@@ -1,0 +1,47 @@
+﻿@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject CustomerService CustomerService
+@page "/customerlist"
+@attribute [Authorize]
+
+<h3>My Customers</h3>
+
+@if (customers is null)
+{
+    <p>Loading customers...</p>
+}
+else if (!customers.Any())
+{
+    <p>No customers found for your Rep Code.</p>
+}
+else
+{
+    <p>@repCode</p>
+    <ul>
+        @foreach (var customer in customers)
+        {
+            <li>@customer.Cust_Num - @customer.Cust_Name</li>
+        }
+    </ul>
+}
+
+@code {
+    private IEnumerable<Customer> customers;
+    private string repCode;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        repCode = user.FindFirst("RepCode")?.Value;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            var currentUser = await UserManager.GetUserAsync(user);
+            if (!string.IsNullOrEmpty(currentUser?.RepCode))
+            {
+                customers = await CustomerService.GetCustomersByRepCodeAsync(currentUser.RepCode);
+            }
+        }
+    }
+}

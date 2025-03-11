@@ -1,0 +1,186 @@
+﻿@page "/monthly-sales-report"
+@using System.Dynamic
+@using System.Globalization
+@using RepPortal.Services
+@using RepPortal.Data
+@using RepPortal.Models
+@using Syncfusion.Blazor.Grids
+@inject SalesService SalesService
+
+<SfGrid @ref="Grid" DataSource="@eSalesData" AllowSorting="true" >
+    <GridColumns>
+        <!-- Fixed Columns -->
+        <GridColumn Field="Customer" HeaderText="Customer" Width="100"></GridColumn>
+        <GridColumn Field="Customer Name" HeaderText="Customer Name" Width="150"></GridColumn>
+        <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
+        <GridColumn Field="slsman" HeaderText="Salesman" Width="120"></GridColumn>
+        <GridColumn Field="Bill To State" HeaderText="State" Width="100"></GridColumn>
+        <GridColumn Field="RegionName" HeaderText="Region" Width="120"></GridColumn>
+
+        <!-- Dynamic Columns -->
+        @foreach (var column in DynamicColumns)
+        {
+            <GridColumn Field="@column" HeaderText="@column" Format="C2" Width="120"></GridColumn>
+        }
+    </GridColumns>
+</SfGrid>
+
+@code {
+    private SfGrid<ExpandoObject> Grid;
+    private List<Dictionary<string, object>> SalesData = new List<Dictionary<string, object>>();
+    private List<string> DynamicColumns = new List<string>();
+    private List<ExpandoObject> eSalesData = new List<ExpandoObject>();
+
+   
+
+    protected override async Task OnInitializedAsync()
+    {
+        var rawData = await SalesService.GetSalesReportData();
+        ProcessDynamicColumns(rawData);
+        ConvertToDictionaries(rawData);
+        Console.WriteLine("Sales Data Count: " + SalesData.Count); // Log the number of ExpandoObjects
+        eSalesData = SalesData.Select(d => d.ToExpando()).ToList();
+        await base.OnInitializedAsync();
+
+    }
+
+    private void ConvertToDictionaries(List<Dictionary<string, object>> records)
+    {
+        // No conversion needed since records is already List<Dictionary<string, object>>
+        SalesData = records;
+    }
+
+    private void ProcessDynamicColumns(List<Dictionary<string, object>> records)
+    {
+        // Get all possible dynamic column names
+        var allColumns = records
+            .SelectMany(r => r.Keys)
+            .Where(k => !IsFixedColumn(k))
+            .Distinct()
+            .OrderBy(GetColumnOrder)
+            .ToList();
+
+        DynamicColumns = allColumns;
+
+        // Debugging: Log the dynamic columns
+        Console.WriteLine("Dynamic Columns: " + string.Join(", ", DynamicColumns));
+    }
+
+    private bool IsFixedColumn(string columnName)
+    {
+        var fixedColumns = new HashSet<string> 
+        { 
+            "Customer", "Customer Name", "Ship To Num", "slsman", "name",
+            "Bill To State",  "Uf_SalesRegion" ,"RegionName"
+        };
+        return fixedColumns.Contains(columnName);
+    }
+    private int GetColumnOrder(string columnName)
+    {
+        // Handle fixed columns (if needed)
+        var fixedColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Customer", 0 },
+            { "Customer Name", 1 },
+            { "Ship To Num", 2 },
+            { "Slsman", 3 },
+            { "Name", 4 },
+            { "Bill To State", 5 },
+            { "Uf_SalesRegion", 6 },
+            { "RegionName", 7 }
+        };
+
+        if (fixedColumnOrder.ContainsKey(columnName))
+        {
+            return fixedColumnOrder[columnName];
+        }
+
+        // Handle dynamic columns (chronological order)
+        if (columnName.StartsWith("FY", StringComparison.OrdinalIgnoreCase))
+        {
+            return 8; // Place FY columns after fixed columns
+        }
+
+        // Parse month-year columns (e.g., SEP2024, OCT2024, etc.)
+        if (columnName.Length >= 3)
+        {
+            var monthPart = columnName.Substring(0, 3);
+            var yearPart = columnName.Length > 3 ? columnName.Substring(3) : "";
+
+            var monthOrder = monthPart.ToUpper() switch
+            {
+                "SEP" => 9,
+                "OCT" => 10,
+                "NOV" => 11,
+                "DEC" => 12,
+                "JAN" => 13,
+                "FEB" => 14,
+                "MAR" => 15,
+                "APR" => 16,
+                "MAY" => 17,
+                "JUN" => 18,
+                "JUL" => 19,
+                "AUG" => 20,
+                _ => -1 // Unknown month
+            };
+
+            if (monthOrder != -1)
+            {
+                return monthOrder;
+            }
+        }
+
+        // Default for unmatched columns
+        return int.MaxValue; // Place unmatched columns at the end
+    }
+
+    private int GetColumnOrderX(string columnName)
+    {
+        // Implement logic to order columns chronologically
+
+        return columnName switch
+        {
+            "Customer" => 0,
+            "CustomerName" => 1,
+            "ShipToNum" => 2,
+            "Slsman" => 3,
+            "Name" => 4,
+            "BillToState" => 5,
+            "Uf_SalesRegion" => 6,
+            "RegionName" => 7,
+            _ when columnName.StartsWith("FY") => 8,
+        _ when columnName.StartsWith("SEP", StringComparison.OrdinalIgnoreCase) => 9,
+            _ when columnName.StartsWith("OCT", StringComparison.OrdinalIgnoreCase) => 10,
+            _ when columnName.StartsWith("NOV", StringComparison.OrdinalIgnoreCase) => 11,
+            _ when columnName.StartsWith("DEC", StringComparison.OrdinalIgnoreCase) => 12,
+            _ when columnName.StartsWith("JAN", StringComparison.OrdinalIgnoreCase) => 13,
+            _ when columnName.StartsWith("FEB", StringComparison.OrdinalIgnoreCase) => 14,
+            _ when columnName.StartsWith("MAR", StringComparison.OrdinalIgnoreCase) => 15,
+            _ when columnName.StartsWith("APR", StringComparison.OrdinalIgnoreCase) => 16,
+            _ when columnName.StartsWith("MAY", StringComparison.OrdinalIgnoreCase) => 17,
+            _ when columnName.StartsWith("JUN", StringComparison.OrdinalIgnoreCase) => 18,
+            _ when columnName.StartsWith("JUL", StringComparison.OrdinalIgnoreCase) => 19,
+            _ when columnName.StartsWith("AUG", StringComparison.OrdinalIgnoreCase) => 20,
+            _ => -1 // or some default value if none of the above match
+    };
+
+    }
+
+    private void ConvertToExpandoObjects(List<SalesRecord> records)
+    {
+        foreach (var record in records)
+        {
+            dynamic expando = new ExpandoObject();
+            var dict = expando as IDictionary<string, object>;
+
+            foreach (var kvp in record)
+            {
+                dict[kvp.Key] = kvp.Value;
+            }
+
+            SalesData.Add(expando);
+        }
+    }
+
+ 
+}

@@ -1,0 +1,52 @@
+﻿@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+
+@page "/counter"
+
+@using RepPortal.Data
+@attribute [Authorize]
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+@if (authState.User.Identity.IsAuthenticated)
+{
+    if (currentUser != null)
+    {
+        <p>Welcome, @authState.User.Identity.Name  @currentUser.FirstName @currentUser.LastName @currentUser.RepCode </p>
+    }
+    else
+    {
+        <p>Loading user details...</p>
+    }
+}
+else
+{
+    <p>You are not logged in.</p>
+}
+
+<p role="status">Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@code {
+    private int currentCount = 0;
+    private AuthenticationState authState;
+    private ApplicationUser currentUser;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentUser = await UserManager.GetUserAsync(user);
+        }
+    }
+}

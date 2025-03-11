@@ -1,0 +1,59 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">RepPortal</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<ul class="nav flex-column">
+    <!-- Other nav items -->
+    <li class="nav-item">
+        <NavLink class="nav-link" href="">
+            <span class="oi oi-home" aria-hidden="true"></span> Home
+        </NavLink>
+    </li>
+    <li class="nav-item">
+        <NavLink class="nav-link" href="customerlist">
+            <span class="oi oi-home" aria-hidden="true"></span> My Customer List
+        </NavLink>
+    </li>
+    <li class="nav-item">
+        <NavLink class="nav-link" href="counter">
+            <span class="oi oi-home" aria-hidden="true"></span> Counter
+        </NavLink>
+    </li>
+
+
+
+    <!-- Reports Submenu -->
+    <li class="nav-item">
+        <!-- Toggle for the Reports submenu -->
+        <a class="nav-link" data-toggle="collapse" href="#reportsSubmenu" role="button" aria-expanded="false" aria-controls="reportsSubmenu">
+            <span class="oi oi-document" aria-hidden="true"></span> Reports
+        </a>
+        <!-- Collapsible submenu -->
+        <div class="collapse" id="reportsSubmenu">
+            <ul class="nav flex-column ml-3">
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/monthly-sales-report" Match="NavLinkMatch.Prefix">
+                        Monthly Sales Report
+                    </NavLink>
+                </li>
+            </ul>
+        </div>
+    </li>
+</ul>
+
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}
