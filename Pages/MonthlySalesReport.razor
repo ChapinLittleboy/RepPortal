@@ -20,7 +20,7 @@
         <!-- Dynamic Columns -->
         @foreach (var column in DynamicColumns)
         {
-            <GridColumn Field="@column" HeaderText="@column" Format="C2" Width="120"></GridColumn>
+            <GridColumn Field="@column" HeaderText="@column" Format="C0" Width="120"></GridColumn>
         }
     </GridColumns>
 </SfGrid>
@@ -31,7 +31,7 @@
     private List<string> DynamicColumns = new List<string>();
     private List<ExpandoObject> eSalesData = new List<ExpandoObject>();
 
-   
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,29 +98,40 @@
         // Handle dynamic columns (chronological order)
         if (columnName.StartsWith("FY", StringComparison.OrdinalIgnoreCase))
         {
-            return 8; // Place FY columns after fixed columns
+            // Extract the integer part after "FY"
+            if (int.TryParse(columnName.Substring(2), out int year))
+            {
+                // Return a value based on the year
+                // For example, FY2024 returns 8, FY2025 returns 9, etc.
+                return year - 2016; // Adjust the offset as needed
+            }
+            else
+            {
+                // Handle the case where the column name doesn't contain a valid year
+                return int.MaxValue; // Place invalid FY columns at the end
+            }
         }
-
         // Parse month-year columns (e.g., SEP2024, OCT2024, etc.)
         if (columnName.Length >= 3)
         {
             var monthPart = columnName.Substring(0, 3);
             var yearPart = columnName.Length > 3 ? columnName.Substring(3) : "";
 
+            int previouscolumns = 9;
             var monthOrder = monthPart.ToUpper() switch
             {
-                "SEP" => 9,
-                "OCT" => 10,
-                "NOV" => 11,
-                "DEC" => 12,
-                "JAN" => 13,
-                "FEB" => 14,
-                "MAR" => 15,
-                "APR" => 16,
-                "MAY" => 17,
-                "JUN" => 18,
-                "JUL" => 19,
-                "AUG" => 20,
+                "SEP" => previouscolumns + 1,
+                "OCT" => previouscolumns + 2,
+                "NOV" => previouscolumns + 3,
+                "DEC" => previouscolumns + 4,
+                "JAN" => previouscolumns + 5,
+                "FEB" => previouscolumns + 6,
+                "MAR" => previouscolumns + 7,
+                "APR" => previouscolumns + 8,
+                "MAY" => previouscolumns + 9,
+                "JUN" => previouscolumns + 10,
+                "JUL" => previouscolumns + 11,
+                "AUG" => previouscolumns + 12,
                 _ => -1 // Unknown month
             };
 

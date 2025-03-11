@@ -81,7 +81,7 @@ public class SalesService
         [Bill To State],
         Uf_SalesRegion,
         RegionName,
-        FY2024,' + @cols + '
+        FY2024, FY2025, ' + @cols + '
     FROM (
         SELECT 
             ih.cust_num AS Customer,
@@ -94,7 +94,7 @@ public class SalesService
             rn.RegionName,
             CASE 
                 WHEN ih.inv_date BETWEEN ''2023-09-01'' AND ''2024-08-31'' THEN ''FY2024''
-                ELSE FORMAT(ih.inv_date, ''MMM'' + CASE WHEN MONTH(ih.inv_date) >= 9 THEN CAST(YEAR(ih.inv_date) AS VARCHAR) ELSE CAST(YEAR(ih.inv_date) + 1 AS VARCHAR) END)
+                ELSE FORMAT(ih.inv_date, ''MMM'') + CAST(YEAR(ih.inv_date) AS VARCHAR)
             END AS Period,
             SUM(ii.qty_invoiced * ii.price) AS ExtPrice
         FROM inv_item_mst ii 
@@ -115,12 +115,41 @@ public class SalesService
             cu.slsman,
             CASE 
                 WHEN ih.inv_date BETWEEN ''2023-09-01'' AND ''2024-08-31'' THEN ''FY2024''
-                ELSE FORMAT(ih.inv_date, ''MMM'' + CASE WHEN MONTH(ih.inv_date) >= 9 THEN CAST(YEAR(ih.inv_date) AS VARCHAR) ELSE CAST(YEAR(ih.inv_date) + 1 AS VARCHAR) END)
+                ELSE FORMAT(ih.inv_date, ''MMM'') + CAST(YEAR(ih.inv_date) AS VARCHAR)
             END
+ UNION ALL
+
+    SELECT 
+        ih.cust_num AS Customer,
+        ca0.Name AS [Customer Name],
+        ih.cust_seq AS [Ship To Num],
+        cu.slsman,
+        ca0.name,
+        ca0.state AS [Bill To State],
+        cu.Uf_SalesRegion,
+        rn.RegionName,
+        ''FY2025'' AS Period,
+        SUM(ii.qty_invoiced * ii.price) AS ExtPrice
+    FROM inv_item_mst ii 
+    JOIN inv_hdr_mst ih ON ii.inv_num = ih.inv_num
+    JOIN custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
+    JOIN customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
+    LEFT JOIN Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
+    WHERE ih.inv_date >= ''2024-09-01'' 
+        AND cu.slsman = ''LAW''
+    GROUP BY 
+        ih.cust_num, 
+        ca0.Name, 
+        ih.cust_seq, 
+        ca0.name, 
+        ca0.state, 
+        cu.Uf_SalesRegion, 
+        rn.RegionName,
+        cu.slsman
     ) AS src
     PIVOT (
         SUM(ExtPrice)
-        FOR Period IN (FY2024,' + @cols + ')
+        FOR Period IN (FY2024, FY2025, ' + @cols + ')
     ) AS pvt
     ORDER BY FY2024 DESC;';
 
