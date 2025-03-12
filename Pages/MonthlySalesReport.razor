@@ -1,4 +1,5 @@
 ﻿@page "/monthly-sales-report"
+@attribute [Authorize]
 @using System.Dynamic
 @using System.Globalization
 @using RepPortal.Services
@@ -7,30 +8,48 @@
 @using Syncfusion.Blazor.Grids
 @inject SalesService SalesService
 
-<SfGrid @ref="Grid" DataSource="@eSalesData" AllowSorting="true" >
-    <GridColumns>
-        <!-- Fixed Columns -->
-        <GridColumn Field="Customer" HeaderText="Customer" Width="100"></GridColumn>
-        <GridColumn Field="Customer Name" HeaderText="Customer Name" Width="150"></GridColumn>
-        <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
-        <GridColumn Field="slsman" HeaderText="Salesman" Width="120"></GridColumn>
-        <GridColumn Field="Bill To State" HeaderText="State" Width="100"></GridColumn>
-        <GridColumn Field="RegionName" HeaderText="Region" Width="120"></GridColumn>
+<SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
 
-        <!-- Dynamic Columns -->
-        @foreach (var column in DynamicColumns)
-        {
-            <GridColumn Field="@column" HeaderText="@column" Format="C0" Width="120"></GridColumn>
-        }
-    </GridColumns>
-</SfGrid>
+@if (isLoading)
+{
+    <p>Loading sales data, please wait...</p>
+}
+else
+{
+
+
+    <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export" })">
+        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
+        <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })"  PageSize="20" ></GridPageSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridColumns>
+            <!-- Fixed Columns -->
+            <GridColumn Field="Customer" HeaderText="Customer" Width="100"></GridColumn>
+            <GridColumn Field="Customer Name" HeaderText="Name" Width="150"></GridColumn>
+            <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
+            <GridColumn Field="Ship To City" HeaderText="Ship City" Width="120"></GridColumn>
+            <GridColumn Field="Ship To State" HeaderText="Ship State" Width="120"></GridColumn>
+            <GridColumn Field="slsman" HeaderText="Salesman" Width="120"></GridColumn>
+            <GridColumn Field="Bill To State" HeaderText="Bill State" Width="100"></GridColumn>
+            <GridColumn Field="RegionName" HeaderText="Region" Width="120"></GridColumn>
+
+            <!-- Dynamic Columns -->
+            @foreach (var column in DynamicColumns)
+            {
+                <GridColumn Field="@column" HeaderText="@column" Format="C0"  Width="120"></GridColumn>
+            }
+        </GridColumns>
+    </SfGrid>
+}
+
 
 @code {
     private SfGrid<ExpandoObject> Grid;
     private List<Dictionary<string, object>> SalesData = new List<Dictionary<string, object>>();
     private List<string> DynamicColumns = new List<string>();
     private List<ExpandoObject> eSalesData = new List<ExpandoObject>();
-
+    private bool isLoading = true;
+    private SfSpinner spinner;
 
 
     protected override async Task OnInitializedAsync()
@@ -38,12 +57,20 @@
         var rawData = await SalesService.GetSalesReportData();
         ProcessDynamicColumns(rawData);
         ConvertToDictionaries(rawData);
-        Console.WriteLine("Sales Data Count: " + SalesData.Count); // Log the number of ExpandoObjects
+        
         eSalesData = SalesData.Select(d => d.ToExpando()).ToList();
         await base.OnInitializedAsync();
-
+        // Hide the spinner
+        isLoading = false;
+        //spinner.HideAsync();
     }
-
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "Grid_Export") //Id is combination of Grid's ID and itemname
+        {
+            await this.Grid.ExportToExcelAsync();
+        }
+    }
     private void ConvertToDictionaries(List<Dictionary<string, object>> records)
     {
         // No conversion needed since records is already List<Dictionary<string, object>>
@@ -70,7 +97,8 @@
     {
         var fixedColumns = new HashSet<string> 
         { 
-            "Customer", "Customer Name", "Ship To Num", "slsman", "name",
+            "Customer", "Customer Name", "Ship To Num", "Ship To City", "Ship To State"
+            , "slsman", "name",
             "Bill To State",  "Uf_SalesRegion" ,"RegionName"
         };
         return fixedColumns.Contains(columnName);
@@ -83,11 +111,13 @@
             { "Customer", 0 },
             { "Customer Name", 1 },
             { "Ship To Num", 2 },
-            { "Slsman", 3 },
-            { "Name", 4 },
-            { "Bill To State", 5 },
-            { "Uf_SalesRegion", 6 },
-            { "RegionName", 7 }
+            { "Ship To City", 3 },
+            { "Ship To State", 4 },
+            { "Slsman", 5 },
+            { "Name", 6 },
+            { "Bill To State", 7 },
+            { "Uf_SalesRegion", 8 },
+            { "RegionName", 9 }
         };
 
         if (fixedColumnOrder.ContainsKey(columnName))
@@ -102,8 +132,8 @@
             if (int.TryParse(columnName.Substring(2), out int year))
             {
                 // Return a value based on the year
-                // For example, FY2024 returns 8, FY2025 returns 9, etc.
-                return year - 2016; // Adjust the offset as needed
+                // For example, FY2024 returns 10, FY2025 returns 11, etc.
+                return year - 2014; // Adjust the offset as needed
             }
             else
             {
@@ -117,7 +147,7 @@
             var monthPart = columnName.Substring(0, 3);
             var yearPart = columnName.Length > 3 ? columnName.Substring(3) : "";
 
-            int previouscolumns = 9;
+            int previouscolumns = 11;
             var monthOrder = monthPart.ToUpper() switch
             {
                 "SEP" => previouscolumns + 1,
