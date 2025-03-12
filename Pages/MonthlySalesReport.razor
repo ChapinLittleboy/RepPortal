@@ -7,6 +7,8 @@
 @using RepPortal.Models
 @using Syncfusion.Blazor.Grids
 @inject SalesService SalesService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
 
 <SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
 
@@ -49,26 +51,44 @@ else
     private List<string> DynamicColumns = new List<string>();
     private List<ExpandoObject> eSalesData = new List<ExpandoObject>();
     private bool isLoading = true;
-    private SfSpinner spinner;
+   
+    private AuthenticationState authState;
+    private ApplicationUser currentUser;
+
 
 
     protected override async Task OnInitializedAsync()
     {
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentUser = await UserManager.GetUserAsync(user);
+        }
+
         var rawData = await SalesService.GetSalesReportData();
         ProcessDynamicColumns(rawData);
         ConvertToDictionaries(rawData);
-        
+
         eSalesData = SalesData.Select(d => d.ToExpando()).ToList();
         await base.OnInitializedAsync();
         // Hide the spinner
         isLoading = false;
         //spinner.HideAsync();
     }
+
+
+
     public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
     {
         if (args.Item.Id == "Grid_Export") //Id is combination of Grid's ID and itemname
         {
-            await this.Grid.ExportToExcelAsync();
+            var ExcelFileName = $"Chapin Monthly Sales Report({currentUser.RepCode}).xlsx";
+            ExcelExportProperties exportProperties = new ExcelExportProperties
+            {
+                    FileName = ExcelFileName
+            };
+            await this.Grid.ExportToExcelAsync(exportProperties);
         }
     }
     private void ConvertToDictionaries(List<Dictionary<string, object>> records)
