@@ -12,6 +12,9 @@ a, .btn-link {
     color: #0071c1;
 }
 
+.auth-link {
+    color: white !important;
+}
 .btn-primary {
     color: #fff;
     background-color: #1b6ec2;
@@ -66,3 +69,4 @@ a, .btn-link {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+

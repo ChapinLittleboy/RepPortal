@@ -1,0 +1,160 @@
+﻿@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Buttons
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="control-container">
+    <SfAppBar Mode="AppBarMode.Prominent" ColorMode="AppBarColor.Inherit" CssClass="e-appbar">
+        <div class="appbar-content">
+            <img src="images/ChapinLogo.png" alt="Logo" class="appbar-logo"/>
+            <span class="appbar-title">Rep Portal</span>
+            <AppBarSpacer></AppBarSpacer>
+            <SfButton CssClass="e-inherit home-button" OnClick="GoHome">Home</SfButton>
+           
+            <SfMenu CssClass="e-inherit" TValue="MenuItem">
+                <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+                
+                <MenuItems>
+                    <MenuItem Text="Reports">
+                        <MenuItems>
+                            <MenuItem Text="Customer List"/>
+                            <MenuItem Text="Monthly Sales Report"></MenuItem>
+                            <MenuItem Text="Blog"></MenuItem>
+                            <MenuItem Text="Careers"></MenuItem>
+                        </MenuItems>
+                    </MenuItem>
+                </MenuItems>
+            </SfMenu>
+            <SfMenu CssClass="e-inherit" TValue="MenuItem">
+                <MenuItems>
+                    <MenuItem Text="Downloads">
+                        <MenuItems>
+                            <MenuItem Text="Developer"></MenuItem>
+                            <MenuItem Text="Analytics"></MenuItem>
+                            <MenuItem Text="Reporting"></MenuItem>
+                            <MenuItem Text="Help Desk"></MenuItem>
+                        </MenuItems>
+                    </MenuItem>
+                </MenuItems>
+            </SfMenu>
+            <SfMenu CssClass="e-inherit" TValue="MenuItem">
+                <MenuItems>
+                    <MenuItem Text="About Us"></MenuItem>
+                </MenuItems>
+            </SfMenu>
+            <SfMenu CssClass="e-inherit" TValue="MenuItem">
+                <MenuItems>
+                    <MenuItem Text="Careers"></MenuItem>
+                </MenuItems>
+            </SfMenu>
+            <AppBarSpacer></AppBarSpacer>
+            <AuthorizeView>
+                <Authorized>
+                    <a href="Identity/Account/Manage" class="nav-link">Hello, @context.User.Identity?.Name!</a>
+                    <form method="post" action="Identity/Account/Logout" class="logout-form">
+                        <button type="submit" class="nav-link btn btn-link">Log out</button>
+                    </form>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="Identity/Account/Register" class="nav-link">Register</a>
+                    <a href="Identity/Account/Login" class="nav-link">Log in</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </SfAppBar>
+</div>
+
+@code
+{
+    private string eventName = "No";
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+    private void itemSelected(MenuEventArgs<MenuItem> args)
+    {
+        //Selected menu item
+        var selectedItem = args.Item.Text;
+        this.eventName = "ItemSelected";
+
+        switch (selectedItem)
+        {
+            case "Customer List":
+                //Navigate to Customer List page
+                Navigation.NavigateTo("/customerlist");
+                break;
+            case "Monthly Sales Report":
+                //Navigate to Monthly Sales Report page
+                Navigation.NavigateTo("/monthly-sales-report");
+                break;
+        }
+    }
+}
+
+<style>
+    .control-container .e-btn.e-inherit {
+        margin: 0 3px;
+    }
+    e-appbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        color: red;
+    }
+
+    .appbar-content {
+        display: flex;
+        align-items: center;
+    }
+
+    .appbar-logo {
+        height: 80px; /* Adjust the height as needed */
+        margin-right: 30px;
+    }
+
+    .appbar-title {
+        font-size: 2rem; /* Increased font size */
+        font-weight: normal;
+        font-family: Tahoma;
+        vertical-align: top;
+    }
+
+    .nav-link {
+        color: blue;
+        text-decoration: none;
+        margin-right: 10px;
+    }
+
+    .nav-link:hover {
+        text-decoration: underline;
+    }
+
+    .logout-form {
+        margin: 0;
+    }
+
+    .btn-link {
+        background-color: transparent;
+        border: none;
+        color: blue;
+        cursor: pointer;
+    }
+
+    /* Top level menu items - target directly */
+    .e-menu-container .e-menu > li.e-menu-item {
+        font-size: 1.5rem !important;
+    }
+
+    /* Sub menu items - these will be in a popup container */
+    .e-menu-popup .e-menu-item {
+        font-size: 1rem !important;
+    }
+
+    .home-button {
+        font-size: 1.5rem; /* Increased font size for Home button */
+        line-height: 1.5rem; /* Adjust line height to match font size */
+        vertical-align: top; /* Align text to the top */
+    }
+</style>
