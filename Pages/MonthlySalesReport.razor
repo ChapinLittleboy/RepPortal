@@ -20,7 +20,7 @@ else
 {
 
 
-    <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export" })">
+    <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })">
         <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
         <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })"  PageSize="20" ></GridPageSettings>
         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
@@ -81,7 +81,7 @@ else
 
     public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
     {
-        if (args.Item.Id == "Grid_Export") //Id is combination of Grid's ID and itemname
+        if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
         {
             var ExcelFileName = $"Chapin Monthly Sales Report({currentUser.RepCode}).xlsx";
             ExcelExportProperties exportProperties = new ExcelExportProperties
@@ -182,6 +182,7 @@ else
                 "JUN" => previouscolumns + 10,
                 "JUL" => previouscolumns + 11,
                 "AUG" => previouscolumns + 12,
+                
                 _ => -1 // Unknown month
             };
 
