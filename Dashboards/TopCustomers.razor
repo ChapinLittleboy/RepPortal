@@ -1,0 +1,238 @@
+﻿@page "/dashboard/top-customers"
+@using Microsoft.Data.SqlClient
+@using Dapper
+@using System.Collections.Generic
+@using System.Linq
+@using Syncfusion.Blazor.Charts
+@inject IConfiguration Configuration
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">Top Grossing Customers - FY2024 vs Current Year</h5>
+        <div class="card-tools">
+            <div class="input-group input-group-sm">
+                <select class="form-select" @bind="numberOfCustomers">
+                    <option value="5">Top 5</option>
+                    <option value="10">Top 10</option>
+                    <option value="15">Top 15</option>
+                </select>
+                <button type="button" class="btn btn-primary btn-sm ms-2" @onclick="LoadData">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (isLoading)
+        {
+            <div class="d-flex justify-content-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        else if (topCustomers == null || !topCustomers.Any())
+        {
+            <div class="alert alert-info">No customer data available.</div>
+        }
+        else
+        {
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered table-striped">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Customer</th>
+                            <th class="text-end">FY2024 Total</th>
+                            <th class="text-end">Current YTD</th>
+                            <th class="text-end">% Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var customer in topCustomers)
+                        {
+                            <tr @onclick="() => SelectCustomer(customer)" class="@(selectedCustomer?.Id == customer.Id ? "table-active" : "")">
+                                <td>@customer.Name</td>
+                                <td class="text-end">@customer.PreviousYearTotal.ToString("C0")</td>
+                                <td class="text-end">@customer.CurrentYearTotal.ToString("C0")</td>
+                                <td class="text-end @(customer.PercentChange >= 0 ? "text-success" : "text-danger")">
+                                    @(customer.PercentChange.ToString("+0.0%;-0.0%"))
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (selectedCustomer != null)
+            {
+                <h6 class="mt-4">Monthly Comparison for @selectedCustomer.Name</h6>
+                
+                <SfChart Height="300px">
+                    <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category">
+                        <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+                    </ChartPrimaryXAxis>
+                    <ChartPrimaryYAxis Title="Sales Amount ($)" LabelFormat="{value}K">
+                        <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+                    </ChartPrimaryYAxis>
+                    <ChartLegendSettings Visible="true" Position="LegendPosition.Top"></ChartLegendSettings>
+                    <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                    <ChartSeriesCollection>
+                        <ChartSeries DataSource="@selectedCustomer.MonthlyData" XName="Month" 
+                                    YName="PreviousYearAmount" Type="ChartSeriesType.Column" 
+                                    Name="FY2024" Fill="#6c757d">
+                        </ChartSeries>
+                        <ChartSeries DataSource="@selectedCustomer.MonthlyData" XName="Month" 
+                                    YName="CurrentYearAmount" Type="ChartSeriesType.Column" 
+                                    Name="FY2025" Fill="#0d6efd">
+                        </ChartSeries>
+                    </ChartSeriesCollection>
+                </SfChart>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private bool isLoading = false;
+    private int numberOfCustomers = 5;
+    private List<CustomerViewModel> topCustomers;
+    private CustomerViewModel selectedCustomer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            topCustomers = await GetTopCustomers(numberOfCustomers);
+            if (topCustomers.Any())
+            {
+                await SelectCustomer(topCustomers[0]);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log the exception
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectCustomer(CustomerViewModel customer)
+    {
+        selectedCustomer = customer;
+        selectedCustomer.MonthlyData = await GetCustomerMonthlyData(customer.Id);
+        StateHasChanged();
+    }
+
+    private async Task<List<CustomerViewModel>> GetTopCustomers(int count)
+    {
+        using (var connection = new SqlConnection(Configuration.GetConnectionString("BatAppConnection")))
+        {
+            await connection.OpenAsync();
+
+            var currentYear = DateTime.Now.Year;
+            var previousYear = currentYear - 1;
+
+            string sql = @"
+                WITH PreviousYearSales AS (
+                    SELECT 
+                        c.CustomerId,
+                        c.CustomerName,
+                        ISNULL(SUM(s.SalesAmount), 0) AS TotalSales
+                    FROM Customers c
+                    LEFT JOIN Sales s ON c.CustomerId = s.CustomerId
+                    WHERE YEAR(s.SalesDate) = @PreviousYear
+                    GROUP BY c.CustomerId, c.CustomerName
+                ),
+                CurrentYearSales AS (
+                    SELECT 
+                        c.CustomerId,
+                        ISNULL(SUM(s.SalesAmount), 0) AS TotalSales
+                    FROM Customers c
+                    LEFT JOIN Sales s ON c.CustomerId = s.CustomerId
+                    WHERE YEAR(s.SalesDate) = @CurrentYear
+                    GROUP BY c.CustomerId
+                )
+                SELECT TOP (@Count)
+                    p.CustomerId AS Id,
+                    p.CustomerName AS Name,
+                    p.TotalSales AS PreviousYearTotal,
+                    ISNULL(c.TotalSales, 0) AS CurrentYearTotal,
+                    CASE 
+                        WHEN p.TotalSales = 0 THEN 0
+                        ELSE (ISNULL(c.TotalSales, 0) - p.TotalSales) / p.TotalSales
+                    END AS PercentChange
+                FROM PreviousYearSales p
+                LEFT JOIN CurrentYearSales c ON p.CustomerId = c.CustomerId
+                ORDER BY p.TotalSales DESC";
+
+            return (await connection.QueryAsync<CustomerViewModel>(sql, new { 
+                PreviousYear = previousYear, 
+                CurrentYear = currentYear, 
+                Count = count 
+            })).ToList();
+        }
+    }
+
+    private async Task<List<MonthlyData>> GetCustomerMonthlyData(int customerId)
+    {
+        using (var connection = new SqlConnection(Configuration.GetConnectionString("BatAppConnection")))
+        {
+            await connection.OpenAsync();
+
+            var currentYear = DateTime.Now.Year;
+            var previousYear = currentYear - 1;
+
+            string sql = @"
+                WITH MonthlyData AS (
+                    SELECT
+                        MONTH(s.SalesDate) AS MonthNumber,
+                        DATENAME(MONTH, s.SalesDate) AS MonthName,
+                        SUM(CASE WHEN YEAR(s.SalesDate) = @PreviousYear THEN s.SalesAmount ELSE 0 END) AS PreviousYearAmount,
+                        SUM(CASE WHEN YEAR(s.SalesDate) = @CurrentYear THEN s.SalesAmount ELSE 0 END) AS CurrentYearAmount
+                    FROM Sales s
+                    WHERE s.CustomerId = @CustomerId
+                        AND YEAR(s.SalesDate) IN (@PreviousYear, @CurrentYear)
+                    GROUP BY MONTH(s.SalesDate), DATENAME(MONTH, s.SalesDate)
+                )
+                SELECT
+                    MonthName AS Month,
+                    PreviousYearAmount / 1000 AS PreviousYearAmount,
+                    CurrentYearAmount / 1000 AS CurrentYearAmount
+                FROM MonthlyData
+                ORDER BY MonthNumber";
+
+            return (await connection.QueryAsync<MonthlyData>(sql, new { 
+                CustomerId = customerId, 
+                PreviousYear = previousYear, 
+                CurrentYear = currentYear 
+            })).ToList();
+        }
+    }
+
+    public class CustomerViewModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public decimal PreviousYearTotal { get; set; }
+        public decimal CurrentYearTotal { get; set; }
+        public decimal PercentChange { get; set; }
+        public List<MonthlyData> MonthlyData { get; set; } = new List<MonthlyData>();
+    }
+
+    public class MonthlyData
+    {
+        public string Month { get; set; }
+        public decimal PreviousYearAmount { get; set; }
+        public decimal CurrentYearAmount { get; set; }
+    }
+}

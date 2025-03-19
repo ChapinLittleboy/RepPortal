@@ -8,19 +8,19 @@
     <SfAppBar Mode="AppBarMode.Prominent" ColorMode="AppBarColor.Inherit" CssClass="e-appbar">
         <div class="appbar-content">
             <img src="images/ChapinLogo.png" alt="Logo" class="appbar-logo"/>
-            <span class="appbar-title">Rep Portal</span>
+            <span class="appbar-title" >Rep Portal</span>
             <AppBarSpacer></AppBarSpacer>
             <SfButton CssClass="e-inherit home-button" OnClick="GoHome">Home</SfButton>
-           
+
             <SfMenu CssClass="e-inherit" TValue="MenuItem">
                 <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
-                
+
                 <MenuItems>
                     <MenuItem Text="Reports">
                         <MenuItems>
                             <MenuItem Text="Customer List"/>
                             <MenuItem Text="Monthly Sales Report"></MenuItem>
-                            <MenuItem Text="Blog"></MenuItem>
+                            <MenuItem Text="Shipments Report"></MenuItem>
                             <MenuItem Text="Careers"></MenuItem>
                         </MenuItems>
                     </MenuItem>
@@ -73,10 +73,30 @@
 @code
 {
     private string eventName = "No";
+    private string welcomemsg;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            var firstName = user.FindFirst(c => c.Type == "FirstName")?.Value;
+            var lastName = user.FindFirst(c => c.Type == "LastName")?.Value;
+            welcomemsg = $"Welcome, {firstName} {lastName}!";
+        }
+        else
+        {
+            welcomemsg = "Welcome, Guest!";
+        }
+    }
+
     private void GoHome()
     {
         Navigation.NavigateTo("/");
     }
+
     private void itemSelected(MenuEventArgs<MenuItem> args)
     {
         //Selected menu item
@@ -92,6 +112,10 @@
             case "Monthly Sales Report":
                 //Navigate to Monthly Sales Report page
                 Navigation.NavigateTo("/monthly-sales-report");
+                break;
+            case "Shipments Report":
+                //Navigate to Monthly Sales Report page
+                Navigation.NavigateTo("/shipments-report");
                 break;
         }
     }
@@ -124,6 +148,7 @@
         font-weight: normal;
         font-family: Tahoma;
         vertical-align: top;
+        color: var(--bs-primary); /* Use Bootstrap primary color */
     }
 
     .nav-link {

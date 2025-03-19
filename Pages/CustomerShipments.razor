@@ -1,0 +1,184 @@
+﻿
+
+@page "/shipments-report"
+@attribute [Authorize]
+@using System.Dynamic
+@using System.Globalization
+@using RepPortal.Services
+@using RepPortal.Data
+@using RepPortal.Models
+@using Syncfusion.Blazor.Grids
+@inject SalesService SalesService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+
+<SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
+
+@if (isLoading)
+{
+    <p>Loading shipment data, please wait...</p>
+}
+else
+{
+    <EditForm Model="@parameters" OnValidSubmit="LoadShipments">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div>
+            <label>Begin Ship Date:</label>
+            <InputDate @bind-Value="parameters.BeginShipDate" />
+        </div>
+        <div>
+            <label>End Ship Date:</label>
+            <InputDate @bind-Value="parameters.EndShipDate" />
+        </div>
+        <div>
+            <label>Rep Code:</label>
+            <InputText @bind-Value="parameters.RepCode" />
+        </div>
+        <div>
+            <label>Customer Number (Optional):</label>
+            <InputText @bind-Value="parameters.CustNum" />
+        </div>
+        <div>
+            <label>Corporate Number (Optional):</label>
+            <InputText @bind-Value="parameters.CorpNum" />
+        </div>
+        <div>
+            <label>Customer Type (Optional):</label>
+            <InputText @bind-Value="parameters.CustType" />
+        </div>
+        <div>
+            <label>End User Type (Optional):</label>
+            <InputText @bind-Value="parameters.EndUserType" />
+        </div>
+        <button type="submit">Load Shipments</button>
+    </EditForm>
+
+    <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@eShipmentsData" AllowTextWrap="false" AllowSorting="false" AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })">
+        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
+        <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })"  PageSize="20" ></GridPageSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
+        <GridColumns >
+            <GridColumn Field="CustNum" HeaderText="Customer Num" Width="100"></GridColumn>
+            <GridColumn Field="CustName" HeaderText="Customer Name" Width="150"></GridColumn>
+            <GridColumn Field="PoNumber" HeaderText="PO Num" Width="100"></GridColumn>
+            <GridColumn Field="OrderNumber" HeaderText="Order Num" Width="100"></GridColumn>
+            <GridColumn Field="ExtLinePrice" HeaderText="Ext Price" Format="C2" Width="120"></GridColumn>
+            <GridColumn Field="CoLine" HeaderText="CO Line" Width="100"></GridColumn>
+            <GridColumn Field="ItemNum" HeaderText="Item" Width="100"></GridColumn>
+            <GridColumn Field="ItemDesc" HeaderText="Description" Width="150"></GridColumn>
+            <GridColumn Field="ShipDate"  HeaderText = "Ship Date" Format="d" Width="100"></GridColumn>
+            <GridColumn Field="CarrierCode" HeaderText="Carrier Code" Width="100"></GridColumn>
+            <GridColumn Field="ServiceType" HeaderText="Service Type"  Width="100"></GridColumn>
+            <GridColumn Field="ship_code" HeaderText="Ship Code" Width="100"></GridColumn>
+            <GridColumn Field="tracking_number" HeaderText="Tracking Number" Width="150"></GridColumn>
+            <GridColumn Field="due_date" HeaderText="Due Date" Format="d" Width="100"></GridColumn>
+            <GridColumn Field="whse" HeaderText="Warehouse" Width="100"></GridColumn>
+            <GridColumn Field="shipment_id" HeaderText="Shipment ID" Width="100"></GridColumn>
+        </GridColumns>
+    </SfGrid>
+}
+<style>
+    .e-grid .e-gridheader .e-headercell {
+        height: 50px; /* Increase header height */
+        white-space: normal !important; /* Allow text wrapping */
+    }
+    /* Position the filter icon absolutely within the header cell */
+    .e-grid .e-headercell {
+        position: relative;
+        padding-right: 25px !important; /* Space for the icon */
+    }
+    /* Position the filter icon absolutely within the header cell */
+    .e-grid .e-headercell {
+        position: relative;
+        padding-right: 1px !important; /* Space for the icon */
+    }
+
+    .e-grid .e-headercell .e-filtericon {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-left: 0 !important;
+    }
+    .custom-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    .custom-grid .e-gridheader .e-headercell {
+        font-size: 16px !important;
+        padding: 10px !important; /* Adjust padding if text is cramped */
+    }
+
+    .custom-grid .e-rowcell {
+        font-size: 14px !important;
+    }
+
+</style>
+
+@code {
+    private SfGrid<ExpandoObject> Grid;
+    private List<Dictionary<string, object>> ShipmentsData = new List<Dictionary<string, object>>();
+    private List<ExpandoObject> eShipmentsData = new List<ExpandoObject>();
+    private bool isLoading = false;
+
+    private AuthenticationState authState;
+    private ApplicationUser currentUser;
+
+    private SalesService.ShipmentsParameters parameters = new SalesService.ShipmentsParameters();
+
+    protected override async Task OnInitializedAsync()
+    {
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentUser = await UserManager.GetUserAsync(user);
+            parameters.RepCode = currentUser.RepCode;
+        }
+    }
+
+    private async Task LoadShipments()
+    {
+        isLoading = true;
+        var rawData = await SalesService.GetShipmentsData(parameters);
+        ConvertToDictionaries(rawData);
+        eShipmentsData = ShipmentsData.Select(d => d.ToExpando()).ToList();
+
+        // Print out the values of all the elements in the eShipmentsData for the first record
+        if (eShipmentsData.Count > 0)
+        {
+            var firstRecord = eShipmentsData[0];
+            foreach (var kvp in (IDictionary<string, object>)firstRecord)
+            {
+                Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+            }
+        }
+
+        isLoading = false;
+    }
+
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
+        {
+            var ExcelFileName = $"Chapin Shipments Report({currentUser.RepCode}).xlsx";
+            ExcelExportProperties exportProperties = new ExcelExportProperties
+            {
+                FileName = ExcelFileName
+            };
+            await this.Grid.ExportToExcelAsync(exportProperties);
+        }
+    }
+
+    private void ConvertToDictionaries(List<Dictionary<string, object>> records)
+    {
+        // No conversion needed since records is already List<Dictionary<string, object>>
+        ShipmentsData = records;
+    }
+}
+
+

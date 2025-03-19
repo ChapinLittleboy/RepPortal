@@ -208,4 +208,62 @@ public class SalesService
 
 
     }
+
+
+
+    public async Task<List<Dictionary<string, object>>> GetShipmentsData(ShipmentsParameters parameters)
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var results = await connection.QueryAsync(@"
+            EXEC RepPortal_GetShipmentsSp 
+                @BeginShipDate, 
+                @EndShipDate, 
+                @RepCode, 
+                @CustNum, 
+                @CorpNum, 
+                @CustType, 
+                @EndUserType",
+                new
+                {
+                    parameters.BeginShipDate,
+                    parameters.EndShipDate,
+                    parameters.RepCode,
+                    parameters.CustNum,
+                    parameters.CorpNum,
+                    parameters.CustType,
+                    parameters.EndUserType
+                });
+
+            // Convert the results to a list of dictionaries
+            var data = new List<Dictionary<string, object>>();
+            foreach (var row in results)
+            {
+                var dict = new Dictionary<string, object>();
+                foreach (var prop in row)
+                {
+                    dict[prop.Key] = prop.Value;
+                }
+                data.Add(dict);
+            }
+
+            return data;
+        }
+    }
+
+
+    public class ShipmentsParameters
+    {
+        public DateTime BeginShipDate { get; set; }
+        public DateTime EndShipDate { get; set; }
+        public string RepCode { get; set; }
+        public string CustNum { get; set; }
+        public string CorpNum { get; set; }
+        public string CustType { get; set; }
+        public string EndUserType { get; set; }
+    }
+
+
+
 }
