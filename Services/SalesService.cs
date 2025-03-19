@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Data.SqlClient;
+using RepPortal.Models;
 using System.Data;
 
 namespace RepPortal.Services;
@@ -9,6 +10,7 @@ public class SalesService
 {
     private readonly string _connectionString;
     private readonly AuthenticationStateProvider _authenticationStateProvider;
+
 
     public SalesService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider)
     {
@@ -211,20 +213,20 @@ public class SalesService
 
 
 
-    public async Task<List<Dictionary<string, object>>> GetShipmentsData(ShipmentsParameters parameters)
+    public async Task<List<CustomerShipment>> GetShipmentsData(ShipmentsParameters parameters)
     {
         using (var connection = new SqlConnection(_connectionString))
         {
             await connection.OpenAsync();
-            var results = await connection.QueryAsync(@"
-            EXEC RepPortal_GetShipmentsSp 
-                @BeginShipDate, 
-                @EndShipDate, 
-                @RepCode, 
-                @CustNum, 
-                @CorpNum, 
-                @CustType, 
-                @EndUserType",
+            var results = await connection.QueryAsync<CustomerShipment>(@"
+                EXEC RepPortal_GetShipmentsSp 
+                    @BeginShipDate, 
+                    @EndShipDate, 
+                    @RepCode, 
+                    @CustNum, 
+                    @CorpNum, 
+                    @CustType, 
+                    @EndUserType",
                 new
                 {
                     parameters.BeginShipDate,
@@ -236,19 +238,7 @@ public class SalesService
                     parameters.EndUserType
                 });
 
-            // Convert the results to a list of dictionaries
-            var data = new List<Dictionary<string, object>>();
-            foreach (var row in results)
-            {
-                var dict = new Dictionary<string, object>();
-                foreach (var prop in row)
-                {
-                    dict[prop.Key] = prop.Value;
-                }
-                data.Add(dict);
-            }
-
-            return data;
+            return results.ToList();
         }
     }
 

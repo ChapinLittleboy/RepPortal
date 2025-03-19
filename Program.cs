@@ -1,3 +1,4 @@
+using Dapper;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,8 @@ using Syncfusion.Blazor;
 
 
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NMaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxfcHVWRWBfV0x/VkQ=");
+// Set the global command timeout for Dapper
+SqlMapper.Settings.CommandTimeout = 60; // Timeout set to 60 seconds
 
 var builder = WebApplication.CreateBuilder(args);
 
