@@ -68,7 +68,7 @@
             </div>
         </EditForm>
 
-        <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@ShipmentsData" AllowTextWrap="true" AllowSorting="false" AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })">
+        <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@ShipmentsData" AllowTextWrap="true" AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })">
             <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
             <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="CustomerShipment"></GridEvents>
             <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })"  PageSize="20" ></GridPageSettings>

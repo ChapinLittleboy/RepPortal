@@ -1,6 +1,8 @@
 ﻿@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject CustomerService CustomerService
+@using RepPortal.Models;
+
 @page "/customerlist"
 @attribute [Authorize]
 
@@ -20,7 +22,7 @@ else
     <ul>
         @foreach (var customer in customers)
         {
-            <li>@customer.Cust_Num - @customer.Cust_Name</li>
+            <li>@customer.Cust_Num - @GetStatusDescription(customer.Status) - @customer.Cust_Name  </li>
         }
     </ul>
 }
@@ -43,5 +45,14 @@ else
                 customers = await CustomerService.GetCustomersByRepCodeAsync(currentUser.RepCode);
             }
         }
+    }
+
+    private string GetStatusDescription(string status)
+    {
+        if (Enum.TryParse<Customer.CustomerStatus>(status, out var customerStatus))
+        {
+            return customerStatus.ToDescription();
+        }
+        return "Unknown";
     }
 }

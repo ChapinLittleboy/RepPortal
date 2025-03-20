@@ -18,7 +18,7 @@ public class CustomerService
     public async Task<IEnumerable<Customer>> GetCustomersByRepCodeAsync(string repCode)
     {
         const string sql = @"
-            SELECT cu.Cust_Num , ca.Name as Cust_Name , cu.slsman as  RepCode
+            SELECT cu.Cust_Num , ca.Name as Cust_Name , cu.slsman as  RepCode, cu.stat as Status
             FROM Customer_mst cu
             Join CustAddr_mst ca on cu.cust_num = ca.cust_num and cu.cust_seq = ca.cust_seq 
             WHERE slsman = @RepCode and cu.cust_seq = 0
