@@ -73,21 +73,42 @@
             <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="CustomerShipment"></GridEvents>
             <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })"  PageSize="20" ></GridPageSettings>
             <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
+            <GridSortSettings>
+                <GridSortColumns>
+                    <GridSortColumn Field="CustName" Direction="SortDirection.Ascending"></GridSortColumn>
+                    <GridSortColumn Field="PoNumber" Direction="SortDirection.Ascending"></GridSortColumn>
+                    <GridSortColumn Field="CoLine" Direction="SortDirection.Ascending"></GridSortColumn>
+                    <GridSortColumn Field="ShipDate" Direction="SortDirection.Ascending"></GridSortColumn>
+                </GridSortColumns>
+            </GridSortSettings>
             <GridColumns >
                 <GridColumn Field="CustNum" HeaderText="Cust Num" Width="100"></GridColumn>
                 <GridColumn Field="CustName" HeaderText="Customer Name" Width="150"></GridColumn>
                 <GridColumn Field="PoNumber" HeaderText="PO Num" Width="100"></GridColumn>
                 <GridColumn Field="OrderNumber" HeaderText="Order Num" Width="100"></GridColumn>
-                <GridColumn Field="ExtLinePrice" HeaderText="Ext Price" Format="C2" Width="120"></GridColumn>
+
                 <GridColumn Field="CoLine" HeaderText="CO Line" Width="100"></GridColumn>
                 <GridColumn Field="ItemNum" HeaderText="Item" Width="100"></GridColumn>
                 <GridColumn Field="ItemDesc" HeaderText="Description" Width="150"></GridColumn>
-                <GridColumn Field="ShipDate"  HeaderText = "Ship Date" Format="d" Width="100"></GridColumn>
+                <GridColumn Field="DueDate" HeaderText="Due Date" Format="d" Width="100"></GridColumn>
+                <GridColumn Field="ShipDate" HeaderText="Ship Date" Format="d" Width="100"></GridColumn>
+                <GridColumn HeaderText="Qty Shipped" TextAlign="TextAlign.Right" Width="100">
+                    <Template>
+                        @{
+                            var sd = (context as CustomerShipment);
+                            <div class="right-padding">
+                                @sd.ShipQty
+                            </div>
+                        }
+                    </Template>
+                </GridColumn>
+                <GridColumn Field="ExtLinePrice" HeaderText="Ext Price" Format="C2" Width="120" TextAlign="TextAlign.Right"></GridColumn>
+                <GridColumn Field="Whse" HeaderText="Whse" Width="100"></GridColumn>
                 <GridColumn Field="CarrierCode" HeaderText="Carrier Code" Width="100"></GridColumn>
                 <GridColumn Field="ServiceType" HeaderText="Service Type"  Width="100"></GridColumn>
                 <GridColumn Field="ShipCode" HeaderText="Ship Code" Width="100"></GridColumn>
                 <GridColumn Field="TrackingNumber" HeaderText="Tracking Number" Width="150"></GridColumn>
-                <GridColumn Field="DueDate" HeaderText="Due Date" Format="d" Width="100"></GridColumn>
+
                 <GridColumn Field="Whse" HeaderText="Whse" Width="100"></GridColumn>
                 <GridColumn Field="ShipmentID" HeaderText="Shipment ID" Width="100"></GridColumn>
             </GridColumns>
@@ -165,6 +186,10 @@
     }
     .button-row {
         margin-top: 20px;
+    }
+    .right-padding {
+        padding-right: 0px; /* Adjust the padding as needed */
+
     }
 </style>
 

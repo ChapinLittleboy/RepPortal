@@ -17,6 +17,8 @@ public class CustomerShipment
     public DateTime ShipDate { get; set; }
     public string CarrierCode { get; set; }
     public string ServiceType { get; set; }
+    public int ShipQty { get; set; }
+
 
 
     public string ShipCode { get; set; }
