@@ -254,6 +254,17 @@ public class SalesService
         public string EndUserType { get; set; }
     }
 
+    public string GetRepAgency(string repCode)
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            var repAgency = connection.QueryFirstOrDefault<string>(
+                "SELECT name as AgencyName FROM Chap_SlsmanNameV WHERE slsman = @RepCode",
+                new { RepCode = repCode });
+
+            return repAgency;
+        }
+    }
 
 
 }

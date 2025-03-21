@@ -1,6 +1,48 @@
 ﻿@page "/"
+@inject SalesService SalesService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 
 <PageTitle>Chapin Rep Portal</PageTitle>
 
-<h3>Hello, Welcome to the Chapin Rep Portal</h3>
+<h3> Welcome to the Chapin Rep Portal</h3>
 
+@if (isLoggedIn)
+{
+    
+   
+}
+else
+{
+    <p>Please log in to continue your session.</p>
+}
+
+@code {
+    private string repAgency;
+    private string repFirstName;
+    private bool isLoggedIn = false;
+    private string repCode;
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            isLoggedIn = true;
+
+            repFirstName = user.FindFirst(c => c.Type == "FirstName")?.Value;
+            repCode = user.FindFirst(c => c.Type == "RepCode")?.Value;
+
+            if (!string.IsNullOrEmpty(repFirstName))
+            {
+                //repAgency =  SalesService.GetRepAgency(repCode);
+            }
+        }
+    }
+
+
+
+
+}

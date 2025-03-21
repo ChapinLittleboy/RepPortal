@@ -3,6 +3,8 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject SalesService SalesService
+
 
 <div class="control-container">
     <SfAppBar Mode="AppBarMode.Prominent" ColorMode="AppBarColor.Inherit" CssClass="e-appbar">
@@ -56,7 +58,10 @@
             <AppBarSpacer></AppBarSpacer>
             <AuthorizeView>
                 <Authorized>
-                    <a href="Identity/Account/Manage" class="nav-link">Hello, @context.User.Identity?.Name!</a>
+                    <div class="user-info">
+                        <a href="Identity/Account/Manage" class="nav-link" >Hello, @welcomemsg</a>
+                        <div class="rep-name">@GetRepFullName(context.User)</div>
+                    </div>
                     <form method="post" action="Identity/Account/Logout" class="logout-form">
                         <button type="submit" class="nav-link btn btn-link">Log out</button>
                     </form>
@@ -74,6 +79,7 @@
 {
     private string eventName = "No";
     private string welcomemsg;
+    private string FirstName;
 
     protected override async Task OnInitializedAsync()
     {
@@ -84,7 +90,7 @@
         {
             var firstName = user.FindFirst(c => c.Type == "FirstName")?.Value;
             var lastName = user.FindFirst(c => c.Type == "LastName")?.Value;
-            welcomemsg = $"Welcome, {firstName} {lastName}!";
+            welcomemsg = $"{firstName} {lastName}!";
         }
         else
         {
@@ -92,6 +98,18 @@
         }
     }
 
+    private string GetRepFullName(System.Security.Claims.ClaimsPrincipal user)
+    {
+        // You might get this information from claims
+        var firstName = user.FindFirst("FirstName")?.Value ?? string.Empty;
+        var lastName = user.FindFirst("LastName")?.Value ?? string.Empty;
+        var repCode = user.FindFirst("RepCode")?.Value ?? string.Empty;
+        var agencyName = SalesService.GetRepAgency(repCode);// Assuming this is a synchronous call for simplicity
+        return $"[{repCode}]  {agencyName}";
+    
+        // Alternatively, if using Identity, you might need to fetch the user from your UserManager
+        // This would be done asynchronously in an actual implementation
+    }
     private void GoHome()
     {
         Navigation.NavigateTo("/");
@@ -187,4 +205,18 @@
         line-height: 1.5rem; /* Adjust line height to match font size */
         vertical-align: top; /* Align text to the top */
     }
+    .user-info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        
+    }
+
+    .rep-name {
+        font-size: 0.85rem;
+        margin-top: -5px;
+        color: blue;
+        
+    }
+
 </style>
