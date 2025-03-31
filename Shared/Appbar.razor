@@ -1,9 +1,12 @@
 ﻿@using Syncfusion.Blazor.Navigations
 @using Syncfusion.Blazor.Buttons
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject SalesService SalesService
+@inject IRepCodeContext RepCodeContext
+
 
 
 <div class="control-container">
@@ -55,6 +58,21 @@
                     <MenuItem Text="Chapin Contacts"></MenuItem>
                 </MenuItems>
             </SfMenu>
+
+            @if (isSuperUser)
+            {
+                <SfMenu CssClass="e-inherit" TValue="MenuItem">
+                    <MenuItems>
+                        <MenuItem Text="Admin">
+                            <MenuItems>
+                                <MenuItem Text="Manage User Roles" Url="/admin/user-roles"></MenuItem>
+                                <MenuItem Text="Debug User Identity" Url="/admin/debug-identity"></MenuItem>
+                                <MenuItem Text="Manage RepCodes" Url="/admin/manage-repcodes" />
+                            </MenuItems>
+                        </MenuItem>
+                    </MenuItems>
+                </SfMenu>
+            }
             <AppBarSpacer></AppBarSpacer>
             <AuthorizeView>
                 <Authorized>
@@ -75,40 +93,86 @@
     </SfAppBar>
 </div>
 
+
 @code
 {
     private string eventName = "No";
     private string welcomemsg;
     private string FirstName;
+    private bool isAdmin;
+    private bool isSuperUser;
+    private IEnumerable<Claim> claims;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
+
         if (user.Identity.IsAuthenticated)
         {
             var firstName = user.FindFirst(c => c.Type == "FirstName")?.Value;
             var lastName = user.FindFirst(c => c.Type == "LastName")?.Value;
             welcomemsg = $"{firstName} {lastName}!";
+            isAdmin = user.IsInRole("Administrator") || user.IsInRole("SuperUser");
+            isSuperUser = user.IsInRole("SuperUser");
+            //claims = user.Claims;
+
         }
         else
         {
             welcomemsg = "Welcome, Guest!";
         }
+     
+        // ✅ Subscribe to RepCode change notifications
+        RepCodeContext.OnRepCodeChanged += OnRepCodeChanged;
+
+
     }
+
+
+    private void OnRepCodeChanged()
+    {
+        InvokeAsync(StateHasChanged); // re-render the component
+    }
+    public void Dispose()
+    {
+        RepCodeContext.OnRepCodeChanged -= OnRepCodeChanged;
+    }
+
+
+    private async Task<string> GetRepDisplayAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        var userRepCode = user.FindFirst("RepCode")?.Value ?? string.Empty;
+        var effectiveRepCode = RepCodeContext.CurrentRepCode;
+        var agencyName = SalesService.GetRepAgency(effectiveRepCode);
+
+        var isOverridden = userRepCode != effectiveRepCode;
+
+        var repDisplay = isOverridden
+            ? $"<span title=\"Impersonating another rep\">[{effectiveRepCode}*]</span> {agencyName}"
+            : $"[{effectiveRepCode}] {agencyName}";
+
+        return repDisplay;
+    }
+
+
+
 
     private string GetRepFullName(System.Security.Claims.ClaimsPrincipal user)
     {
         // You might get this information from claims
         var firstName = user.FindFirst("FirstName")?.Value ?? string.Empty;
         var lastName = user.FindFirst("LastName")?.Value ?? string.Empty;
-        var repCode = user.FindFirst("RepCode")?.Value ?? string.Empty;
-        var agencyName = SalesService.GetRepAgency(repCode);// Assuming this is a synchronous call for simplicity
+        // var repCode = user.FindFirst("RepCode")?.Value ?? string.Empty;
+        var repCode = RepCodeContext.CurrentRepCode;
+       var agencyName = SalesService.GetRepAgency(repCode);// Assuming this is a synchronous call for simplicity
+       
         return $"[{repCode}]  {agencyName}";
-    
-        // Alternatively, if using Identity, you might need to fetch the user from your UserManager
-        // This would be done asynchronously in an actual implementation
+
     }
     private void GoHome()
     {

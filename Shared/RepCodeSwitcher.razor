@@ -1,0 +1,47 @@
+﻿@inject IRepCodeContext RepCodeContext
+@inject AuthenticationStateProvider AuthStateProvider
+
+@if (isAdmin)
+{
+    <div class="d-flex align-items-center gap-2">
+        <label>View as Rep:</label>
+        <select @bind="selectedCode" class="form-select form-select-sm" style="width: 150px;">
+            @foreach (var code in allRepCodes)
+            {
+                <option value="@(code)">@(code)</option>
+            }
+        </select>
+        <button class="btn btn-sm btn-primary" @onclick="ApplyOverride">Set</button>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="ResetOverride">Reset</button>
+    </div>
+}
+
+@code {
+    private bool isAdmin = false;
+    private string selectedCode;
+    private List<string> allRepCodes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = (await AuthStateProvider.GetAuthenticationStateAsync()).User;
+        isAdmin = user.IsInRole("Administrator");
+
+        // 🔧 Replace this with real source (DB or config)
+        allRepCodes = new() { "PRL", "LAW", "GUL", "CHA" };
+
+        selectedCode = RepCodeContext.CurrentRepCode;
+    }
+
+    private void ApplyOverride()
+    {
+        RepCodeContext.OverrideRepCode(selectedCode);
+        StateHasChanged();
+    }
+
+    private void ResetOverride()
+    {
+        RepCodeContext.ResetRepCode();
+        selectedCode = RepCodeContext.CurrentRepCode;
+        StateHasChanged();
+    }
+}

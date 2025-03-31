@@ -1,0 +1,92 @@
+﻿@page "/admin/manage-repcodes"
+@attribute [Authorize(Roles = "Administrator")]
+@inject UserManager<ApplicationUser> UserManager
+
+<h3>Manage RepCodes</h3>
+
+@if (users == null)
+{
+    <p><em>Loading users...</em></p>
+}
+else
+{
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Current RepCode</th>
+                <th>Update RepCode</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.Email</td>
+                    <td>@user.FirstName</td>
+                    <td>@user.LastName</td>
+                    <td>@user.RepCode</td>
+                    <td>
+                        <input class="form-control form-control-sm"
+                               style="width: 100px;"
+                               @bind="user.EditedRepCode" />
+                        <button class="btn btn-sm btn-primary ms-2"
+                                @onclick="() => SaveRepCode(user)">
+                            Save
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<UserWithEdit> users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var allUsers = UserManager.Users.ToList();
+        users = allUsers.Select(u => new UserWithEdit
+            {
+                Id = u.Id,
+                Email = u.Email,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                RepCode = u.RepCode,
+                EditedRepCode = u.RepCode
+            }).ToList();
+    }
+
+    private async Task SaveRepCode(UserWithEdit user)
+    {
+        var targetUser = await UserManager.FindByIdAsync(user.Id);
+        if (targetUser != null)
+        {
+            targetUser.RepCode = user.EditedRepCode;
+            var result = await UserManager.UpdateAsync(targetUser);
+
+            if (result.Succeeded)
+            {
+                user.RepCode = user.EditedRepCode;
+                await UserManager.UpdateSecurityStampAsync(targetUser);
+            }
+            else
+            {
+                // handle failure (you can add error messages if you like)
+            }
+        }
+    }
+
+    private class UserWithEdit
+    {
+        public string Id { get; set; }
+        public string Email { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string RepCode { get; set; }
+        public string EditedRepCode { get; set; }
+    }
+}

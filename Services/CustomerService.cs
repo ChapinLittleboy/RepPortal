@@ -6,13 +6,16 @@ using RepPortal.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+
 public class CustomerService
 {
     private readonly string _batAppConnection;
+    private readonly IRepCodeContext _repCodeContext;
 
-    public CustomerService(IConfiguration config)
+    public CustomerService(IConfiguration config, IRepCodeContext repCodeContext)
     {
         _batAppConnection = config.GetConnectionString("BatAppConnection");
+        _repCodeContext = repCodeContext;
     }
 
     public async Task<IEnumerable<Customer>> GetCustomersByRepCodeAsync(string repCode)
@@ -25,6 +28,7 @@ public class CustomerService
             ORDER BY ca.Name";
 
         using var connection = new SqlConnection(_batAppConnection);
-        return await connection.QueryAsync<Customer>(sql, new { RepCode = repCode });
+        return await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
+        // NOTE: Using the repCode from the RepCodeContext!!
     }
 }

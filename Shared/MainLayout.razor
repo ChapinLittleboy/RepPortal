@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ILogger<MainLayout> Logger 
 
 <PageTitle>RepPortal</PageTitle>
 
@@ -14,3 +16,21 @@
         </article>
     </main>
 </div>
+@code {
+    protected override void OnInitialized()
+    {
+        var user = HttpContextAccessor.HttpContext?.User;
+        if (user?.Identity?.IsAuthenticated ?? false)
+        {
+            Logger.LogWarning("DIAGNOSTIC: User Authenticated in OnInitialized. Type: {AuthType}, Name: {Name}",
+                user.Identity.AuthenticationType, user.Identity.Name);
+        }
+        else
+        {
+            Logger.LogWarning("DIAGNOSTIC: User NOT Authenticated in OnInitialized.");
+            // You could also inspect request headers here if needed, e.g., for WWW-Authenticate
+             var headers = HttpContextAccessor.HttpContext?.Request?.Headers;
+        }
+        base.OnInitialized();
+    }
+}

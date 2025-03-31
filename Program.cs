@@ -12,6 +12,9 @@ Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQx
 // Set the global command timeout for Dapper
 SqlMapper.Settings.CommandTimeout = 60; // Timeout set to 60 seconds
 
+
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -19,24 +22,50 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddClaimsPrincipalFactory<CustomUserClaimsPrincipalFactory>();
+
+builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<ApplicationUser>>();
+
+
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<ApplicationUser>>();
+
+
 builder.Services.AddScoped<UserManager<ApplicationUser>>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<SalesService>();
 builder.Services.AddSyncfusionBlazor();
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IRepCodeContext, RepCodeContext>();
 
 
 
-
-builder.Services.AddSingleton<WeatherForecastService>();
+//builder.Services.AddSingleton<WeatherForecastService>();
 
 var app = builder.Build();
+
+
+/*
+var scope = app.Services.CreateScope();
+var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+string[] roles = new[] { "Administrator", "Sales", "Manager", "SuperUser" };
+
+foreach (var role in roles)
+{
+    if (!await roleManager.RoleExistsAsync(role))
+    {
+        await roleManager.CreateAsync(new IdentityRole(role));
+    }
+}
+
+
+*/
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

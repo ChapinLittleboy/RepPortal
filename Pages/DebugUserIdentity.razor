@@ -1,0 +1,69 @@
+﻿@page "/admin/debug-identity"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<ApplicationUser> UserManager
+
+<h3>User Identity Debug Info</h3>
+
+@if (currentUser == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card p-3 mb-3">
+        <h5>Basic Info</h5>
+        <p><strong>Email:</strong> @currentUser.Email</p>
+        <p><strong>UserName:</strong> @currentUser.UserName</p>
+        <p><strong>User ID:</strong> @currentUser.Id</p>
+    </div>
+
+    <div class="card p-3 mb-3">
+        <h5>Roles</h5>
+        @if (userRoles?.Count > 0)
+        {
+            <ul>
+                @foreach (var role in userRoles)
+                {
+                    <li>@role</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p><em>No roles assigned.</em></p>
+        }
+    </div>
+
+    <div class="card p-3">
+        <h5>Claims</h5>
+        <ul>
+            @foreach (var claim in userClaims)
+            {
+                <li><strong>@claim.Type</strong>: @claim.Value</li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    private ApplicationUser currentUser;
+    private List<string> userRoles = new();
+    private IEnumerable<Claim> userClaims = Enumerable.Empty<Claim>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var principal = authState.User;
+
+        userClaims = principal.Claims;
+
+        currentUser = await UserManager.GetUserAsync(principal);
+        if (currentUser != null)
+        {
+            userRoles = (await UserManager.GetRolesAsync(currentUser)).ToList();
+        }
+    }
+}

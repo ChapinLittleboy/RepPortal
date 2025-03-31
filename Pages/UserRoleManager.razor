@@ -1,0 +1,121 @@
+﻿@page "/admin/user-roles"
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+
+<h3>User Role Manager</h3>
+
+@if (users == null)
+{
+    <p><em>Loading users...</em></p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Roles</th>
+                <th>Add Role</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.User.Email</td>
+                    <td>
+                        @foreach (var role in user.Roles)
+                        {
+                            <span class="badge bg-info me-1">
+                                @role
+                                <button class="btn-close btn-close-white btn-sm ms-1"
+                                        title="Remove"
+                                        @onclick="() => RemoveRole(user.User, role)">
+                                </button>
+                            </span>
+                        }
+                    </td>
+                    <td>
+                        <select @bind="user.SelectedRole">
+                            <option value="">-- Select Role --</option>
+                            @foreach (var role in allRoles)
+                            {
+                                if (!user.Roles.Contains(role))
+                                {
+                                    <option value="@role">@role</option>
+                                }
+                            }
+                        </select>
+                        <button class="btn btn-sm btn-primary ms-2" @onclick="() => AddRole(user.User, user.SelectedRole)">Add</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<UserWithRoles> users;
+    private List<string> allRoles = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        allRoles = await RoleManager.Roles.Select(r => r.Name).ToListAsync();
+        var userList = await UserManager.Users.ToListAsync();
+
+        users = new List<UserWithRoles>();
+
+        foreach (var user in userList)
+        {
+            var roles = await UserManager.GetRolesAsync(user);
+            users.Add(new UserWithRoles
+                {
+                    User = user,
+                    Roles = roles.ToList(),
+                    SelectedRole = ""
+                });
+        }
+    }
+
+    private async Task AddRole(ApplicationUser user, string role)
+    {
+        if (!string.IsNullOrEmpty(role))
+        {
+            await UserManager.AddToRoleAsync(user, role);
+            await RefreshUsers();
+        }
+    }
+
+    private async Task RemoveRole(ApplicationUser user, string role)
+    {
+        await UserManager.RemoveFromRoleAsync(user, role);
+        await RefreshUsers();
+    }
+
+    private async Task RefreshUsers()
+    {
+        var userList = await UserManager.Users.ToListAsync();
+        users = new();
+
+        foreach (var user in userList)
+        {
+            var roles = await UserManager.GetRolesAsync(user);
+            users.Add(new UserWithRoles
+                {
+                    User = user,
+                    Roles = roles.ToList(),
+                    SelectedRole = ""
+                });
+        }
+    }
+
+    private class UserWithRoles
+    {
+        public ApplicationUser User { get; set; }
+        public List<string> Roles { get; set; }
+        public string SelectedRole { get; set; }
+        
+    }
+}

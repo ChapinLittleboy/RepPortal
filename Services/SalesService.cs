@@ -4,18 +4,21 @@ using Microsoft.Data.SqlClient;
 using RepPortal.Models;
 using System.Data;
 
+
 namespace RepPortal.Services;
 
 public class SalesService
 {
     private readonly string _connectionString;
     private readonly AuthenticationStateProvider _authenticationStateProvider;
+    private readonly IRepCodeContext _repCodeContext;
 
 
-    public SalesService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider)
+    public SalesService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider, IRepCodeContext repCodeContext)
     {
         _connectionString = configuration.GetConnectionString("BatAppConnection");
         _authenticationStateProvider = authenticationStateProvider;
+        _repCodeContext = repCodeContext;
 
     }
 
@@ -26,7 +29,10 @@ public class SalesService
         return user?.FindFirst("RepID")?.Value;
     }
 
-
+    public string GetCurrentRepCode()
+    {
+        return _repCodeContext.CurrentRepCode;
+    }
 
 
 
@@ -34,7 +40,8 @@ public class SalesService
     {
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        var repCode = user?.FindFirst("RepCode")?.Value;
+        //var repCode = user?.FindFirst("RepCode")?.Value;
+        var repCode = _repCodeContext.CurrentRepCode;
 
         using (var connection = new SqlConnection(_connectionString))
         {

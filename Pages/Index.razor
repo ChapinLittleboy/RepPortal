@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 
+
 <PageTitle>Chapin Rep Portal</PageTitle>
 
 <h3> Welcome to the Chapin Rep Portal</h3>
@@ -17,6 +18,10 @@ else
 {
     <p>Please log in to continue your session.</p>
 }
+
+<AuthorizeView Roles="Administrator">
+    <RepCodeSwitcher />
+</AuthorizeView>
 
 @code {
     private string repAgency;

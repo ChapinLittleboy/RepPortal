@@ -1,6 +1,8 @@
 ﻿@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject CustomerService CustomerService
+@inject IRepCodeContext RepCodeContext
+
 @using RepPortal.Models;
 
 @page "/customerlist"
@@ -37,12 +39,13 @@ else
         var user = authState.User;
         repCode = user.FindFirst("RepCode")?.Value;
 
+        repCode = RepCodeContext.CurrentRepCode;
         if (user.Identity.IsAuthenticated)
         {
             var currentUser = await UserManager.GetUserAsync(user);
-            if (!string.IsNullOrEmpty(currentUser?.RepCode))
+            if (!string.IsNullOrEmpty(repCode))
             {
-                customers = await CustomerService.GetCustomersByRepCodeAsync(currentUser.RepCode);
+                customers = await CustomerService.GetCustomersByRepCodeAsync(repCode);
             }
         }
     }

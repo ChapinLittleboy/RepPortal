@@ -1,10 +1,7 @@
-﻿namespace RepPortal.Services;
-
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using RepPortal.Data;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 public class CustomUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<ApplicationUser>
 {
@@ -19,7 +16,21 @@ public class CustomUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<Appli
     {
         var identity = await base.GenerateClaimsAsync(user);
 
-        // Add your custom claims here
+        // ✅ Add role claims manually
+        var roles = await UserManager.GetRolesAsync(user);
+        var existingRoles = identity.FindAll(ClaimTypes.Role).Select(r => r.Value).ToHashSet();
+
+        foreach (var role in roles)
+        {
+            Console.WriteLine($"Adding role claim: {role}"); // 🔍 For debugging
+
+            if (!existingRoles.Contains(role))
+            {
+                identity.AddClaim(new Claim(ClaimTypes.Role, role));
+            }
+        }
+
+        // ✅ Add custom claims
         if (!string.IsNullOrEmpty(user.RepCode))
         {
             identity.AddClaim(new Claim("RepCode", user.RepCode));
