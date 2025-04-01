@@ -1,5 +1,7 @@
 ﻿@inject IRepCodeContext RepCodeContext
 @inject AuthenticationStateProvider AuthStateProvider
+@inject SalesService SalesService
+
 
 @if (isAdmin)
 {
@@ -27,7 +29,9 @@
         isAdmin = user.IsInRole("Administrator");
 
         // 🔧 Replace this with real source (DB or config)
-        allRepCodes = new() { "PRL", "LAW", "GUL", "CHA" };
+        //allRepCodes = new() { "PRL", "LAW", "GUL", "CHA" };
+        allRepCodes = await SalesService.GetAllRepCodesAsync();
+
 
         selectedCode = RepCodeContext.CurrentRepCode;
     }

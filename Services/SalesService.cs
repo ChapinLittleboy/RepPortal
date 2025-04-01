@@ -273,5 +273,95 @@ public class SalesService
         }
     }
 
+    public async Task<List<string>> GetAllRepCodesAsync()
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var results = await connection.QueryAsync<string>("SELECT slsman FROM Chap_SlsmanNameV  where slsman " +
+                                                              "in (Select distinct slsman from customer_mst where stat = 'A' and cust_seq = 0) ORDER BY slsman");
+            return results.ToList();
+        }
+    }
+    public async Task<List<CustomerOrderSummary>> GetOpenOrderSummariesAsync(/* string salesRepId */)
+    {
+        // Adjust SQL to filter by Sales Rep if applicable, or filter customers later
+        const string sql = @"
+            SELECT
+                OpenOrders.Cust,
+                Cust.CorpName AS Name,
+                OpenOrders.Shippable_U AS ShippableUnits,
+                OpenOrders.Future_U AS FutureUnits,
+                OpenOrders.Total_U AS TotalUnits,
+                OpenOrders.Shippable_D AS ShippableDollars,
+                OpenOrders.Future_D AS FutureDollars,
+                OpenOrders.Total_D AS TotalDollars
+            FROM CIISQL10.INTRANET.DBO.Cust Cust
+            INNER JOIN CIISQL10.INTRANET.DBO.OpenOrders OpenOrders
+                ON Cust.CustSeq = OpenOrders.CustSeq AND Cust.Cust = OpenOrders.Cust
+            WHERE Cust.slsman = @RepCode -- Example filter
+            ORDER BY Cust.CorpName; ";
 
+        using var connection = new SqlConnection(_connectionString);
+        var summaries = await connection.QueryAsync<CustomerOrderSummary>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
+        return summaries.ToList();
+    }
+
+    // --- Get Detail Data for ONE Customer ---
+    public async Task<List<OrderDetail>> GetOpenOrderDetailsAsync(string customerId)
+    {
+        // This query fetches ALL open order lines for the customer.
+        // The distinction between Shippable/Future can be made in C# or added here.
+        const string detailSql = @"
+            SELECT
+                ORDERS.CUST AS Cust,
+                Cust.CorpName AS Name,
+                ORDERS.DUEDATE AS DueDate,
+                ORDERS.ORDDATE AS OrdDate,
+                ORDERS.PromDate AS PromDate,
+                ORDERS.CustPO,
+                ORDERS.CONUM AS CoNum,
+                ORDERS.ITEM AS Item,
+                ORDERS.PRICE AS Price,
+                ORDERS.ORDQTY AS OrdQty,
+                (ORDERS.Price * ORDERS.OrdQty) AS Dollars,
+                Cust.B2Name AS ShipToName
+            FROM CIISQL10.INTRANET.DBO.ORDERS ORDERS
+            LEFT JOIN CIISQL10.INTRANET.DBO.Cust CUST
+                ON ORDERS.CUST = Cust.Cust AND ORDERS.CUSTSEQ = Cust.CustSeq
+            WHERE ORDERS.STAT = 'O' AND ORDERS.CUST = @CustomerId
+            ORDER BY Orders.DueDate, ORDERS.PromDate, Orders.CoNum;";
+
+        // Use the current date from the server for comparison
+        // Note: The date literal in your original query ('5/01/2025') is hardcoded.
+        // Fetching all 'O' status orders and determining shippable/future dynamically is often better.
+
+        using var connection = new SqlConnection(_connectionString);
+        var details = await connection.QueryAsync<OrderDetail>(detailSql, new { CustomerId = customerId });
+        return details.ToList();
+    }
+
+    // --- Optional: Method to get ALL details for ALL relevant customers (for combined export) ---
+    public async Task<List<OrderDetail>> GetAllOpenOrderDetailsAsync(/* string salesRepId */)
+    {
+        // Similar to GetOpenOrderDetailsAsync, but potentially joining with Cust table
+        // first based on SalesRepId to get relevant Customer IDs, then fetching details.
+        // Or fetch all details and filter in C# if the dataset isn't excessively large.
+        const string allDetailSql = @"
+            SELECT
+                O.CUST AS Cust, C.CorpName AS Name, O.DUEDATE AS DueDate, O.ORDDATE AS OrdDate,
+                O.PromDate AS PromDate, O.CustPO, O.CONUM AS CoNum, O.ITEM AS Item,
+                O.PRICE AS Price, O.ORDQTY AS OrdQty, (O.Price * O.OrdQty) AS Dollars,
+                C.B2Name AS ShipToName
+            FROM CIISQL10.INTRANET.DBO.ORDERS O
+            INNER JOIN CIISQL10.INTRANET.DBO.Cust C ON O.CUST = C.Cust AND O.CUSTSEQ = C.CustSeq
+            WHERE O.STAT = 'O'
+            AND C.slsman = @RepCode 
+            ORDER BY C.Cust, O.DueDate, O.PromDate, O.CoNum;";
+
+        using var connection = new SqlConnection(_connectionString);
+        var allDetails = await connection.QueryAsync<OrderDetail>(allDetailSql, new { RepCode = _repCodeContext.CurrentRepCode });
+        return allDetails.ToList();
+    }
 }
+

@@ -1,0 +1,76 @@
+﻿@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Spinner
+@using RepPortal.Models
+@using RepPortal.Services
+
+@inject SalesService SalesSvc
+
+@if (isLoading)
+{
+    <SfSpinner Visible="true" Size="30" Label="Loading order lines..."></SfSpinner>
+}
+else if (orderDetails != null && orderDetails.Any())
+{
+    <SfGrid DataSource="@orderDetails" AllowPaging="true" PageSize="10" AllowSorting="true">
+        <GridColumns>
+            <GridColumn Field=@nameof(OrderDetail.DueDate) HeaderText="Due Date" Format="d" Type="ColumnType.Date" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(OrderDetail.OrdDate) HeaderText="Order Date" Format="d" Type="ColumnType.Date" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(OrderDetail.PromDate) HeaderText="Promise Date" Format="d" Type="ColumnType.Date" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(OrderDetail.CustPO) HeaderText="Customer PO" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(OrderDetail.CoNum) HeaderText="Order #" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(OrderDetail.Item) HeaderText="Item" Width="120"></GridColumn>
+            <GridColumn Field=@nameof(OrderDetail.ShipToName) HeaderText="Ship To" Width="200"></GridColumn>
+            <GridColumn Field=@nameof(OrderDetail.OrdQty) HeaderText="Ord Qty" Format="N0" Width="90" TextAlign="TextAlign.Right"></GridColumn>
+            <GridColumn Field=@nameof(OrderDetail.Price) HeaderText="Price" Format="C2" Width="100" TextAlign="TextAlign.Right"></GridColumn>
+            <GridColumn Field=@nameof(OrderDetail.Dollars) HeaderText="Line Total" Format="C2" Width="110" TextAlign="TextAlign.Right"></GridColumn>
+            <GridColumn Field=@nameof(OrderDetail.StatusCategory) HeaderText="Status" Width="100"></GridColumn>
+        </GridColumns>
+    </SfGrid>
+}
+else if (errorMessage != null)
+{
+    <p class="text-danger">@errorMessage</p>
+}
+else
+{
+    <p>No open order details found for this customer.</p>
+}
+
+
+@code {
+    [Parameter]
+    public string CustomerId { get; set; } = "";
+
+    private List<OrderDetail>? orderDetails;
+    private bool isLoading = true;
+    private string? errorMessage = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(CustomerId))
+        {
+            isLoading = true;
+            errorMessage = null;
+            try
+            {
+                orderDetails = await SalesSvc.GetOpenOrderDetailsAsync(CustomerId);
+            }
+            catch (Exception ex)
+            {
+                // Log error
+                Console.WriteLine($"Error loading details for customer {CustomerId}: {ex.Message}");
+                errorMessage = "Could not load order details.";
+                orderDetails = null;
+            }
+            finally
+            {
+                isLoading = false;
+            }
+        }
+        else
+        {
+            isLoading = false;
+            errorMessage = "Customer ID not provided.";
+        }
+    }
+}
