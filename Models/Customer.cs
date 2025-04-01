@@ -13,9 +13,12 @@ public class Customer
     public string? BillToName { get; set; }
     public string? BillToAddress1 { get; set; }
     public string? BillToAddress2 { get; set; }
+    public string? BillToAddress3 { get; set; }
+    public string? BillToAddress4 { get; set; }
     public string? BillToCity { get; set; }
     public string? BillToState { get; set; }
     public string? BillToZip { get; set; }
+    public string? BillToCountry { get; set; }
     public string? BillToPhone { get; set; }
     public string? BillToBuyer { get; set; }
     public string? PaymentTerms { get; set; }
@@ -25,7 +28,15 @@ public class Customer
     public string? SalesManager { get; set; }
     public string? SalesManagerName { get; set; }
     public string? SalesManagerEmail { get; set; }
+    public string? PaymentTermsCode { get; set; }
     public string? PaymentTermsDescription { get; set; }
+    public string? Corp_Cust { get; set; }
+    public int CreditHold { get; set; }
+    public DateTime CreditHoldDate { get; set; }
+    public string? CreditHoldReason { get; set; }
+    public string? PricingCode { get; set; }
+
+
 
 
     public string? EUT { get; set; }
@@ -50,6 +61,32 @@ public class Customer
         I,
         [Description("Restricted")]
         R
+    }
+
+    public string StatusDescription
+    {
+        get
+        {
+            if (Enum.TryParse<CustomerStatus>(Status, out var customerStatus))
+            {
+                return customerStatus.ToDescription();
+            }
+            return "Unknown";
+        }
+    }
+    public string HoldStatusYN
+    {
+        get
+        {
+            if (CreditHold == 1)
+            {
+                return "Yes";
+            }
+            else
+            {
+                return "No";
+            }
+        }
     }
 
 }

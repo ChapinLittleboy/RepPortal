@@ -1,37 +1,58 @@
-﻿@inject AuthenticationStateProvider AuthenticationStateProvider
+﻿@page "/customerlist"
+@attribute [Authorize]
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject CustomerService CustomerService
 @inject IRepCodeContext RepCodeContext
 
-@using RepPortal.Models;
-
-@page "/customerlist"
-@attribute [Authorize]
+@using RepPortal.Models
+@using Syncfusion.Blazor.Grids
 
 <h3>My Customers</h3>
 
-@if (customers is null)
+
+<div class="container-fluid">
+<SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
+
+@if (isLoading)
 {
-    <p>Loading customers...</p>
-}
-else if (!customers.Any())
-{
-    <p>No customers found for your Rep Code.</p>
+    <p>Loading your customer list, please wait...</p>
 }
 else
 {
-    <p>@repCode</p>
-    <ul>
-        @foreach (var customer in customers)
-        {
-            <li>@customer.Cust_Num - @GetStatusDescription(customer.Status) - @customer.Cust_Name  </li>
-        }
-    </ul>
+        <SfGrid ID="Grid" RowHeight="20" DataSource="@customers" AllowExcelExport="true" AllowFiltering="true" AllowTextWrap="true" AllowSorting="true" Height="600" EnableVirtualization="false" EnableVirtualMaskRow="true">
+        <GridPageSettings PageSizes="@(new string[] {"30", "60", "100",  "All" })"  PageSize="30" ></GridPageSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
+            <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
+        <GridColumns>
+            <GridColumn Field=@nameof(Customer.Cust_Num) HeaderText="Cust Number" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(Customer.Cust_Name) HeaderText="Name" Width="200"></GridColumn>
+            <GridColumn Field=@nameof(Customer.StatusDescription) HeaderText="Status" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(Customer.HoldStatusYN) HeaderText="Credit Hold" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(Customer.Corp_Cust) HeaderText="Corp Customer" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(Customer.BillToAddress1) HeaderText="Address 1" Width="200"></GridColumn>
+            <GridColumn Field=@nameof(Customer.BillToAddress2) HeaderText="Address 2" Width="200"></GridColumn>
+            <GridColumn Field=@nameof(Customer.BillToAddress3) HeaderText="Address 3" Width="200"></GridColumn>
+            <GridColumn Field=@nameof(Customer.BillToAddress4) HeaderText="Address 4" Width="200"></GridColumn>
+            <GridColumn Field=@nameof(Customer.BillToCity) HeaderText="City" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(Customer.BillToState) HeaderText="State" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(Customer.BillToZip) HeaderText="Zip Code" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(Customer.BillToCountry) HeaderText="Country" Width="150"></GridColumn>
+
+            <GridColumn Field=@nameof(Customer.CreditHoldDate) HeaderText="Credit Hold Date" Width="150" Format="d"></GridColumn>
+            <GridColumn Field=@nameof(Customer.CreditHoldReason) HeaderText="Credit Hold Reason" Width="200"></GridColumn>
+            <GridColumn Field=@nameof(Customer.PaymentTermsCode) HeaderText="Payment Terms Code" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(Customer.PricingCode) HeaderText="Pricing Code" Width="150"></GridColumn>
+        </GridColumns>
+    </SfGrid>
 }
+</div>
 
 @code {
     private IEnumerable<Customer> customers;
     private string repCode;
+    private bool isLoading = true;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -45,7 +66,8 @@ else
             var currentUser = await UserManager.GetUserAsync(user);
             if (!string.IsNullOrEmpty(repCode))
             {
-                customers = await CustomerService.GetCustomersByRepCodeAsync(repCode);
+                customers = await CustomerService.GetCustomersDetailsByRepCodeAsync();
+                isLoading = false;
             }
         }
     }
@@ -58,4 +80,97 @@ else
         }
         return "Unknown";
     }
+
+    private string YesNoAccessor(object data, string field)
+    {
+        var isActive = (int)data.GetType().GetProperty(field).GetValue(data, null);
+        return isActive == 1 ? "Yes" : "No";
+    }
+
+    private List<CreditHoldLookup> creditHoldLookup = new()
+    {
+        new CreditHoldLookup { Id = 1, Text = "Yes" },
+        new CreditHoldLookup { Id = 0, Text = "No" }
+    };
+
+    public class CreditHoldLookup
+    {
+        public int Id { get; set; }
+        public string Text { get; set; }
+    }
 }
+
+<style>
+    .e-grid .e-gridheader .e-headercell {
+        height: 50px; /* Increase header height */
+        white-space: normal !important; /* Allow text wrapping */
+        
+    }
+    /* Position the filter icon absolutely within the header cell */
+    .e-grid .e-headercell {
+        position: relative;
+        padding-right: 25px !important; /* Space for the icon */
+      
+    }
+    /* Position the filter icon absolutely within the header cell */
+    .e-grid .e-headercell {
+        position: relative;
+        padding-right: 1px !important; /* Space for the icon */
+    }
+
+    .e-grid .e-headercell .e-filtericon {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-left: 0 !important;
+    }
+    .custom-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    .custom-grid .e-gridheader .e-headercell {
+        font-size: 12px !important;
+        padding: 10px !important; /* Adjust padding if text is cramped */
+    }
+
+    .custom-grid .e-rowcell {
+        font-size: 10px !important;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 2fr 2fr 2fr 6fr;
+        gap: 20px;
+    }
+    .form-group {
+        margin-bottom: 15px;
+        display: flex;
+        flex-direction: column;
+    }
+    .column {
+        display: flex;
+        flex-direction: column;
+    }
+    label {
+        margin-bottom: 5px;
+    }
+    .input-container {
+        height: 38px; /* Consistent height for all inputs */
+    }
+    .input-container :deep(input),
+    .input-container :deep(InputDate) {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+    }
+    .button-row {
+        margin-top: 20px;
+    }
+    .right-padding {
+        padding-right: 0px; /* Adjust the padding as needed */
+
+    }
+</style>

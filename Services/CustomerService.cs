@@ -18,6 +18,8 @@ public class CustomerService
         _repCodeContext = repCodeContext;
     }
 
+
+
     public async Task<IEnumerable<Customer>> GetCustomersByRepCodeAsync(string repCode)
     {
         const string sql = @"
@@ -31,4 +33,26 @@ public class CustomerService
         return await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
         // NOTE: Using the repCode from the RepCodeContext!!
     }
+
+    public async Task<IEnumerable<Customer>> GetCustomersDetailsByRepCodeAsync()
+    {
+        // NOTE:  Always uses the repCode from the RepCodeContext
+        const string sql = @"
+            SELECT cu.cust_num as Cust_Num, ca.[name] as Cust_Name, ca.corp_cust as Corp_Cust,
+       ca.addr##1 as BillToAddress1, ca.addr##2 as BillToAddress2, ca.addr##3 as BillToAddress3,
+       ca.addr##4 as BillToAddress4, ca.city as BillToCity, ca.state as BillToState,
+       ca.zip as BillToZip, ca.country as BillToCountry, cu.slsman as RepCode,
+       ca.credit_hold as CreditHold, ca.credit_hold_date as CreditHoldDate, ca.credit_hold_reason as CreditHoldReason,
+       cu.terms_code as PaymentTermsCode, cu.Uf_PROG_BASIS as PricingCode, cu.stat as Status
+FROM   customer_mst cu JOIN custaddr_mst ca ON cu.cust_num = ca.cust_num AND cu.cust_seq = ca.cust_seq AND cu.cust_seq = 0
+WHERE  cu.slsman = @RepCode ORDER BY ca.[name]";
+
+        using var connection = new SqlConnection(_batAppConnection);
+        return await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
+        // NOTE: Using the repCode from the RepCodeContext!!
+    }
+
+
+
+
 }
