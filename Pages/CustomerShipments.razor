@@ -11,6 +11,7 @@
 @inject SalesService SalesService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
+@inject IRepCodeContext RepCodeContext
 
 
 <div class="container-fluid">
@@ -66,6 +67,14 @@
             <div class="button-row">
                 <button type="submit">Load Shipments</button>
             </div>
+
+            @if (showTip){
+
+            <div style="margin-top: 5px; color: red; font-size: small">
+                Tip: Set Items per page to 'ALL' before grouping records
+            </div>
+            }
+
         </EditForm>
 
         <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@ShipmentsData" AllowTextWrap="true" AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })">
@@ -113,22 +122,78 @@
                 <GridColumn Field="ShipmentID" HeaderText="Shipment ID" Width="100"></GridColumn>
             </GridColumns>
         </SfGrid>
-    
+
     }
 </div>
+
+
+@code {
+    private SfGrid<CustomerShipment> Grid;
+    private List<CustomerShipment> ShipmentsData = new List<CustomerShipment>();
+
+    private bool isLoading = false;
+    private bool showTip = false;
+
+
+    private AuthenticationState authState;
+    private ApplicationUser currentUser;
+
+    private SalesService.ShipmentsParameters parameters = new SalesService.ShipmentsParameters();
+
+    protected override async Task OnInitializedAsync()
+    {
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentUser = await UserManager.GetUserAsync(user);
+            // parameters.RepCode = currentUser.RepCode;
+            parameters.RepCode = RepCodeContext.CurrentRepCode;
+
+        }
+        parameters.BeginShipDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
+        parameters.EndShipDate = DateTime.Now; // Default to today
+
+    }
+
+    private async Task LoadShipments()
+    {
+        showTip = true;
+        isLoading = true;
+        ShipmentsData = await SalesService.GetShipmentsData(parameters);
+
+
+        isLoading = false;
+    }
+
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
+        {
+            var ExcelFileName = $"Chapin Shipments Report({RepCodeContext.CurrentRepCode}).xlsx";
+            ExcelExportProperties exportProperties = new ExcelExportProperties
+            {
+                FileName = ExcelFileName
+            };
+            await this.Grid.ExportToExcelAsync(exportProperties);
+        }
+    }
+
+
+}
+
+
 
 
 <style>
     .e-grid .e-gridheader .e-headercell {
         height: 50px; /* Increase header height */
         white-space: normal !important; /* Allow text wrapping */
-        
     }
     /* Position the filter icon absolutely within the header cell */
     .e-grid .e-headercell {
         position: relative;
         padding-right: 25px !important; /* Space for the icon */
-      
     }
     /* Position the filter icon absolutely within the header cell */
     .e-grid .e-headercell {
@@ -136,19 +201,21 @@
         padding-right: 1px !important; /* Space for the icon */
     }
 
-    .e-grid .e-headercell .e-filtericon {
-        position: absolute;
-        right: 5px;
-        top: 50%;
-        transform: translateY(-50%);
-        margin-left: 0 !important;
-    }
+        .e-grid .e-headercell .e-filtericon {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            margin-left: 0 !important;
+        }
+
     .custom-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         width: 100%;
     }
+
     .custom-grid .e-gridheader .e-headercell {
         font-size: 12px !important;
         padding: 10px !important; /* Adjust padding if text is cramped */
@@ -163,84 +230,38 @@
         grid-template-columns: 2fr 2fr 2fr 6fr;
         gap: 20px;
     }
+
     .form-group {
         margin-bottom: 15px;
         display: flex;
         flex-direction: column;
     }
+
     .column {
         display: flex;
         flex-direction: column;
     }
+
     label {
         margin-bottom: 5px;
     }
+
     .input-container {
         height: 38px; /* Consistent height for all inputs */
     }
-    .input-container :deep(input),
-    .input-container :deep(InputDate) {
-        width: 100%;
-        height: 100%;
-        box-sizing: border-box;
-    }
+
+        .input-container :deep(input),
+        .input-container :deep(InputDate) {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
     .button-row {
         margin-top: 20px;
     }
+
     .right-padding {
         padding-right: 0px; /* Adjust the padding as needed */
-
     }
 </style>
-
-@code {
-    private SfGrid<CustomerShipment> Grid;
-    private List<CustomerShipment> ShipmentsData = new List<CustomerShipment>();
-    
-    private bool isLoading = false;
-
-    private AuthenticationState authState;
-    private ApplicationUser currentUser;
-
-    private SalesService.ShipmentsParameters parameters = new SalesService.ShipmentsParameters();
-
-    protected override async Task OnInitializedAsync()
-    {
-        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        if (user.Identity.IsAuthenticated)
-        {
-            currentUser = await UserManager.GetUserAsync(user);
-            parameters.RepCode = currentUser.RepCode;
-        }
-        parameters.BeginShipDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
-        parameters.EndShipDate = DateTime.Now; // Default to today
-
-    }
-
-    private async Task LoadShipments()
-    {
-        isLoading = true;
-        ShipmentsData = await SalesService.GetShipmentsData(parameters);
-
-
-        isLoading = false;
-    }
-
-    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
-    {
-        if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
-        {
-            var ExcelFileName = $"Chapin Shipments Report({currentUser.RepCode}).xlsx";
-            ExcelExportProperties exportProperties = new ExcelExportProperties
-            {
-                FileName = ExcelFileName
-            };
-            await this.Grid.ExportToExcelAsync(exportProperties);
-        }
-    }
-
-
-}
-
-

@@ -1,0 +1,244 @@
+﻿
+
+@page "/invoices-report"
+@attribute [Authorize]
+@using System.Dynamic
+@using System.Globalization
+@using RepPortal.Services
+@using RepPortal.Data
+@using RepPortal.Models
+@using Syncfusion.Blazor.Grids
+@inject SalesService SalesService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject IRepCodeContext RepCodeContext
+
+
+
+<div class="container-fluid">
+    <SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
+
+    @if (isLoading)
+    {
+        <p>Loading shipment data, please wait...</p>
+    }
+    else
+    {
+        <EditForm Model="@parameters" OnValidSubmit="LoadShipments">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-grid">
+                <div class="column">
+                    <div class="form-group">
+                        <label>Begin Ship Date:</label>
+                        <InputDate @bind-Value="parameters.BeginInvoiceDate" />
+                    </div>
+                    <div class="form-group">
+                        <label>End Ship Date: </label>
+                        <InputDate @bind-Value="parameters.EndInvoiceDate" />
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="form-group">
+                        <label>Customer Number (Optional):</label>
+                        <InputText @bind-Value="parameters.CustNum" />
+                    </div>
+                    <div class="form-group">
+                        <label>Corporate Number (Optional):</label>
+                        <InputText @bind-Value="parameters.CorpNum" />
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="form-group">
+                        <label>Customer Type (Optional):</label>
+                        <InputText @bind-Value="parameters.CustType" />
+                    </div>
+                    <div class="form-group">
+                        <label>End User Type (Optional):</label>
+                        <InputText @bind-Value="parameters.EndUserType" />
+                    </div>
+                </div>
+                <!-- Empty 4th column -->
+                <div class="column empty-column"></div>
+            </div>
+            <div class="visually-hidden">
+                <label>Rep Code:</label>
+                <InputText @bind-Value="parameters.RepCode" />
+            </div>
+            <div class="button-row">
+                <button type="submit">Load Invoices</button>
+            </div>
+            @if (showTip){
+
+                <div style="margin-top: 5px; color: red; font-size: small">
+                    Tip: Set Items per page to 'ALL' before grouping records
+                </div>
+            }
+        </EditForm>
+
+        <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@InvoiceData" AllowTextWrap="true" AllowSorting="true" AllowGrouping="true"
+        AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })">
+            <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
+            <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="InvoiceRptDetail"></GridEvents>
+            <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })"  PageSize="20" >  </GridPageSettings>
+            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
+            <GridGroupSettings>
+
+            </GridGroupSettings>
+            <GridColumns >
+                <GridColumn Field="Cust" HeaderText="Cust Num" Width="100"></GridColumn>
+                <GridColumn Field="B2Name" HeaderText="Customer Name" Width="150"></GridColumn>
+                <GridColumn Field="CustPO" HeaderText="PO Num" Width="100"></GridColumn>
+                <GridColumn Field="InvNum" HeaderText="Invoice Num" Width="100"></GridColumn>
+
+                <GridColumn Field="CoNum" HeaderText="Order Num" Width="100"></GridColumn>
+                <GridColumn Field="Item" HeaderText="Item" Width="100"></GridColumn>
+                <GridColumn Field="DueDate" HeaderText="Due Date" Format="d" Width="100"></GridColumn>
+                <GridColumn Field="InvDate" HeaderText="Invoice Date" Format="d" Width="100"></GridColumn>
+                <GridColumn HeaderText="Qty Invoiced" TextAlign="TextAlign.Right" Width="100">
+                    <Template>
+                        @{
+                            var sd = (context as InvoiceRptDetail);
+                            <div class="right-padding">
+                                @sd.InvQty
+                            </div>
+                        }
+                    </Template>
+                </GridColumn>
+                <GridColumn Field="ExtPrice" HeaderText="Ext Price" Format="C2" Width="120" TextAlign="TextAlign.Right"></GridColumn>
+
+            </GridColumns>
+        </SfGrid>
+
+    }
+</div>
+
+
+<style>
+    .e-grid .e-gridheader .e-headercell {
+    height: 50px; /* Increase header height */
+    white-space: normal !important; /* Allow text wrapping */
+
+    }
+    /* Position the filter icon absolutely within the header cell */
+    .e-grid .e-headercell {
+    position: relative;
+    padding-right: 25px !important; /* Space for the icon */
+
+    }
+    /* Position the filter icon absolutely within the header cell */
+    .e-grid .e-headercell {
+    position: relative;
+    padding-right: 1px !important; /* Space for the icon */
+    }
+
+    .e-grid .e-headercell .e-filtericon {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 0 !important;
+    }
+    .custom-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    }
+    .custom-grid .e-gridheader .e-headercell {
+    font-size: 12px !important;
+    padding: 10px !important; /* Adjust padding if text is cramped */
+    }
+
+    .custom-grid .e-rowcell {
+    font-size: 10px !important;
+    }
+
+    .form-grid {
+    display: grid;
+    grid-template-columns: 2fr 2fr 2fr 6fr;
+    gap: 20px;
+    }
+    .form-group {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    }
+    .column {
+    display: flex;
+    flex-direction: column;
+    }
+    label {
+    margin-bottom: 5px;
+    }
+    .input-container {
+    height: 38px; /* Consistent height for all inputs */
+    }
+    .input-container :deep(input),
+    .input-container :deep(InputDate) {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    }
+    .button-row {
+    margin-top: 20px;
+    }
+    .right-padding {
+    padding-right: 0px; /* Adjust the padding as needed */
+
+    }
+</style>
+
+@code {
+    private SfGrid<InvoiceRptDetail> Grid;
+    private List<InvoiceRptDetail> InvoiceData = new List<InvoiceRptDetail>();
+
+    private bool isLoading = false;
+    private bool showTip = false;
+
+    private AuthenticationState authState;
+    private ApplicationUser currentUser;
+
+    private SalesService.InvoiceRptParameters parameters = new SalesService.InvoiceRptParameters();
+
+    protected override async Task OnInitializedAsync()
+    {
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentUser = await UserManager.GetUserAsync(user);
+            parameters.RepCode = RepCodeContext.CurrentRepCode;
+        }
+        parameters.BeginInvoiceDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
+        parameters.EndInvoiceDate = DateTime.Now; // Default to today
+
+    }
+
+    private async Task LoadShipments()
+    {
+        showTip = true;
+        isLoading = true;
+       InvoiceData = await SalesService.GetInvoiceRptData(parameters);
+
+
+        isLoading = false;
+    }
+
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
+        {
+            var ExcelFileName = $"Chapin Invoices Report({RepCodeContext.CurrentRepCode}).xlsx";
+            ExcelExportProperties exportProperties = new ExcelExportProperties
+            {
+                FileName = ExcelFileName
+            };
+            await this.Grid.ExportToExcelAsync(exportProperties);
+        }
+    }
+
+
+}
+
+

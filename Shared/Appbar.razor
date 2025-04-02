@@ -28,6 +28,7 @@
                             <MenuItem Text="Monthly Sales By Item Report"></MenuItem>
                             <MenuItem Text="Shipments Report"></MenuItem>
                             <MenuItem Text="Open Orders Report"></MenuItem>
+                            <MenuItem Text="Customer Invoices Report"></MenuItem>
 
                         </MenuItems>
                     </MenuItem>
@@ -208,6 +209,10 @@
             case "Open Orders Report":
                 //Navigate to Monthly Sales Report page
                 Navigation.NavigateTo("/openorders-report");
+                break;
+            case "Customer Invoices Report":
+                //Navigate to Monthly Sales Report page
+                Navigation.NavigateTo("/invoices-report");
                 break;
         }
     }

@@ -695,5 +695,56 @@ ORDER BY FY{fiscalYear - 1} DESC;";
             AdminUser = adminUser
         });
     }
+
+
+
+    public async Task<List<InvoiceRptDetail>> GetInvoiceRptData(InvoiceRptParameters parameters)
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var results = await connection.QueryAsync<InvoiceRptDetail>(@"
+                EXEC RepPortal.dbo.sp_GetInvoices 
+                    @BeginInvoiceDate, 
+                    @EndInvoiceDate, 
+                    @RepCode, 
+                    @CustNum, 
+                    @CorpNum, 
+                    @CustType, 
+                    @EndUserType",
+                new
+                {
+                    parameters.BeginInvoiceDate,
+                    parameters.EndInvoiceDate,
+                    RepCode = _repCodeContext.CurrentRepCode,   // Security, mind you
+                    parameters.CustNum,
+                    parameters.CorpNum,
+                    parameters.CustType,
+                    parameters.EndUserType
+                });
+
+            return results.ToList();
+        }
+    }
+
+
+    public class InvoiceRptParameters
+    {
+        public DateTime BeginInvoiceDate { get; set; }
+        public DateTime EndInvoiceDate { get; set; }
+        public string RepCode { get; set; }
+        public string CustNum { get; set; }
+        public string CorpNum { get; set; }
+        public string CustType { get; set; }
+        public string EndUserType { get; set; }
+    }
+
+
+
+
+
+
 }
+
+
 
