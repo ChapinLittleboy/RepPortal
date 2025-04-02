@@ -45,11 +45,14 @@ public class SalesService
 
         using (var connection = new SqlConnection(_connectionString))
         {
+            int fiscalYear;  // it's being set by the GetDynamicQuery method
+
             await connection.OpenAsync();
-            var query = GetDynamicQuery();
+            var query = GetDynamicQuery(out fiscalYear);
             var parameters = new { RepCode = repCode };
             var results = await connection.QueryAsync(query, parameters, commandType: CommandType.Text);
 
+            Console.WriteLine($"Fiscal year used: {fiscalYear}");
             // Convert the results to a list of dictionaries
             var data = new List<Dictionary<string, object>>();
             foreach (var row in results)
@@ -67,7 +70,131 @@ public class SalesService
 
     }
 
-    private string GetDynamicQuery()
+    string GetDynamicQuery(out int fiscalYear)
+    {
+        var today = DateTime.Today;
+        fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+
+        var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
+        var fyCurrentEnd = new DateTime(fiscalYear, 8, 31);
+        var fyPriorStart = fyCurrentStart.AddYears(-1);
+        var fyPriorEnd = fyCurrentEnd.AddYears(-1);
+
+        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
+
+        var monthNames = Enumerable.Range(1, currentFiscalMonth)
+            .Select(i => fyCurrentStart.AddMonths(i - 1))
+            .Select(d => d.ToString("MMM") + d.Year)
+            .ToList();
+
+        var cols = string.Join(",", monthNames.Select(m => $"ISNULL([{m}], 0) AS [{m}]"));
+        var colsPivot = string.Join(",", monthNames.Select(m => $"[{m}]"));
+
+        var query = $@"
+SELECT 
+    Customer,
+    [Customer Name],
+    [Ship To Num],
+    [Ship To City],
+    [Ship To State],
+    slsman,
+    name,
+    [Bill To State],
+    Uf_SalesRegion,
+    RegionName,
+    ISNULL(FY{fiscalYear - 1}, 0) AS FY{fiscalYear - 1}, 
+    ISNULL(FY{fiscalYear}, 0) AS FY{fiscalYear}, 
+    {cols}
+FROM (
+    SELECT 
+        ih.cust_num AS Customer,
+        ca0.Name AS [Customer Name],
+        ih.cust_seq AS [Ship To Num],
+        ca.City AS [Ship To City],
+        ca.State AS [Ship To State],
+        cu.slsman,
+        ca0.name,
+        ca0.state AS [Bill To State],
+        cu.Uf_SalesRegion,
+        rn.RegionName,
+        CASE 
+            WHEN ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyPriorEnd:yyyy-MM-dd}' THEN 'FY{fiscalYear - 1}'
+            ELSE FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR)
+        END AS Period,
+        ISNULL(SUM(ii.qty_invoiced * ii.price),0) AS ExtPrice
+    FROM inv_item_mst ii 
+    JOIN inv_hdr_mst ih ON ii.inv_num = ih.inv_num
+    JOIN custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
+    JOIN custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
+    JOIN customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
+    LEFT JOIN Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
+    WHERE ih.inv_date >= '{fyPriorStart:yyyy-MM-dd}' 
+        AND cu.slsman = @RepCode
+    GROUP BY 
+        ih.cust_num, 
+        ca0.Name, 
+        ih.cust_seq, 
+        ca.City,
+        ca.State,
+        ca0.name, 
+        ca0.state, 
+        cu.Uf_SalesRegion, 
+        rn.RegionName,
+        cu.slsman,
+        CASE 
+            WHEN ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyPriorEnd:yyyy-MM-dd}' THEN 'FY{fiscalYear - 1}'
+            ELSE FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR)
+        END
+
+    UNION ALL
+
+    SELECT 
+        ih.cust_num AS Customer,
+        ca0.Name AS [Customer Name],
+        ih.cust_seq AS [Ship To Num],
+        ca.City AS [Ship To City],
+        ca.State AS [Ship To State],
+        cu.slsman,
+        ca0.name,
+        ca0.state AS [Bill To State],
+        cu.Uf_SalesRegion,
+        rn.RegionName,
+        'FY{fiscalYear}' AS Period,
+        ISNULL(SUM(ii.qty_invoiced * ii.price),0) AS ExtPrice
+    FROM inv_item_mst ii 
+    JOIN inv_hdr_mst ih ON ii.inv_num = ih.inv_num
+    JOIN custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
+    JOIN custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
+    JOIN customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
+    LEFT JOIN Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
+    WHERE ih.inv_date >= '{fyCurrentStart:yyyy-MM-dd}' 
+        AND cu.slsman = @RepCode
+    GROUP BY 
+        ih.cust_num, 
+        ca0.Name, 
+        ih.cust_seq, 
+        ca.City,
+        ca.State,
+        ca0.name, 
+        ca0.state, 
+        cu.Uf_SalesRegion, 
+        rn.RegionName,
+        cu.slsman
+) AS src
+PIVOT (
+    SUM(ExtPrice)
+    FOR Period IN (FY{fiscalYear - 1}, FY{fiscalYear}, {colsPivot})
+) AS pvt
+ORDER BY FY{fiscalYear - 1} DESC;";
+
+        return query;
+    }
+
+
+
+
+
+    private string GetDynamicQueryOrig()
     {
         return @"
     DECLARE @cols NVARCHAR(MAX),
@@ -279,7 +406,7 @@ public class SalesService
         {
             await connection.OpenAsync();
             var results = await connection.QueryAsync<string>("SELECT slsman FROM Chap_SlsmanNameV  where slsman " +
-                                                              "in (Select distinct slsman from customer_mst where stat = 'A' and cust_seq = 0) ORDER BY slsman");
+                                                              "in (Select distinct slsman from customer_mst where stat = 'A' and cust_seq = 0 and cust_num <> 'LILBOY') ORDER BY slsman");
             return results.ToList();
         }
     }
@@ -362,6 +489,26 @@ public class SalesService
         using var connection = new SqlConnection(_connectionString);
         var allDetails = await connection.QueryAsync<OrderDetail>(allDetailSql, new { RepCode = _repCodeContext.CurrentRepCode });
         return allDetails.ToList();
+    }
+
+
+    public async Task LogReportUsageAsync(string repCode, string reportName)
+    {
+        string? adminUser = _repCodeContext.CurrentLastName;
+
+
+        var sql = @"
+        INSERT INTO CIISQL10.RepPortal.dbo.ReportUsageHistory (RepCode, ReportName, RunTime, AdminUser)
+        VALUES (@RepCode, @ReportName, @RunTime, @AdminUser)";
+
+        using var connection = new SqlConnection(_connectionString);
+        await connection.ExecuteAsync(sql, new
+        {
+            RepCode = repCode,
+            ReportName = reportName,
+            RunTime = DateTime.Now, // Use UTC for consistency unless local is preferred
+            AdminUser = adminUser
+        });
     }
 }
 
