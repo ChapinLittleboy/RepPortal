@@ -138,6 +138,21 @@ public class RegisterModel : PageModel
             {
                 _logger.LogInformation("User created a new account with password.");
 
+                // 🔐 Assign user to a role
+                var roleResult = await _userManager.AddToRoleAsync(user, "Administrator"); // or "Administrator", etc.
+
+                if (!roleResult.Succeeded)
+                {
+                    foreach (var error in roleResult.Errors)
+                    {
+                        _logger.LogError("Error assigning role: {Error}", error.Description);
+                        ModelState.AddModelError(string.Empty, $"Role assignment failed: {error.Description}");
+                        return Page(); // or handle it another way
+                    }
+                }
+
+
+
                 var userId = await _userManager.GetUserIdAsync(user);
                 var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));

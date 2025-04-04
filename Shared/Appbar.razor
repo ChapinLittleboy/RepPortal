@@ -61,16 +61,19 @@
                 </MenuItems>
             </SfMenu>
 
-            @if (isSuperUser)
+            @if (isAdmin)
             {
                 <SfMenu CssClass="e-inherit" TValue="MenuItem">
                     <MenuItems>
                         <MenuItem Text="Admin">
-                            <MenuItems>
-                                <MenuItem Text="Manage User Roles" Url="/admin/user-roles"></MenuItem>
-                                <MenuItem Text="Debug User Identity" Url="/admin/debug-identity"></MenuItem>
-                                <MenuItem Text="Manage RepCodes" Url="/admin/manage-repcodes" />
-                            </MenuItems>
+	                        <MenuItems>
+                                <AuthorizeView Roles="SuperUser">
+		                        <MenuItem Text="Manage User Roles" Url="/admin/user-roles"></MenuItem>
+		                        <MenuItem Text="Debug User Identity" Url="/admin/debug-identity"></MenuItem>
+                                <MenuItem Text="Manage RepCodes" Url="/admin/manage-repcodes"/>
+                                </AuthorizeView>
+		                        <MenuItem Text="Connected Users" Url="/admin/connected"></MenuItem>
+	                        </MenuItems>
                         </MenuItem>
                     </MenuItems>
                 </SfMenu>
@@ -298,3 +301,8 @@
     }
 
 </style>
+
+		
+
+		
+

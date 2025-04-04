@@ -1,0 +1,9 @@
+﻿@page "/admin/connected"
+@attribute [Authorize(Roles = "Administrator")]
+
+@inject UserConnectionTracker ConnectionTracker
+
+<h3>Connected Users</h3>
+
+<p>There are currently <strong>@ConnectionTracker.ActiveConnections</strong> active user(s) on the site.</p>
+

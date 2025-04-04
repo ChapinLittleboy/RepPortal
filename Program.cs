@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 using Microsoft.EntityFrameworkCore;
@@ -44,6 +45,8 @@ builder.Services.AddSyncfusionBlazor();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRepCodeContext, RepCodeContext>();
+builder.Services.AddSingleton<UserConnectionTracker>();
+builder.Services.AddScoped<CircuitHandler, TrackingCircuitHandler>();
 
 
 

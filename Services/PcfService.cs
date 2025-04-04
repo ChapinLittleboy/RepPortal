@@ -25,30 +25,22 @@ public class PcfService
 
     }
 
-    public async Task<List<PCFHeaderDTO>> GetPCFHeadersAsync(string status)
+    public async Task<List<PCFHeader>> GetPCFHeadersAsync(string status)
     {
-
-
         string query =
-
-                @"SELECT distinct Upper(SRNum) as RepID, ProgControl.CustNum as CustomerNumber, CustName as CustomerName,
+            @"SELECT distinct Upper(SRNum) as RepID, ProgControl.CustNum as CustomerNumber, CustName as CustomerName,
                ProgSDate as StartDate, ProgEDate as EndDate, PCFNum as PcfNumber, PCFStatus as ApprovalStatus
-                    ,PcfType as PcfType, cc.Eut as MarketType, BuyingGroup as BuyingGroup, SubmittedBy as SubmittedBy
-                        ,cc.Salesman as Salesman, cc.SalesManager as SalesManager
+                ,PcfType as PcfType, cc.Eut as MarketType, BuyingGroup as BuyingGroup, SubmittedBy as SubmittedBy
+                    ,cc.Salesman as Salesman, cc.SalesManager as SalesManager
                FROM ProgControl --join UserCustomerAccesses uca on ProgControl.CustNum = uca.CustNum
                 left join ConsolidatedCustomers cc on ProgControl.CustNum = cc.CustNum and cc.custseq = 0
                 WHERE (1 = 1 AND  progcontrol.CustNum is not null AND progcontrol.ProgSDate is not null)
                 AND progcontrol.ProgSDate > '2019-12-31'
-               ORDER BY PCFNum DESC"
-            ;
+               ORDER BY PCFNum DESC";
 
-
-        //var parameters = new { CurrentDate = DateTime.Now.Date};
         using var connection = new SqlConnection(_pcfConnectionString);
-        return await connection.QueryAsync<PCFHeaderDTO>(query, new { RepCode = _repCodeContext.CurrentRepCode });
-        // NOTE: Using the repCode from the RepCodeContext!!
-       // using var connection = _dbConnectionFactory.CreateReadWriteConnection(_userService.CurrentPCFDatabaseName);
-       // return (await connection.QueryAsync<PCFHeaderDTO>(query)).ToList();
+        var result = await connection.QueryAsync<PCFHeader>(query, new { RepCode = _repCodeContext.CurrentRepCode });
+        return result.ToList();
     }
 
 
