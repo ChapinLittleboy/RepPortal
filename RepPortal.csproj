@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <Compile Remove="Models\PcfHeader.cs" />
-    <Compile Remove="Services\PcfService.cs" />
   </ItemGroup>
 
   <ItemGroup>
