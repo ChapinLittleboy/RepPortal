@@ -1,7 +1,9 @@
 using Dapper;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.CodeAnalysis.Elfie.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using RepPortal.Areas.Identity;
 using RepPortal.Data;
 using RepPortal.Services;
@@ -48,6 +50,9 @@ builder.Services.AddScoped<IRepCodeContext, RepCodeContext>();
 //builder.Services.AddSingleton<WeatherForecastService>();
 
 var app = builder.Build();
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+
 
 
 /*
@@ -82,10 +87,19 @@ else
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
+app.Use(async (context, next) =>
+{
+    var userName = context.User?.Identity?.Name ?? "<null>";
+    logger.LogInformation("Startup middleware — User.Identity.Name = {Name}", userName);
+    await next();
+});
+
 
 app.UseRouting();
 
 app.UseAuthorization();
+app.UseAuthentication();
+
 
 app.MapControllers();
 app.MapBlazorHub();

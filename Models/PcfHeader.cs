@@ -146,7 +146,7 @@ public class PCFHeader : INotifyPropertyChanged
 
     #region Approval Information
   
-    public PCFStatus ApprovalStatus { get; set; }
+    //public PCFStatus ApprovalStatus { get; set; }
 
     public int? PCFStatus { get; set; } // 0 = New, 1 = Awaiting SM Approval, 2 = Awaiting VP Approval, 3 = Approved, -1 = Reopened, 99 = Expired
 

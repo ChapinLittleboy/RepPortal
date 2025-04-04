@@ -71,7 +71,7 @@ public class RegisterModel : PageModel
         [Required]
         [EmailAddress]
         [Display(Name = "Email")]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         /// <summary>
         ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
@@ -93,12 +93,12 @@ public class RegisterModel : PageModel
         public string ConfirmPassword { get; set; }
 
         // Add custom fields here:
-        [Required]
+     
         public string FirstName { get; set; }
 
-        [Required]
+       
         public string LastName { get; set; }
-        [Required]
+       
         public string RepCode { get; set; }
     }
 
@@ -113,6 +113,19 @@ public class RegisterModel : PageModel
     {
         returnUrl ??= Url.Content("~/");
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
+        if (string.IsNullOrWhiteSpace(Input.Email))
+        {
+            ModelState.AddModelError("Input.Email", "Email is required.");
+            return Page();
+        }
+
+        if (string.IsNullOrWhiteSpace(Input.Password))
+        {
+            ModelState.AddModelError("Input.Password", "Password is required.");
+            return Page();
+        }
+
         if (ModelState.IsValid)
         {
             var user = CreateUser();
