@@ -118,6 +118,12 @@ namespace RepPortal.Areas.Identity.Pages.Account
                     _logger.LogInformation("User logged in.");
                     return LocalRedirect(returnUrl);
                 }
+                if (result.IsNotAllowed)
+                {
+                    _logger.LogWarning("User is inactive.");
+                    ModelState.AddModelError(string.Empty, "Your account is inactive. Please contact Chapin support.");
+                    return Page();
+                }
                 if (result.RequiresTwoFactor)
                 {
                     return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });

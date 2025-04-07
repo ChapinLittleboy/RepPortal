@@ -18,6 +18,8 @@ else
                 <th>Last Name</th>
                 <th>Current RepCode</th>
                 <th>Update RepCode</th>
+                <th>Status</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -35,6 +37,13 @@ else
                         <button class="btn btn-sm btn-primary ms-2"
                                 @onclick="() => SaveRepCode(user)">
                             Save
+                        </button>
+                    </td>
+                    <td>@(user.IsActive ? "Active" : "Inactive")</td>
+                    <td>
+                        <button class="btn btn-sm @(user.IsActive ? "btn-danger" : "btn-success")"
+                                @onclick="() => ToggleUserStatus(user)">
+                            @(user.IsActive ? "Deactivate" : "Activate")
                         </button>
                     </td>
                 </tr>
@@ -56,7 +65,8 @@ else
                 FirstName = u.FirstName,
                 LastName = u.LastName,
                 RepCode = u.RepCode,
-                EditedRepCode = u.RepCode
+                EditedRepCode = u.RepCode,
+                IsActive = u.IsActive
             }).ToList();
     }
 
@@ -73,9 +83,20 @@ else
                 user.RepCode = user.EditedRepCode;
                 await UserManager.UpdateSecurityStampAsync(targetUser);
             }
-            else
+        }
+    }
+
+    private async Task ToggleUserStatus(UserWithEdit user)
+    {
+        var targetUser = await UserManager.FindByIdAsync(user.Id);
+        if (targetUser != null)
+        {
+            targetUser.IsActive = !targetUser.IsActive;
+            var result = await UserManager.UpdateAsync(targetUser);
+            if (result.Succeeded)
             {
-                // handle failure (you can add error messages if you like)
+                user.IsActive = targetUser.IsActive;
+                await UserManager.UpdateSecurityStampAsync(targetUser);
             }
         }
     }
@@ -88,5 +109,6 @@ else
         public string LastName { get; set; }
         public string RepCode { get; set; }
         public string EditedRepCode { get; set; }
+        public bool IsActive { get; set; }
     }
 }

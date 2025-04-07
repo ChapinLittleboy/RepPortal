@@ -1,0 +1,19 @@
+﻿@page "/access-denied"
+@attribute [AllowAnonymous]
+@inject NavigationManager Navigation
+@inject SignInManager<ApplicationUser> SignInManager
+
+<h3>Access Denied</h3>
+
+<p>Your account has been marked as inactive and you no longer have access to the system.</p>
+
+<button class="btn btn-secondary" @onclick="Logout">Return to Login</button>
+
+@code {
+	private async Task Logout()
+	{
+		await SignInManager.SignOutAsync();
+		Navigation.NavigateTo("/login", true); // Or whatever your login page route is
+	}
+}
+
