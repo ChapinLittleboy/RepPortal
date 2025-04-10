@@ -26,49 +26,56 @@ else
 
 
 
-        <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true"
-        AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" AllowResizing="true" AllowTextWrap="true"
-        Toolbar="@(new List<string>() { "Export to Excel" })" AllowReordering="true">
-            <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
-            <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
-            <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })"  PageSize="20" ></GridPageSettings>
-            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-            <GridAggregates>
-                <GridAggregate>
-                    <GridAggregateColumns>
-                        @foreach (var colName in DynamicColumns)
-                        {
-                            <GridAggregateColumn Field="@colName" Type="AggregateType.Sum" Format="C0">
-                                <FooterTemplate>
-                                    @{
-                                        var aggregate = (context as AggregateTemplateContext);
-                                    }
-                                    <div>@aggregate.Sum</div>
-                                </FooterTemplate>
-                            </GridAggregateColumn>
-                        }
-                    </GridAggregateColumns>
-                </GridAggregate>
+        <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowGrouping="true"
+                AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" AllowResizing="true" AllowTextWrap="true"
+                Toolbar="@(new List<string>() { "Export to Excel" })" AllowReordering="true">
 
-            </GridAggregates>
-            <GridColumns>
-                <!-- Fixed Columns -->
-                <GridColumn Field="Customer" HeaderText="Customer" Width="100"></GridColumn>
-                <GridColumn Field="Customer Name" HeaderText="Name" Width="150"></GridColumn>
-                <GridColumn Field="Bill To State" HeaderText="Bill State" Width="100"></GridColumn>
-                <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
-                <GridColumn Field="Ship To City" HeaderText="Ship City" Width="120"></GridColumn>
-                <GridColumn Field="Ship To State" HeaderText="Ship State" Width="120"></GridColumn>
-                <GridColumn Field="slsman" HeaderText="Salesman" Width="120"></GridColumn>
+	        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
+	        <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
+	        <GridPageSettings PageSizes="@(new string[] { "10", "20", "50", "100", "All" })" PageSize="20"></GridPageSettings>
+	        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+	        <GridAggregates>
+		        <GridAggregate>
+			        <GridAggregateColumns>
+				        @foreach (var colName in DynamicColumns)
+				        {
+					        <GridAggregateColumn Field="@colName" Type="AggregateType.Sum" Format="C0">
+						        <FooterTemplate>
+							        @{
+								        var aggregate = (context as AggregateTemplateContext);
+							        }
+							        <div>@aggregate.Sum</div>
+						        </FooterTemplate>
+						        <GroupFooterTemplate>
+							        @{
+								        var aggregate = (context as AggregateTemplateContext);
+							        }
+							        <div>@aggregate.Sum</div>
+						        </GroupFooterTemplate>
+					        </GridAggregateColumn>
+				        }
+			        </GridAggregateColumns>
+		        </GridAggregate>
 
-                <GridColumn Field="RegionName" HeaderText="Region" Width="120"></GridColumn>
+	        </GridAggregates>
+	        <GridColumns>
+		        <!-- Fixed Columns -->
+		        <GridColumn Field="Customer" HeaderText="Customer" Width="100"></GridColumn>
+		        <GridColumn Field="Customer Name" HeaderText="Name" Width="150"></GridColumn>
+		        <GridColumn Field="Bill To State" HeaderText="Bill State" Width="100"></GridColumn>
+		        <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
+		        <GridColumn Field="Ship To City" HeaderText="Ship City" Width="120"></GridColumn>
+		        <GridColumn Field="Ship To State" HeaderText="Ship State" Width="120"></GridColumn>
+		        <GridColumn Field="slsman" HeaderText="Salesman" Width="120"></GridColumn>
 
-                <!-- Dynamic Columns -->
-                @foreach (var column in DynamicColumns)
-                {
-                    <GridColumn Field="@column" HeaderText="@column" Format="C0"  Width="120"></GridColumn>
-                }
-            </GridColumns>
+		        <GridColumn Field="RegionName" HeaderText="Region" Width="120"></GridColumn>
+
+		        <!-- Dynamic Columns -->
+		        @foreach (var column in DynamicColumns)
+		        {
+			        <GridColumn Field="@column" HeaderText="@column" Format="C0" Width="120"></GridColumn>
+		        }
+	        </GridColumns>
         </SfGrid>
     }
 }
