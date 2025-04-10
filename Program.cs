@@ -35,7 +35,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
 
 // Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("RepPortalConnection") ?? throw new InvalidOperationException("Connection string 'RepPortalConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -61,6 +61,8 @@ builder.Services.AddSingleton<UserConnectionTracker>();
 builder.Services.AddScoped<CircuitHandler, TrackingCircuitHandler>();
 builder.Services.AddScoped<SignInManager<ApplicationUser>, CustomSignInManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+builder.Services.AddSingleton<DbConnectionFactory>();
+builder.Services.AddScoped<PcfService>();
 
 
 var app = builder.Build();

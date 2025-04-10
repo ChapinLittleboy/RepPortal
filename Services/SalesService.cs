@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Data.SqlClient;
 using RepPortal.Models;
 using System.Data;
+using RepPortal.Data;
 
 
 namespace RepPortal.Services;
@@ -12,14 +13,15 @@ public class SalesService
     private readonly string _connectionString;
     private readonly AuthenticationStateProvider _authenticationStateProvider;
     private readonly IRepCodeContext _repCodeContext;
+    private readonly DbConnectionFactory _dbConnectionFactory;
 
 
-    public SalesService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider, IRepCodeContext repCodeContext)
+    public SalesService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider, IRepCodeContext repCodeContext, DbConnectionFactory dbConnectionFactory)
     {
         _connectionString = configuration.GetConnectionString("BatAppConnection");
         _authenticationStateProvider = authenticationStateProvider;
         _repCodeContext = repCodeContext;
-
+        _dbConnectionFactory = dbConnectionFactory;
     }
 
     public async Task<string> GetRepIDAsync()

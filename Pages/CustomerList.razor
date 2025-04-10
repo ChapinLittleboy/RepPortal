@@ -20,9 +20,13 @@
 }
 else
 {
-        <SfGrid ID="Grid" RowHeight="20" DataSource="@customers" AllowExcelExport="true" AllowFiltering="true" AllowTextWrap="true" AllowSorting="true" Height="600" EnableVirtualization="false" EnableVirtualMaskRow="true">
+        <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@customers" AllowExcelExport="true" AllowFiltering="true" 
+                Toolbar="@(new List<string>() { "Export to Excel", "ColumnChooser" })"
+                AllowResizing="true" AllowSelection="true" ShowColumnChooser="true" AllowReordering="true"
+	        AllowTextWrap="true" AllowSorting="true" Height="600" EnableVirtualization="false" EnableVirtualMaskRow="true">
         <GridPageSettings PageSizes="@(new string[] {"30", "60", "100",  "All" })"  PageSize="30" ></GridPageSettings>
-        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true" ></GridFilterSettings>
+        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="Customer"></GridEvents>
             <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
         <GridColumns>
             <GridColumn Field=@nameof(Customer.Cust_Num) HeaderText="Cust Number" Width="150"></GridColumn>
@@ -38,10 +42,10 @@ else
             <GridColumn Field=@nameof(Customer.BillToState) HeaderText="State" Width="100"></GridColumn>
             <GridColumn Field=@nameof(Customer.BillToZip) HeaderText="Zip Code" Width="100"></GridColumn>
             <GridColumn Field=@nameof(Customer.BillToCountry) HeaderText="Country" Width="150"></GridColumn>
+            <GridColumn Field=@nameof(Customer.SalesManager) HeaderText="Sales Mgr" Width="150"></GridColumn>
 
             <GridColumn Field=@nameof(Customer.CreditHoldDate) HeaderText="Credit Hold Date" Width="150" Format="d"></GridColumn>
             <GridColumn Field=@nameof(Customer.CreditHoldReason) HeaderText="Credit Hold Reason" Width="200"></GridColumn>
-            <GridColumn Field=@nameof(Customer.PaymentTermsCode) HeaderText="Payment Terms Code" Width="150"></GridColumn>
             <GridColumn Field=@nameof(Customer.PricingCode) HeaderText="Pricing Code" Width="150"></GridColumn>
         </GridColumns>
     </SfGrid>
@@ -52,6 +56,7 @@ else
     private IEnumerable<Customer> customers;
     private string repCode;
     private bool isLoading = true;
+	private SfGrid<Customer> Grid;
 
 
     protected override async Task OnInitializedAsync()
@@ -66,7 +71,9 @@ else
             var currentUser = await UserManager.GetUserAsync(user);
             if (!string.IsNullOrEmpty(repCode))
             {
-                customers = await CustomerService.GetCustomersDetailsByRepCodeAsync();
+               var allCustomers = await CustomerService.GetCustomersDetailsByRepCodeAsync();
+                customers = allCustomers.Where(c => c.Status != "R" );
+
                 isLoading = false;
             }
         }
@@ -98,6 +105,21 @@ else
         public int Id { get; set; }
         public string Text { get; set; }
     }
+
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+	    if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
+	    {
+		    var ExcelFileName = $"Customers Report({RepCodeContext.CurrentRepCode}).xlsx";
+		    ExcelExportProperties exportProperties = new ExcelExportProperties
+		    {
+			    FileName = ExcelFileName
+		    };
+		    await this.Grid.ExportToExcelAsync(exportProperties);
+	    }
+    }
+
+
 }
 
 <style>

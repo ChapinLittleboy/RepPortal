@@ -1,19 +1,17 @@
 ﻿@inject PcfService PcfService
-@page "/pcfviewer"
-@using System.Net.Http.Json
-@using Microsoft.AspNetCore.Components.Web
 @using RepPortal.Models
 
+@page "/pcflist"
 
 
-
-<h3>PCFViewer</h3>
 
 @code {
-
-	private string? _pcfFileName;
-	private string? _pcfFileContent;
+	
 	private string? _errorMessage;
+
+	List<PCFHeader> pcfHeaders = new List<PCFHeader>();
+
+
 	protected override async Task OnInitializedAsync()
 	{
 		try
@@ -30,3 +28,7 @@
 		}
 	}
 }
+
+
+
+

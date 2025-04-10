@@ -231,3 +231,10 @@ public class PCFItem
 
     public string? ItemStatus { get; set; }
 }
+
+
+public class StatusOptions
+{
+    public string StatusCode { get; set; }
+}
+

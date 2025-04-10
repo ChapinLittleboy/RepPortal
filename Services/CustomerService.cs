@@ -20,13 +20,15 @@ public class CustomerService
 
 
 
-    public async Task<IEnumerable<Customer>> GetCustomersByRepCodeAsync(string repCode)
+    public async Task<IEnumerable<Customer>> GetCustomersByRepCodeAsync()
     {
         const string sql = @"
-            SELECT cu.Cust_Num , ca.Name as Cust_Name , cu.slsman as  RepCode, cu.stat as Status
+            SELECT cu.Cust_Num , ca.Name as Cust_Name , cu.slsman as  RepCode, cu.stat as Status,
+            cu.uf_c_slsmgr as SalesManager, sm.SalesManagerName as SalesManagerName
             FROM Customer_mst cu
             Join CustAddr_mst ca on cu.cust_num = ca.cust_num and cu.cust_seq = ca.cust_seq 
-            WHERE slsman = @RepCode and cu.cust_seq = 0
+            left join Chap_SalesManagers sm on cu.uf_c_slsmgr = sm.SalesManagerInitials
+            WHERE cu.slsman = @RepCode and cu.cust_seq = 0
             ORDER BY ca.Name";
 
         using var connection = new SqlConnection(_batAppConnection);
@@ -41,10 +43,13 @@ public class CustomerService
             SELECT cu.cust_num as Cust_Num, ca.[name] as Cust_Name, ca.corp_cust as Corp_Cust,
        ca.addr##1 as BillToAddress1, ca.addr##2 as BillToAddress2, ca.addr##3 as BillToAddress3,
        ca.addr##4 as BillToAddress4, ca.city as BillToCity, ca.state as BillToState,
-       ca.zip as BillToZip, ca.country as BillToCountry, cu.slsman as RepCode,
+       ca.zip as BillToZip, ca.country as BillToCountry, cu.slsman as RepCode, 
        ca.credit_hold as CreditHold, ca.credit_hold_date as CreditHoldDate, ca.credit_hold_reason as CreditHoldReason,
-       cu.terms_code as PaymentTermsCode, cu.Uf_PROG_BASIS as PricingCode, cu.stat as Status
-FROM   customer_mst cu JOIN custaddr_mst ca ON cu.cust_num = ca.cust_num AND cu.cust_seq = ca.cust_seq AND cu.cust_seq = 0
+       cu.terms_code as PaymentTermsCode, cu.Uf_PROG_BASIS as PricingCode, cu.stat as Status,
+        cu.uf_c_slsmgr as SalesManager, sm.SalesManagerName as SalesManagerName
+FROM   customer_mst cu 
+JOIN custaddr_mst ca ON cu.cust_num = ca.cust_num AND cu.cust_seq = ca.cust_seq AND cu.cust_seq = 0
+LEFT JOIN Chap_SalesManagers sm ON cu.slsman = sm.SalesManagerInitials
 WHERE  cu.slsman = @RepCode ORDER BY ca.[name]";
 
         using var connection = new SqlConnection(_batAppConnection);
