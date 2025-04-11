@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using RepPortal.Models;
 using System.Data;
 using RepPortal.Data;
+using System.Text;
 
 
 namespace RepPortal.Services;
@@ -368,9 +369,206 @@ ORDER BY FY{fiscalYear - 1} DESC;";
 
 
 
+    public async Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQty()
+    {
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        //var repCode = user?.FindFirst("RepCode")?.Value;
+        var repCode = _repCodeContext.CurrentRepCode;
+
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            int fiscalYear; // it's being set by the GetDynamicQuery method
+
+            await connection.OpenAsync();
+            var query = GetDynamicQueryForItemsMonthlyWithQty(out fiscalYear);
+            var parameters = new { RepCode = repCode };
+            var results = await connection.QueryAsync(query, parameters, commandType: CommandType.Text);
+
+            Console.WriteLine($"Fiscal year used: {fiscalYear}");
+            // Convert the results to a list of dictionaries
+            var data = new List<Dictionary<string, object>>();
+            foreach (var row in results)
+            {
+                var dict = new Dictionary<string, object>();
+                foreach (var prop in row)
+                {
+                    dict[prop.Key] = prop.Value;
+                }
+
+                data.Add(dict);
+            }
+
+            return data;
+        }
+    }
 
 
 
+
+    public string GetDynamicQueryForItemsMonthlyWithQty(out int fiscalYear)
+    {
+        var today = DateTime.Today;
+        fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+
+        var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
+        var fyCurrentEnd = new DateTime(fiscalYear, 8, 31);
+        var fyPriorStart = fyCurrentStart.AddYears(-1);
+        var fyPriorEnd = fyCurrentEnd.AddYears(-1);
+
+        // Determine the number of months into the current fiscal year
+        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
+
+        // Generate month names for current fiscal year up to current month
+        var monthNames = Enumerable.Range(1, currentFiscalMonth)
+            .Select(i => fyCurrentStart.AddMonths(i - 1))
+            .Select(d => d.ToString("MMM") + d.Year)
+            .ToList();
+
+        // Generate month columns dynamically
+        var monthColumns = new StringBuilder();
+        foreach (var monthName in monthNames)
+        {
+            string safeMonthName = monthName.Replace("'", "''");
+            monthColumns.AppendLine($@"
+            MAX(CASE WHEN Period = '{safeMonthName}' THEN RevAmount ELSE 0 END) AS [{safeMonthName}_Rev],
+            MAX(CASE WHEN Period = '{safeMonthName}' THEN QtyInvoiced ELSE 0 END) AS [{safeMonthName}_Qty],");
+        }
+
+        if (monthColumns.Length > 0)
+        {
+            // Find the last index of the comma
+            int lastCommaIndex = monthColumns.ToString().LastIndexOf(',');
+            if (lastCommaIndex != -1)
+            {
+                monthColumns.Remove(lastCommaIndex, 1);
+            }
+        }
+
+        // Build optimized query with CTE and fewer CASE expressions
+            var query = $@"
+-- Use WITH statement for improved readability and performance
+WITH InvoiceData AS (
+    SELECT
+        ih.cust_num AS Customer,
+        ca0.Name AS [Customer Name],
+        ih.cust_seq AS [Ship To Num],
+        ca.City AS [Ship To City],
+        ca.State AS [Ship To State],
+        cu.slsman,
+        ca0.name AS SalespersonName,
+        ca0.state AS [Bill To State],
+        cu.Uf_SalesRegion,
+        rn.RegionName,
+        ii.item AS Item,
+        im.Description AS ItemDescription,
+        -- Create single Period column with appropriate fiscal markers
+        CASE
+            WHEN ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyPriorEnd:yyyy-MM-dd}' 
+                THEN 'FY{fiscalYear - 1}'
+            WHEN ih.inv_date BETWEEN '{fyCurrentStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}' 
+                THEN FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR)
+        END AS Period,
+        -- Pre-calculate fiscal year column for easier aggregation
+        CASE
+            WHEN ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyPriorEnd:yyyy-MM-dd}' 
+                THEN 'FY{fiscalYear - 1}'
+            WHEN ih.inv_date BETWEEN '{fyCurrentStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}' 
+                THEN 'FY{fiscalYear}'
+        END AS FiscalYear,
+        -- Pre-calculate the monetary values
+        ii.qty_invoiced * ii.price AS RevAmount,
+        ii.qty_invoiced AS QtyInvoiced
+    FROM inv_item_mst ii 
+    -- Add HINT to enforce join order if needed
+    INNER JOIN inv_hdr_mst ih WITH (NOLOCK) ON ii.inv_num = ih.inv_num
+    INNER JOIN customer_mst cu WITH (NOLOCK) ON ih.cust_num = cu.cust_num
+    INNER JOIN custaddr_mst ca0 WITH (NOLOCK) ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
+    INNER JOIN custaddr_mst ca WITH (NOLOCK) ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
+    LEFT JOIN Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
+    LEFT JOIN Bat_App.dbo.Item_mst im WITH (NOLOCK) ON ii.item = im.item
+    WHERE 
+        -- Use a simplified date range that covers both fiscal years
+        ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}'
+        AND cu.slsman = @RepCode
+),
+-- Create a separate CTE for aggregated values
+AggregatedData AS (
+    SELECT
+        Customer,
+        [Customer Name],
+        [Ship To Num],
+        [Ship To City],
+        [Ship To State],
+        slsman,
+        SalespersonName,
+        [Bill To State],
+        Uf_SalesRegion,
+        RegionName,
+        Item,
+        ItemDescription,
+        Period,
+        FiscalYear,
+        SUM(RevAmount) AS RevAmount,
+        SUM(QtyInvoiced) AS QtyInvoiced
+    FROM InvoiceData
+    GROUP BY
+        Customer,
+        [Customer Name],
+        [Ship To Num],
+        [Ship To City],
+        [Ship To State],
+        slsman,
+        SalespersonName,
+        [Bill To State],
+        Uf_SalesRegion,
+        RegionName,
+        Item,
+        ItemDescription,
+        Period,
+        FiscalYear
+)
+-- Final result set
+SELECT
+    Customer,
+    [Customer Name],
+    [Ship To Num],
+    [Ship To City],
+    [Ship To State],
+    slsman,
+    SalespersonName,
+    [Bill To State],
+    Uf_SalesRegion,
+    RegionName,
+    Item,
+    ItemDescription,
+    -- Prior Fiscal Year Totals
+    SUM(CASE WHEN FiscalYear = 'FY{fiscalYear - 1}' THEN RevAmount ELSE 0 END) AS [FY{fiscalYear - 1}_Rev],
+    SUM(CASE WHEN FiscalYear = 'FY{fiscalYear - 1}' THEN QtyInvoiced ELSE 0 END) AS [FY{fiscalYear - 1}_Qty],
+    -- Current Fiscal Year Totals
+    SUM(CASE WHEN FiscalYear = 'FY{fiscalYear}' THEN RevAmount ELSE 0 END) AS [FY{fiscalYear}_Rev],
+    SUM(CASE WHEN FiscalYear = 'FY{fiscalYear}' THEN QtyInvoiced ELSE 0 END) AS [FY{fiscalYear}_Qty],
+    -- Monthly columns for current fiscal year
+    {monthColumns}
+FROM AggregatedData
+GROUP BY
+    Customer,
+    [Customer Name],
+    [Ship To Num],
+    [Ship To City],
+    [Ship To State],
+    slsman,
+    SalespersonName,
+    [Bill To State],
+    Uf_SalesRegion,
+    RegionName,
+    Item,
+    ItemDescription
+OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
+";
+
+        return query;
+    }
 
 
 

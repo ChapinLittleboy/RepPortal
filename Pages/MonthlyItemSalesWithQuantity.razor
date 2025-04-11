@@ -1,0 +1,325 @@
+﻿
+Note: query does not return the right revenues or quantities.  See item 20000CT for example. We did not sell Millions.
+@page "/monthly-item-sales-with-qty"
+@attribute [Authorize]
+@using System.Dynamic
+@using System.Globalization
+@using Microsoft.CodeAnalysis.CSharp.Syntax
+@using RepPortal.Services
+@using RepPortal.Data
+@using RepPortal.Models
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Buttons
+@inject SalesService SalesService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject IRepCodeContext RepCodeContext
+
+<SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
+
+@if (isLoading)
+{
+    <p>Loading sales data, please wait...</p>
+}
+else
+{
+    <!-- Toggle button for switching between Revenue and Quantity columns -->
+    <div style="margin-bottom: 10px;">
+        <SfButton OnClick="ToggleDataType">Toggle Data Type</SfButton>
+        <span style="margin-left:20px;">@(showRevenue ? "Showing Revenue Data" : "Showing Quantity Data")</span>
+    </div>
+
+    <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+    AllowGrouping="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })">
+        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
+        <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })" PageSize="20"></GridPageSettings>
+        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <GridSortSettings>
+            <GridSortColumns>
+                <GridSortColumn Field="Customer Name" Direction="SortDirection.Ascending"></GridSortColumn>
+                <GridSortColumn Field="Item" Direction="SortDirection.Ascending"></GridSortColumn>
+                <GridSortColumn Field="Ship To Num" Direction="SortDirection.Ascending"></GridSortColumn>
+            </GridSortColumns>
+        </GridSortSettings>
+        <GridAggregates>
+            <GridAggregate>
+                <GridAggregateColumns>
+                    <GridAggregateColumn Field="FY2024" Type="AggregateType.Sum" Format="C0">
+                        <GroupFooterTemplate>
+                            @{
+                                var aggregate = (context as AggregateTemplateContext);
+                                <div>
+                                    <p>@aggregate.Sum</p>
+                                </div>
+                            }
+                        </GroupFooterTemplate>
+                    </GridAggregateColumn>
+                    <GridAggregateColumn Field="FY2025" Type="AggregateType.Sum" Format="C0">
+                        <GroupFooterTemplate>
+                            @{
+                                var aggregate = (context as AggregateTemplateContext);
+                                <div>
+                                    <p>@aggregate.Sum</p>
+                                </div>
+                            }
+                        </GroupFooterTemplate>
+                    </GridAggregateColumn>
+                </GridAggregateColumns>
+            </GridAggregate>
+        </GridAggregates>
+        <GridColumns>
+            <!-- Fixed Columns -->
+            <GridColumn Field="Customer" HeaderText="Customer" Width="100"></GridColumn>
+            <GridColumn Field="Customer Name" HeaderText="Name" Width="150"></GridColumn>
+            <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
+            <GridColumn Field="Ship To City" HeaderText="Ship City" Width="120"></GridColumn>
+            <GridColumn Field="Ship To State" HeaderText="Ship State" Width="120"></GridColumn>
+            <GridColumn Field="slsman" HeaderText="Salesman" Width="120"></GridColumn>
+            <GridColumn Field="Bill To State" HeaderText="Bill State" Width="100"></GridColumn>
+            <GridColumn Field="RegionName" HeaderText="Region" Width="120"></GridColumn>
+            <GridColumn Field="Item" HeaderText="Item" Width="120"></GridColumn>
+            <GridColumn Field="ItemDescription" HeaderText="Description" Width="120"></GridColumn>
+
+            <!-- Dynamic Columns -->
+            @foreach (var column in DynamicColumnsToShow)
+            {
+                @if (showRevenue)
+                {
+	                <GridColumn Field="@column" HeaderText="@column" Format="C0" Width="140"></GridColumn>
+                }
+                else
+                {
+	                <GridColumn Field="@column" HeaderText="@column" Format="N0" Width="140"></GridColumn>
+                }
+            }
+        </GridColumns>
+    </SfGrid>
+}
+
+
+@code {
+    private SfGrid<ExpandoObject> Grid;
+    private List<Dictionary<string, object>> SalesData = new List<Dictionary<string, object>>();
+    private List<string> DynamicColumns = new List<string>();
+    private List<ExpandoObject> eSalesData = new List<ExpandoObject>();
+    private bool isLoading = true;
+
+    private AuthenticationState authState;
+    private ApplicationUser currentUser;
+    private bool showRevenue = true; // Flag to toggle between Revenue and Quantity
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentUser = await UserManager.GetUserAsync(user);
+        }
+
+        var rawData = await SalesService.GetItemSalesReportDataWithQty();
+        ProcessDynamicColumns(rawData);
+        ConvertToDictionaries(rawData);
+
+        eSalesData = SalesData.Select(d => d.ToExpando()).ToList();
+        await base.OnInitializedAsync();
+        // Hide the spinner
+        isLoading = false;
+        //spinner.HideAsync();
+    }
+
+
+
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
+        {
+            var ExcelFileName = $"Chapin Monthly Sales Report({currentUser.RepCode}).xlsx";
+            ExcelExportProperties exportProperties = new ExcelExportProperties
+                {
+                    FileName = ExcelFileName
+                };
+            await this.Grid.ExportToExcelAsync(exportProperties);
+        }
+    }
+    private void ConvertToDictionaries(List<Dictionary<string, object>> records)
+    {
+        // No conversion needed since records is already List<Dictionary<string, object>>
+        SalesData = records;
+    }
+
+    private void ProcessDynamicColumns(List<Dictionary<string, object>> records)
+    {
+
+        Console.WriteLine("Records: " + string.Join(Environment.NewLine, records.Select(record => 
+            string.Join(", ", record.Select(kvp => $"{kvp.Key}: {kvp.Value}")))));
+
+        // Get all possible dynamic column names
+        var allColumns = records
+            .SelectMany(r => r.Keys)
+            .Where(k => !IsFixedColumn(k))
+            .Distinct()
+            .OrderBy(GetColumnOrder)
+            .ToList();
+
+        DynamicColumns = allColumns;
+       
+        // Debugging: Log the dynamic columns
+        Console.WriteLine("Dynamic Columns: " + string.Join(", ", DynamicColumns));
+    }
+
+    private bool IsFixedColumn(string columnName)
+    {
+        var fixedColumns = new HashSet<string>
+        {
+            "Customer", "Customer Name", "Ship To Num", "Ship To City", "Ship To State"
+            , "slsman", "name",
+            "Bill To State",  "Uf_SalesRegion" ,"RegionName","Item","ItemDescription"
+        };
+        return fixedColumns.Contains(columnName);
+    }
+    private int GetColumnOrder(string columnName)
+    {
+        // Handle fixed columns (if needed)
+        var fixedColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Customer", 0 },
+            { "Customer Name", 1 },
+            { "Ship To Num", 2 },
+            { "Ship To City", 3 },
+            { "Ship To State", 4 },
+            { "Slsman", 5 },
+            { "Name", 6 },
+            { "SalesPersonName", 6 },
+            { "Bill To State", 7 },
+            { "Uf_SalesRegion", 8 },
+            { "RegionName", 9 },
+            { "Item", 10 },
+        { "ItemDescription", 11 }
+        };
+
+        if (fixedColumnOrder.ContainsKey(columnName))
+        {
+            return fixedColumnOrder[columnName];
+        }
+
+        // Handle dynamic columns (chronological order)
+        if (columnName.StartsWith("FY", StringComparison.OrdinalIgnoreCase))
+        {
+            // Extract the integer part after "FY"
+            if (int.TryParse(columnName.Substring(2,4), out int year))
+            {
+                // Return a value based on the year
+                // For example, FY2024 returns 10, FY2025 returns 11, etc.
+                return year - 2014; // Adjust the offset as needed
+            }
+            else
+            {
+                // Handle the case where the column name doesn't contain a valid year
+                return int.MaxValue; // Place invalid FY columns at the end
+            }
+        }
+        // Parse month-year columns (e.g., SEP2024, OCT2024, etc.)
+        if (columnName.Length >= 3)
+        {
+            var monthPart = columnName.Substring(0, 3);
+            var yearPart = columnName.Length > 3 ? columnName.Substring(3,4) : "";
+
+            int previouscolumns = 13;
+            var monthOrder = monthPart.ToUpper() switch
+            {
+                "SEP" => previouscolumns + 1,
+                "OCT" => previouscolumns + 2,
+                "NOV" => previouscolumns + 3,
+                "DEC" => previouscolumns + 4,
+                "JAN" => previouscolumns + 5,
+                "FEB" => previouscolumns + 6,
+                "MAR" => previouscolumns + 7,
+                "APR" => previouscolumns + 8,
+                "MAY" => previouscolumns + 9,
+                "JUN" => previouscolumns + 10,
+                "JUL" => previouscolumns + 11,
+                "AUG" => previouscolumns + 12,
+
+                _ => -1 // Unknown month
+            };
+
+            if (monthOrder != -1)
+            {
+                return monthOrder;
+            }
+        }
+
+        // Default for unmatched columns
+        return int.MaxValue; // Place unmatched columns at the end
+    }
+
+    private int GetColumnOrderX(string columnName)
+    {
+        // Implement logic to order columns chronologically
+
+        return columnName switch
+        {
+            "Customer" => 0,
+            "CustomerName" => 1,
+            "ShipToNum" => 2,
+            "Slsman" => 3,
+            "Name" => 4,
+            "BillToState" => 5,
+            "Uf_SalesRegion" => 6,
+            "RegionName" => 7,
+            "Item" => 8,
+            "ItemDescription" => 9,
+            _ when columnName.StartsWith("FY") => 10,
+            _ when columnName.StartsWith("SEP", StringComparison.OrdinalIgnoreCase) => 11,
+            _ when columnName.StartsWith("OCT", StringComparison.OrdinalIgnoreCase) => 12,
+            _ when columnName.StartsWith("NOV", StringComparison.OrdinalIgnoreCase) => 13,
+            _ when columnName.StartsWith("DEC", StringComparison.OrdinalIgnoreCase) => 14,
+            _ when columnName.StartsWith("JAN", StringComparison.OrdinalIgnoreCase) => 15,
+            _ when columnName.StartsWith("FEB", StringComparison.OrdinalIgnoreCase) => 16,
+            _ when columnName.StartsWith("MAR", StringComparison.OrdinalIgnoreCase) => 17,
+            _ when columnName.StartsWith("APR", StringComparison.OrdinalIgnoreCase) => 18,
+            _ when columnName.StartsWith("MAY", StringComparison.OrdinalIgnoreCase) => 19,
+            _ when columnName.StartsWith("JUN", StringComparison.OrdinalIgnoreCase) => 20,
+            _ when columnName.StartsWith("JUL", StringComparison.OrdinalIgnoreCase) => 21,
+            _ when columnName.StartsWith("AUG", StringComparison.OrdinalIgnoreCase) => 22,
+            _ => -1 // or some default value if none of the above match
+        };
+
+    }
+
+    private void ConvertToExpandoObjects(List<SalesRecord> records)
+    {
+        foreach (var record in records)
+        {
+            dynamic expando = new ExpandoObject();
+            var dict = expando as IDictionary<string, object>;
+
+            foreach (var kvp in record)
+            {
+                dict[kvp.Key] = kvp.Value;
+            }
+
+            SalesData.Add(expando);
+        }
+    }
+
+    // This property provides the filtered dynamic columns based on the user's toggle selection.
+    public List<string> DynamicColumnsToShow =>
+        DynamicColumns.Where(col => showRevenue ? col.EndsWith("_Rev") : col.EndsWith("_Qty")).OrderBy(GetColumnOrder).ToList();
+
+
+    // Toggles the selection between Revenue and Quantity columns.
+    void ToggleDataType()
+    {
+        showRevenue = !showRevenue;
+        Grid.RefreshColumnsAsync();
+        Console.WriteLine("Dynamic Columns after toggle: " + string.Join(", ", DynamicColumns));
+        Console.WriteLine("Dynamic Columns to show after toggle: " + string.Join(", ", DynamicColumnsToShow));
+    }
+
+
+}
