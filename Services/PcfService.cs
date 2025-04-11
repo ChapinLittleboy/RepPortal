@@ -12,8 +12,6 @@ namespace RepPortal.Services;
 public class PcfService
 {
     private readonly DbConnectionFactory _dbConnectionFactory;
-    //private readonly string _batConnectionString;
-   // private readonly string _pcfConnectionString;
     private readonly AuthenticationStateProvider _authenticationStateProvider;
     private readonly IRepCodeContext _repCodeContext;
     private readonly IConfiguration _configuration;
@@ -23,8 +21,6 @@ public class PcfService
     public PcfService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider,
         IRepCodeContext repCodeContext, DbConnectionFactory dbConnectionFactory, CustomerService customerService)
     {
-        //_batConnectionString = configuration.GetConnectionString("BatAppConnection");
-        //_pcfConnectionString = configuration.GetConnectionString("PcfConnection");
         _authenticationStateProvider = authenticationStateProvider;
         _repCodeContext = repCodeContext;
         _dbConnectionFactory = dbConnectionFactory;
@@ -41,7 +37,7 @@ public class PcfService
                ProgSDate as StartDate, ProgEDate as EndDate, PCFNum as PcfNumber, PCFStatus as ApprovalStatus
                 ,PcfType as PcfType, cc.Eut as MarketType, BuyingGroup as BuyingGroup, SubmittedBy as SubmittedBy
                     ,cc.Salesman as Salesman, cc.SalesManager as SalesManager
-               FROM ProgControl --join UserCustomerAccesses uca on ProgControl.CustNum = uca.CustNum
+               FROM ProgControl 
                 left join ConsolidatedCustomers cc on ProgControl.CustNum = cc.CustNum and cc.custseq = 0
                 WHERE (1 = 1 AND  progcontrol.CustNum is not null AND progcontrol.ProgSDate is not null)
                 AND progcontrol.ProgSDate > '2019-12-31'
@@ -54,20 +50,8 @@ public class PcfService
     }
 
 
-    public async Task<IEnumerable<PCFHeader>> GetPCFsForCurrentRepAsync()
-    {
-        var customers = await _customerService.GetCustomersByRepCodeAsync();
-        var customerNumbers = customers.Select(c => c.Cust_Num.Trim()).ToList();  // NOTE THE TRIMMING!
+   
 
-        using var connection = _dbConnectionFactory.CreatePcfConnection();
-        const string sql = @"
-        SELECT *
-        FROM PCF
-        WHERE CustomerNumber IN @CustomerNumbers"
-        ;
-
-        return await connection.QueryAsync<PCFHeader>(sql, new { CustomerNumbers = customerNumbers });
-    }
 
 
 
