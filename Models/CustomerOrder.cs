@@ -20,33 +20,25 @@ public class CustomerOrderSummary
 public class OrderDetail
 {
     public string Cust { get; set; }
-    public string Name { get; set; }
+    public string CustName { get; set; }
     public DateTime DueDate { get; set; }
     public DateTime OrdDate { get; set; }
     public DateTime? PromDate { get; set; }
-    public string CustPO { get; set; }
-    public string CoNum { get; set; }
+    public string? CustPO { get; set; }
+    public string? CoNum { get; set; }
     public string Item { get; set; }
+    public string? ItemDesc { get; set; }
+
     public decimal Price { get; set; }
     public int OrdQty { get; set; }
-    public decimal Dollars { get; set; }
-    public string ShipToName { get; set; }
+    public int OpenQty { get; set; }
+    public decimal OpenDollars { get; set; }
+    public string? ShipToName { get; set; }
+    public int ShipToNum { get; set; }
+
 
     // Updated Status Category based on DueDate relative to today + 30 days
-    public string StatusCategory
-    {
-        get
-        {
-            // Get today's date (ignoring time component)
-            DateTime today = DateTime.Today;
-            // Calculate the date 30 days from today
-            DateTime thirtyDaysFromNow = today.AddDays(30);
 
-            // Shippable: Due date is on or before 30 days from now (includes past due)
-            // Future: Due date is after 30 days from now
-            return DueDate <= thirtyDaysFromNow ? "Shippable" : "Future";
-        }
-    }
 }
 public class CustomerOrderSummaryExport
 {

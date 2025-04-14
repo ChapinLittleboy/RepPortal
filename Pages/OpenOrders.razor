@@ -2,15 +2,15 @@
 @attribute [Authorize]
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.Spinner
-@using Syncfusion.Blazor.Navigations 
-@using RepPortal.Models  
+@using Syncfusion.Blazor.Navigations
+@using RepPortal.Models
 @using RepPortal.Services
-@using RepPortal.Shared   
+@using RepPortal.Shared
 @using Syncfusion.XlsIO
 @using System.IO
 
 @inject SalesService SalesService
-@inject IJSRuntime JSRuntime 
+@inject IJSRuntime JSRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
@@ -19,510 +19,122 @@
 
 <PageTitle>Open Customer Orders</PageTitle>
 
-<h1>Open Customer Orders</h1>
 
-@if (customerSummaries == null && isLoading)
+@if (openOrderDetails == null && isLoading)
 {
     <SfSpinner Visible="true" Label="Loading summaries..." Size="40"></SfSpinner>
 }
-else if (customerSummaries == null && !isLoading) // Added !isLoading to distinguish from initial load
-{
-    <p class="text-danger">Error loading summary data. Please check logs or try again.</p> 
-}
-else if (!customerSummaries.Any())
-{
-    <p>No open orders found for your customers.</p>
-}
+
 else
 {
-    <SfGrid @ref="SummaryGrid" DataSource="@customerSummaries" AllowPaging="true" AllowSorting="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "ExcelExport", "Search" })" AllowGrouping="true">
+	<div style="margin-top: 5px; color: red; font-size: small">
+		Tip: Set Items per page to 'ALL' before grouping records
+	</div>
+	<SfGrid @ref="DetailsGrid" DataSource="@openOrderDetails" AllowPaging="true" AllowSorting="true" 
+	        AllowExcelExport="true" Toolbar="@(new List<string>() { "ExcelExport", "Search" })" AllowGrouping="true">
+		<GridEvents  OnToolbarClick="ToolbarClickHandler" TValue="OrderDetail"></GridEvents>
 
-        <GridEvents CommandClicked="CommandsHandler" OnToolbarClick="ToolbarClickHandler" TValue="CustomerOrderSummary"></GridEvents>
+		<GridPageSettings PageSizes="@(new string[] { "20", "50", "100",  "All" })" PageSize="20"></GridPageSettings>
+		<GridSortSettings AllowUnsort="true">
+			<GridSortColumns>
+				<GridSortColumn Field=@nameof(OrderDetail.CustName) Direction="SortDirection.Ascending"></GridSortColumn>
+				<GridSortColumn Field=@nameof(OrderDetail.DueDate) Direction="SortDirection.Ascending"></GridSortColumn>
+			</GridSortColumns>
+		</GridSortSettings>
+		
+		<GridAggregates>
+			<GridAggregate>
+				<GridAggregateColumns>
+					<GridAggregateColumn Field=@nameof(OrderDetail.OpenDollars) Type="AggregateType.Sum" Format="C2">
+						<GroupFooterTemplate>
+							@{
+								var aggregate = (context as AggregateTemplateContext);
+								<div>
+									<p>Sum: @aggregate.Sum</p>
+								</div>
+							}
+						</GroupFooterTemplate>
+						<FooterTemplate>
+							@{
+								var aggregate = (context as AggregateTemplateContext);
+							}
+							<div>
+								<p>Total: @aggregate.Sum</p>
+							</div>
+						</FooterTemplate>
+					</GridAggregateColumn>
+				</GridAggregateColumns>
+			</GridAggregate>
+		</GridAggregates>
+		
+		<GridColumns>
+			<GridColumn Field=@nameof(OrderDetail.Cust) HeaderText="Customer #" Width="120" TextAlign="TextAlign.Left"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.CustName) HeaderText="Customer Name" Width="250"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.ShipToNum) HeaderText="Ship To #" Width="120"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.ShipToName) HeaderText="Name" Width="200"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.Item) HeaderText="Item" Width="120"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.ItemDesc) HeaderText="Item Description" Width="200"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.OpenQty) HeaderText="Open Units" Format="N0" Width="150" TextAlign="TextAlign.Right"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.Price) HeaderText="Price" Format="C2" Width="150" TextAlign="TextAlign.Right"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.OpenDollars) HeaderText="Open $" Format="C2" Width="150" TextAlign="TextAlign.Right"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.OrdDate) HeaderText="Order Date" Format="d" Type="ColumnType.Date" Width="100"></GridColumn>			
+			<GridColumn Field=@nameof(OrderDetail.DueDate) HeaderText="Due Date" Format="d" Type="ColumnType.Date" Width="100"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.CustPO) HeaderText="Customer PO" Width="150"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.CoNum) HeaderText="Order #" Width="100"></GridColumn>
 
-        <GridPageSettings PageSize="20"></GridPageSettings>
-        <GridSortSettings AllowUnsort="true">
-            <GridSortColumns>
-                <GridSortColumn Field=@nameof(CustomerOrderSummary.Name) Direction="SortDirection.Ascending"></GridSortColumn>
-            </GridSortColumns>
-        </GridSortSettings>
-        <GridAggregates>
-        <GridAggregate>
-            <GridAggregateColumns>
-                <GridAggregateColumn Field=@nameof(CustomerOrderSummary.ShippableDollars) Type="AggregateType.Sum" Format="C2">
-                    <GroupFooterTemplate>
-                        @{
-                            var aggregate = (context as AggregateTemplateContext);
-                            <div>
-                                <p>Sum: @aggregate.Sum</p>
-                            </div>
-                        }
-                    </GroupFooterTemplate>
-                </GridAggregateColumn>
-            </GridAggregateColumns>
-        </GridAggregate>
-        </GridAggregates>
-        <GridColumns>
-            <GridColumn Field=@nameof(CustomerOrderSummary.Cust) HeaderText="Customer #" Width="120" TextAlign="TextAlign.Left"></GridColumn>
-            <GridColumn Field=@nameof(CustomerOrderSummary.Name) HeaderText="Customer Name" Width="250"></GridColumn>
-            <GridColumn Field=@nameof(CustomerOrderSummary.ShippableUnits) HeaderText="Shippable Units" Format="N0" Width="150" TextAlign="TextAlign.Right"></GridColumn>
-            <GridColumn Field=@nameof(CustomerOrderSummary.FutureUnits) HeaderText="Future Units" Format="N0" Width="150" TextAlign="TextAlign.Right"></GridColumn>
-            <GridColumn Field=@nameof(CustomerOrderSummary.TotalUnits) HeaderText="Total Units" Format="N0" Width="150" TextAlign="TextAlign.Right"></GridColumn>
-            <GridColumn Field=@nameof(CustomerOrderSummary.ShippableDollars) HeaderText="Shippable $" Format="C2" Width="150" TextAlign="TextAlign.Right">
-  
-            </GridColumn>
-            <GridColumn Field=@nameof(CustomerOrderSummary.FutureDollars) HeaderText="Future $" Format="C2" Width="150" TextAlign="TextAlign.Right"></GridColumn>
-            <GridColumn Field=@nameof(CustomerOrderSummary.TotalDollars) HeaderText="Total $" Format="C2" Width="150" TextAlign="TextAlign.Right"></GridColumn>
-            @* Add a custom command column if needed for specific actions *@
-            @* <GridColumn HeaderText="Actions" Width="120" TextAlign="TextAlign.Center">
-                 <GridCommandColumns>
-                     <GridCommandColumn Type="CommandButtonType.None" Title="Details" ButtonOption="@(new CommandButtonOptions() { IconCss = "e-icons e-search", CssClass="e-flat" })"></GridCommandColumn>
-                 </GridCommandColumns>
-            </GridColumn> *@
-        </GridColumns>
+		
 
-        @* === GridTemplates wrapper is essential === *@
-        <GridTemplates>
-            <DetailTemplate Context="summaryContext">
-                @{ // Restore original logic
-                    var summaryData = summaryContext as CustomerOrderSummary;
-                    if (summaryData != null)
-                    {
-                        <div style="padding: 10px; border: 1px solid #dee2e6; background-color: #f8f9fa;"> @* Added some basic styling *@
-                            <h4>Open Order Lines for @summaryData.Name (@summaryData.Cust)</h4>
-                            @* Render the separate component for details *@
-                            <CustomerOrderDetailGrid CustomerId="@summaryData.Cust" />
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="text-warning" style="padding: 10px;">Could not load context data for detail view.</p>
-                    }
-                }
-            </DetailTemplate>
-        </GridTemplates> 
 
-    </SfGrid>
+		</GridColumns>
+
+	</SfGrid>
 }
 
 @code {
-    private List<CustomerOrderSummary>? customerSummaries;
-    private SfGrid<CustomerOrderSummary>? SummaryGrid; // Reference to the main grid
-    private bool isLoading = true;
 
-    protected override async Task OnInitializedAsync()
-    {
-        isLoading = true;
-        TitleService.PageSubtitle = "Open Orders Report";
-        await SalesService.LogReportUsageAsync(RepCodeContext.CurrentRepCode,  "Open Orders Report");
+	private SfGrid<OrderDetail>? DetailsGrid; // Reference to the main grid
+	private bool isLoading = true;
+	private List<OrderDetail>? openOrderDetails; // Data source for the grid
 
-        try
-        {
-            // TODO: Pass SalesRep ID or filter criteria if needed
-            customerSummaries = await SalesService.GetOpenOrderSummariesAsync();
-        }
-        catch (Exception ex)
-        {
-            // Log the exception (using ILogger is recommended)
-            Console.WriteLine($"Error loading order summaries: {ex.Message}");
-            customerSummaries = null; // Indicate error state
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
+	protected override async Task OnInitializedAsync()
+	{
+		isLoading = true;
+		TitleService.PageSubtitle = "Open Orders Report";
+		await SalesService.LogReportUsageAsync(RepCodeContext.CurrentRepCode, "Open Orders Report");
 
-    // --- Toolbar Click Handler (for Excel Export) ---
-    public async Task ToolbarClickHandler(ClickEventArgs args) // Use specific type from Syncfusion.Blazor.Navigations
-    {
-        if (args.Item.Id != null && args.Item.Id.Contains("excelexport")) // Default ID structure for Excel Export button
-        {
-            if (SummaryGrid != null)
-            {
-                 // For Custom Combined Export (Recommended for full detail):
-                 await ExportAllDetailsToExcel();
+		try
+		{
+			// TODO: Pass SalesRep ID or filter criteria if needed
+			openOrderDetails = await SalesService.GetAllOpenOrderDetailsAsync();
+		}
+		catch (Exception ex)
+		{
+			// Log the exception (using ILogger is recommended)
+			Console.WriteLine($"Error loading order summaries: {ex.Message}");
+			openOrderDetails = null; // Indicate error state
+		}
+		finally
+		{
+			isLoading = false;
+		}
+	}
 
-                 // --- OR --- Choose one of the built-in methods if preferred: ---
-                 /*
-                 var exportProperties = new ExcelExportProperties
-                 {
-                    // --- Option 1: Export Parent and Currently Expanded Details ---
-                    // HierarchyExportMode = HierarchyExportMode.Expanded,
+	// --- Toolbar Click Handler (for Excel Export) ---
+	public async Task ToolbarClickHandler(ClickEventArgs args) // Use specific type from Syncfusion.Blazor.Navigations
+	{
+		if (args.Item.Id != null && args.Item.Id.Contains("DetailsGrid_excelexport")) // Default ID structure for Excel Export button
+		{
 
-                    // --- Option 2: Export Parent and ALL Details (Fetches details for ALL rows - potentially slow!) ---
-                    // HierarchyExportMode = HierarchyExportMode.All, // Requires details to be pre-loaded or fetched by grid
+			var exportProperties = new ExcelExportProperties
+			{
 
-                    // --- Option 3: Export Parent Only (Default if HierarchyExportMode not set) ---
-                    // HierarchyExportMode = HierarchyExportMode.None, 
+				FileName = $"OpenOrders_{DateTime.Now:yyyyMMdd}.xlsx"
+			};
 
-                    FileName = $"OpenOrders_{DateTime.Now:yyyyMMdd}.xlsx"
-                 };
-                 await SummaryGrid.ExcelExport(exportProperties);
-                 */
-            }
-        }
-    }
+			await DetailsGrid.ExcelExport(exportProperties);
 
-    // --- Custom Export Method for Combined Data using XlsIO ---
-    // In OpenOrders.razor @code block
+		}
+	}
 
-
-
-// --- Updated Custom Export Method for Combined Data (Summary + Details Sheets) ---
-private async Task ExportAllDetailsToExcel()
-{
-    // Ensure we have summary data to export for the first sheet
-    if (customerSummaries == null || !customerSummaries.Any())
-    {
-        await JSRuntime.InvokeVoidAsync("alert", "No summary data available to export.");
-        return;
-    }
-
-    isLoading = true;
-    StateHasChanged();
-
-    try
-    {
-        // --- Create Excel Workbook with 2 Sheets ---
-        using (ExcelEngine excelEngine = new ExcelEngine())
-        {
-            IApplication application = excelEngine.Excel;
-            application.DefaultVersion = ExcelVersion.Xlsx;
-            IWorkbook workbook = application.Workbooks.Create(2); // Create 2 worksheets
-
-            // --- Worksheet 1: Summary ---
-            IWorksheet summarySheet = workbook.Worksheets[0];
-            summarySheet.Name = "Summary";
-
-            // Add Summary Headers
-            summarySheet.Range["A1"].Text = "Customer #";
-            summarySheet.Range["B1"].Text = "Customer Name";
-            summarySheet.Range["C1"].Text = "Shippable Units";
-            summarySheet.Range["D1"].Text = "Future Units";
-            summarySheet.Range["E1"].Text = "Total Units";
-            summarySheet.Range["F1"].Text = "Shippable $";
-            summarySheet.Range["G1"].Text = "Future $";
-            summarySheet.Range["H1"].Text = "Total $";
-            summarySheet.Range["A1:H1"].CellStyle.Font.Bold = true;
-            summarySheet.Range["A1:H1"].CellStyle.Color = Syncfusion.Drawing.Color.LightSkyBlue; // Header color
-
-            // Import Summary Data (customerSummaries is List<CustomerOrderSummary>)
-            // Ensure the order of properties matches the headers A1-H1
-            // ImportData automatically maps properties by name if headers match,
-            // but importing without headers (false) and starting at row 2 is safer.
-            // We need to explicitly list properties if we don't rely on header mapping.
-            // Easier way: Import directly from the list.
-            var customerSummariesExport = customerSummaries.Select(cs => new CustomerOrderSummaryExport
-            {
-                Cust = cs.Cust,
-                Name = cs.Name,
-                ShippableUnits = cs.ShippableUnits,
-                FutureUnits = cs.FutureUnits,
-                TotalUnits = cs.TotalUnits,
-                ShippableDollars = cs.ShippableDollars,
-                FutureDollars = cs.FutureDollars,
-                TotalDollars = cs.TotalDollars
-            }).ToList();
-
-             summarySheet.ImportData(customerSummariesExport, 2, 1, false); // Start Row 2, Col 1
-
-            // Apply Summary Formatting
-            int summaryRowCount = customerSummariesExport.Count;
-            summarySheet.Range["C2:E" + (summaryRowCount + 1)].NumberFormat = "#,##0"; // Units format
-            summarySheet.Range["F2:H" + (summaryRowCount + 1)].NumberFormat = "$#,##0.00"; // Dollars format
-            summarySheet.UsedRange.AutofitColumns();
-
-            // --- Worksheet 2: Details ---
-            IWorksheet detailSheet = workbook.Worksheets[1];
-            detailSheet.Name = "Details";
-
-            // Fetch Detail Data (same as before)
-            Console.WriteLine("Fetching all order details for export...");
-            List<OrderDetail> allDetails = await SalesService.GetAllOpenOrderDetailsAsync();
-            Console.WriteLine($"Fetched {allDetails?.Count ?? 0} detail records.");
-
-            if (allDetails != null && allDetails.Any())
-            {
-                // Prepare detail data (same as before)
-                var exportData = allDetails.Select(d => new
-                {
-                    CustomerNumber = d.Cust,
-                    CustomerName = d.Name,
-                    d.DueDate,
-                    d.OrdDate,
-                    d.PromDate,
-                    d.CustPO,
-                    OrderNumber = d.CoNum,
-                    d.Item,
-                    d.Price,
-                    Quantity = d.OrdQty,
-                    LineTotal = d.Dollars,
-                    d.ShipToName,
-                    Status = d.StatusCategory
-                }).OrderBy(d => d.CustomerName).ThenBy(d => d.DueDate).ToList();
-                Console.WriteLine($"Prepared {exportData.Count} detail records for Excel export.");
-
-                // Add Detail Headers
-                detailSheet.Range["A1"].Text = "Customer Number";
-                detailSheet.Range["B1"].Text = "Customer Name";
-                detailSheet.Range["C1"].Text = "Due Date";
-                detailSheet.Range["D1"].Text = "Order Date";
-                detailSheet.Range["E1"].Text = "Promise Date";
-                detailSheet.Range["F1"].Text = "Customer PO";
-                detailSheet.Range["G1"].Text = "Order Number";
-                detailSheet.Range["H1"].Text = "Item";
-                detailSheet.Range["I1"].Text = "Price";
-                detailSheet.Range["J1"].Text = "Quantity";
-                detailSheet.Range["K1"].Text = "Line Total";
-                detailSheet.Range["L1"].Text = "Ship To Name";
-                detailSheet.Range["M1"].Text = "Status";
-                detailSheet.Range["A1:M1"].CellStyle.Font.Bold = true;
-                detailSheet.Range["A1:M1"].CellStyle.Color = Syncfusion.Drawing.Color.LightGray; // Header color
-
-                // Import Detail Data
-                detailSheet.ImportData(exportData, 2, 1, false); // Start Row 2, Col 1
-
-                // Apply Detail Formatting
-                int detailRowCount = exportData.Count;
-                detailSheet.Range["C2:E" + (detailRowCount + 1)].NumberFormat = "mm/dd/yyyy"; // Date format
-                detailSheet.Range["I2:I" + (detailRowCount + 1)].NumberFormat = "$#,##0.00"; // Price format
-                detailSheet.Range["J2:J" + (detailRowCount + 1)].NumberFormat = "#,##0"; // Quantity format
-                detailSheet.Range["K2:K" + (detailRowCount + 1)].NumberFormat = "$#,##0.00"; // Dollars format
-                detailSheet.UsedRange.AutofitColumns();
-            }
-            else
-            {
-                 Console.WriteLine("No detail data found to populate Details sheet.");
-                 // Add a note to the sheet itself (optional)
-                 detailSheet.Range["A1"].Text = "No detail data found.";
-            }
-
-            // --- Save and Download Workbook (Contains both sheets) ---
-            string fileName = $"OpenOrders_SummaryAndDetails_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-            using (MemoryStream stream = new MemoryStream())
-            {
-                workbook.SaveAs(stream);
-                stream.Position = 0; 
-
-                using var streamRef = new DotNetStreamReference(stream: stream);
-                await JSRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
-                Console.WriteLine($"Excel file '{fileName}' prepared for download.");
-            }
-        } // Dispose ExcelEngine
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error during custom Excel export: {ex.Message}\n{ex.StackTrace}");
-        await JSRuntime.InvokeVoidAsync("alert", $"Error during Excel export: {ex.Message}");
-    }
-    finally
-    {
-        isLoading = false;
-        StateHasChanged();
-    }
 }
 
-
-
-    private async Task ExportAllDetailsToExcelxxx()
-    {
-        if (customerSummaries == null || !customerSummaries.Any())
-        {
-            // Optional: Show notification to user
-            await JSRuntime.InvokeVoidAsync("alert", "No summary data available to export.");
-            return;
-        }
-
-        isLoading = true;
-        StateHasChanged();
-
-        try
-        {
-            // 1. Fetch ALL details
-            Console.WriteLine("Starting to fetch all order details for export...");
-            List<OrderDetail> allDetails = await SalesService.GetAllOpenOrderDetailsAsync();
-            Console.WriteLine($"Fetched {allDetails?.Count ?? 0} detail records.");
-
-            if (allDetails == null || !allDetails.Any())
-            {
-                Console.WriteLine("No detail data found for export.");
-                await JSRuntime.InvokeVoidAsync("alert", "No detail data found to export.");
-                isLoading = false; // Reset loading state
-                StateHasChanged();
-                return; // Exit if no details
-            }
-
-            // 2. Prepare data (anonymous type is fine here for XlsIO)
-            var exportData = allDetails.Select(d => new
-            {
-                CustomerNumber = d.Cust,
-                CustomerName = d.Name,
-                d.DueDate,
-                d.OrdDate,
-                d.PromDate,
-                d.CustPO,
-                OrderNumber = d.CoNum,
-                d.Item,
-                d.Price,
-                Quantity = d.OrdQty,
-                LineTotal = d.Dollars,
-                d.ShipToName,
-                Status = d.StatusCategory
-            }).OrderBy(d => d.CustomerName).ThenBy(d => d.DueDate).ToList();
-            Console.WriteLine($"Prepared {exportData.Count} records for Excel export.");
-
-            // --- 3. Build Excel using Syncfusion XlsIO ---
-            using (ExcelEngine excelEngine = new ExcelEngine())
-            {
-                IApplication application = excelEngine.Excel;
-                application.DefaultVersion = ExcelVersion.Xlsx; // Or ExcelVersion.Excel2016 etc.
-                IWorkbook workbook = application.Workbooks.Create(1); // Create 1 worksheet
-                IWorksheet worksheet = workbook.Worksheets[0];
-                worksheet.Name = "Open Order Details";
-
-                // Add Headers (adjust column names as needed)
-                worksheet.Range["A1"].Text = "Customer Number";
-                worksheet.Range["B1"].Text = "Customer Name";
-                worksheet.Range["C1"].Text = "Due Date";
-                worksheet.Range["D1"].Text = "Order Date";
-                worksheet.Range["E1"].Text = "Promise Date";
-                worksheet.Range["F1"].Text = "Customer PO";
-                worksheet.Range["G1"].Text = "Order Number";
-                worksheet.Range["H1"].Text = "Item";
-                worksheet.Range["I1"].Text = "Price";
-                worksheet.Range["J1"].Text = "Quantity";
-                worksheet.Range["K1"].Text = "Line Total";
-                worksheet.Range["L1"].Text = "Ship To Name";
-                worksheet.Range["M1"].Text = "Status";
-
-                // Apply basic header formatting (optional)
-                worksheet.Range["A1:M1"].CellStyle.Font.Bold = true;
-                worksheet.Range["A1:M1"].CellStyle.Color = Syncfusion.Drawing.Color.LightGray;
-
-                // Import data starting from row 2
-                // Using ImportData is efficient for lists of objects
-                worksheet.ImportData(exportData, 2, 1, false); // Start Row 2, Col 1, Don't import headers
-
-                // --- Optional: Apply formatting to columns ---
-                worksheet.Range["C2:E" + (exportData.Count + 1)].NumberFormat = "mm/dd/yyyy"; // Date format
-                worksheet.Range["I2:I" + (exportData.Count + 1)].NumberFormat = "$#,##0.00"; // Price format
-                worksheet.Range["J2:J" + (exportData.Count + 1)].NumberFormat = "#,##0"; // Quantity format
-                worksheet.Range["K2:K" + (exportData.Count + 1)].NumberFormat = "$#,##0.00"; // Dollars format
-
-                worksheet.UsedRange.AutofitColumns(); // Adjust column widths
-
-                // --- 4. Save and Download ---
-                string fileName = $"OpenOrderDetails_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-                using (MemoryStream stream = new MemoryStream())
-                {
-                    workbook.SaveAs(stream);
-                    stream.Position = 0; // Reset stream position
-
-                    // Trigger file download using JavaScript interop
-                    using var streamRef = new DotNetStreamReference(stream: stream);
-                    await JSRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
-                    Console.WriteLine($"Excel file '{fileName}' prepared for download.");
-                }
-            }
-            // --- End XlsIO logic ---
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error during custom Excel export: {ex.Message}\n{ex.StackTrace}");
-            await JSRuntime.InvokeVoidAsync("alert", $"Error during Excel export: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
-            StateHasChanged();
-        }
-    }
-     // --- Custom Export Method for Combined Data ---
-    private async Task ExportAllDetailsToExcelzzz()
-    {
-        if (customerSummaries == null || !customerSummaries.Any())
-        {
-            // Optional: Show notification to user via JS Interop or a Blazor component
-            // await JSRuntime.InvokeVoidAsync("alert", "No summary data available to export.");
-            return;
-        }
-
-        isLoading = true; // Show a loading indicator if desired
-        StateHasChanged(); // Update UI
-
-        try
-        {
-            // 1. Fetch ALL details for the relevant customers
-            // Consider if filtering by Sales Rep is needed here or in the service call
-            Console.WriteLine("Starting to fetch all order details for export..."); // Log start
-            List<OrderDetail> allDetails = await SalesService.GetAllOpenOrderDetailsAsync(); 
-            Console.WriteLine($"Fetched {allDetails?.Count ?? 0} detail records."); // Log count
-
-            if (allDetails == null || !allDetails.Any())
-            {
-                 Console.WriteLine("No detail data found for export.");
-                 // Optional: Notify user
-                 // await JSRuntime.InvokeVoidAsync("alert", "No detail data found to export.");
-                 return; // Exit if no details
-            }
-
-            // 2. Prepare data for export (Flatten details for a single sheet)
-            var exportData = allDetails.Select(d => new
-            {
-                CustomerNumber = d.Cust,
-                CustomerName = d.Name, // Assuming Name is reliably in OrderDetail from the query
-                d.DueDate,
-                d.OrdDate,
-                d.PromDate,
-                d.CustPO,
-                OrderNumber = d.CoNum, // Renamed for clarity potentially
-                d.Item,
-                d.Price,
-                Quantity = d.OrdQty, // Renamed
-                LineTotal = d.Dollars, // Renamed
-                d.ShipToName,
-                Status = d.StatusCategory 
-            }).OrderBy(d => d.CustomerName).ThenBy(d=> d.DueDate).ToList();
-            Console.WriteLine($"Prepared {exportData.Count} records for Excel export.");
-
-            // 3. Use SfGrid's ExportToExcelAsync helper 
-            if (SummaryGrid != null) // Grid reference still needed for the helper method
-            {
-                var exportProperties = new ExcelExportProperties
-                {
-                    DataSource = exportData, // Provide the combined, flattened data source
-                    FileName = $"OpenOrderDetails_{DateTime.Now:yyyyMMdd}.xlsx"
-                    // You can customize columns, themes, headers etc. further here if needed
-                    // e.g., using ExportHelper.cs examples from Syncfusion docs
-                };
-                Console.WriteLine($"Starting Excel export to file: {exportProperties.FileName}");
-                // This uses the *primary* grid reference but exports the *provided* DataSource
-                await SummaryGrid.ExportToExcelAsync(exportProperties);
-                Console.WriteLine("Excel export initiated.");
-            }
-        }
-        catch (Exception ex)
-        {
-            // Log error
-            Console.WriteLine($"Error during custom Excel export: {ex.Message}\n{ex.StackTrace}");
-            // Notify user of export failure
-            // await JSRuntime.InvokeVoidAsync("alert", $"Error during Excel export: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
-            StateHasChanged();
-        }
-    }
-
-    // --- Optional: Handler for Custom Command Buttons ---
-    public void CommandsHandler(CommandClickEventArgs<CustomerOrderSummary> args)
-    {
-        // Example if you add command buttons later
-        if(args.CommandColumn?.Title == "Details") // Add null check for safety
-        {
-            Console.WriteLine($"Details command clicked for: {args.RowData.Cust}");
-            // Potentially trigger modal or navigation
-        }
-    }
-}

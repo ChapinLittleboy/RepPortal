@@ -861,7 +861,7 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
     }
 
     // --- Optional: Method to get ALL details for ALL relevant customers (for combined export) ---
-    public async Task<List<OrderDetail>> GetAllOpenOrderDetailsAsync(/* string salesRepId */)
+    public async Task<List<OrderDetail>> GetAllOpenOrderDetailsAsync_BADDATA(/* string salesRepId */)
     {
         // Similar to GetOpenOrderDetailsAsync, but potentially joining with Cust table
         // first based on SalesRepId to get relevant Customer IDs, then fetching details.
@@ -869,16 +869,59 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
         const string allDetailSql = @"
             SELECT
                 O.CUST AS Cust, C.CorpName AS Name, O.DUEDATE AS DueDate, O.ORDDATE AS OrdDate,
-                O.PromDate AS PromDate, O.CustPO, O.CONUM AS CoNum, O.ITEM AS Item,
+                O.PromDate AS PromDate, O.CustPO, O.CONUM AS CoNum, O.ITEM AS Item, isnull(Item.Description, O.Item) AS ItemDescription,
                 O.PRICE AS Price, O.ORDQTY AS OrdQty, (O.Price * O.OrdQty) AS Dollars,
                 C.B2Name AS ShipToName
             FROM CIISQL10.INTRANET.DBO.ORDERS O
             INNER JOIN CIISQL10.INTRANET.DBO.Cust C ON O.CUST = C.Cust AND O.CUSTSEQ = C.CustSeq
+            LEFT JOIN CIISQL10.BAT_App.DBO.Item_mst Item ON Item.Item = O.Item
             WHERE O.STAT = 'O'
             AND C.slsman = @RepCode 
             ORDER BY C.Cust, O.DueDate, O.PromDate, O.CoNum;";
 
         using var connection = new SqlConnection(_connectionString);
+        var allDetails = await connection.QueryAsync<OrderDetail>(allDetailSql, new { RepCode = _repCodeContext.CurrentRepCode });
+        return allDetails.ToList();
+    }
+
+    public async Task<List<OrderDetail>> GetAllOpenOrderDetailsAsync()
+    {
+        // Similar to GetOpenOrderDetailsAsync, but gets order details from coitem.
+        const string allDetailSql = @"
+            SELECT
+     co.Cust_Num AS Cust
+,cc.Name as CustName
+,co.cust_seq as ShipToNum
+,ca.name AS ShipToName
+,ci.due_date AS DueDate
+,co.order_date AS OrdDate
+,co.Cust_PO AS CustPO
+,co.co_num AS CoNum
+,ci.ITEM AS Item
+,isnull(
+   Item.Description
+  ,ci.Item) AS ItemDesc
+,ci.PRICE AS Price
+,ci.qty_ordered AS OrdQty
+,ci.qty_ordered - ci.qty_shipped as OpenQty
+,(ci.qty_ordered - ci.qty_shipped) * ci.price as OpenDollars
+FROM
+BAT_App.dbo.coitem_mst ci
+JOIN BAT_App.dbo.co_mst co ON co.co_num = ci.co_num 
+JOIN Bat_App.dbo.customer_mst cu
+  ON co.cust_num = cu.cust_num AND
+     co.cust_seq = cu.cust_seq
+JOIN Bat_App.dbo.custaddr_mst ca  ON co.cust_num = ca.cust_num AND     ca.cust_seq = 0
+LEFT JOIN CIISQL10.BAT_App.DBO.Item_mst Item ON Item.Item = ci.Item
+LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
+  ON cu.cust_num = cc.cust_num
+            WHERE ci.STAT = 'O' 
+            AND cu.slsman = @RepCode 
+            AND ci.qty_ordered - ci.qty_shipped > 0
+            ORDER BY cc.Name, co.cust_seq;";
+
+        using var connection = new SqlConnection(_connectionString);
+        _logger.LogInformation($"Executing SQL: {allDetailSql}");
         var allDetails = await connection.QueryAsync<OrderDetail>(allDetailSql, new { RepCode = _repCodeContext.CurrentRepCode });
         return allDetails.ToList();
     }
