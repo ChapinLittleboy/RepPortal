@@ -81,7 +81,7 @@
 		    </EditForm>
 
 		    <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@InvoiceData" AllowTextWrap="true" AllowSorting="true" AllowGrouping="true"
-		            AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })">
+		            AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })" AllowResizing="true">
 			    <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
 			    <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="InvoiceRptDetail"></GridEvents>
 			    <GridPageSettings PageSizes="@(new string[] { "10", "20", "50", "100", "All" })" PageSize="20"> </GridPageSettings>
