@@ -1,6 +1,7 @@
 ﻿@page "/"
 @inject SalesService SalesService
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject TitleService TitleService
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 
@@ -30,6 +31,7 @@ else
     private string repCode;
     protected override async Task OnInitializedAsync()
     {
+	    TitleService.PageSubtitle = "";
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 

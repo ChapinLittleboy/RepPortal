@@ -12,6 +12,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
+@inject TitleService TitleService
 
 
 
@@ -212,7 +213,7 @@
         }
         parameters.BeginInvoiceDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
         parameters.EndInvoiceDate = DateTime.Now; // Default to today
-
+        TitleService.PageSubtitle = "Customer Invoices Report";
     }
 
     private async Task LoadShipments()

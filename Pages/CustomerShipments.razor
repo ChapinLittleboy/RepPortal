@@ -12,6 +12,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
+@inject TitleService TitleService
 
 
 <div class="container-fluid">
@@ -65,7 +66,8 @@
                 <InputText @bind-Value="parameters.RepCode" />
             </div>
             <div class="button-row">
-                <button type="submit">Load Shipments</button>
+	            <button type="submit">Load Shipments</button>
+	  
             </div>
 
             @if (showTip){
@@ -151,6 +153,9 @@
             parameters.RepCode = RepCodeContext.CurrentRepCode;
 
         }
+
+        TitleService.PageSubtitle = "Shipments Report";
+
         parameters.BeginShipDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
         parameters.EndShipDate = DateTime.Now; // Default to today
 

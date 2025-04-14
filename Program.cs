@@ -63,6 +63,7 @@ builder.Services.AddScoped<SignInManager<ApplicationUser>, CustomSignInManager>(
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddSingleton<DbConnectionFactory>();
 builder.Services.AddScoped<PcfService>();
+builder.Services.AddScoped<TitleService>();
 
 
 var app = builder.Build();

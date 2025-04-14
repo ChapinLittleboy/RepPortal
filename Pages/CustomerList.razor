@@ -4,6 +4,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject CustomerService CustomerService
 @inject IRepCodeContext RepCodeContext
+@inject TitleService TitleService
 
 @using RepPortal.Models
 @using Syncfusion.Blazor.Grids
@@ -68,6 +69,7 @@ else
         repCode = RepCodeContext.CurrentRepCode;
         if (user.Identity.IsAuthenticated)
         {
+	        TitleService.PageSubtitle = "Customer Listing";
             var currentUser = await UserManager.GetUserAsync(user);
             if (!string.IsNullOrEmpty(repCode))
             {
