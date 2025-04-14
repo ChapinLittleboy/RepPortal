@@ -26,6 +26,7 @@
                             <MenuItem Text="Customer List"/>
                             <MenuItem Text="Monthly Sales Report"></MenuItem>
                             <MenuItem Text="Monthly Sales By Item Report"></MenuItem>
+                            <MenuItem Text="TEST Monthly Sales By Item Report"></MenuItem>
                             <MenuItem Text="Shipments Report"></MenuItem>
                             <MenuItem Text="Open Orders Report"></MenuItem>
                             <MenuItem Text="Customer Invoices Report"></MenuItem>
@@ -70,7 +71,8 @@
                                 <AuthorizeView Roles="SuperUser">
 		                        <MenuItem Text="Manage User Roles" Url="/admin/user-roles"></MenuItem>
 		                        <MenuItem Text="Debug User Identity" Url="/admin/debug-identity"></MenuItem>
-                                <MenuItem Text="Manage RepCodes" Url="/admin/manage-repcodes"/>
+		                        <MenuItem Text="Manage RepCodes" Url="/admin/manage-repcodes"/>
+                               
                                 </AuthorizeView>
 		                        <MenuItem Text="Connected Users" Url="/admin/connected"></MenuItem>
 	                        </MenuItems>
@@ -201,9 +203,13 @@
                 Navigation.NavigateTo("/monthly-sales-report");
                 break;
             case "Monthly Sales By Item Report":
-                //Navigate to Monthly Sales Report page
-                Navigation.NavigateTo("/monthly-item-sales-report");
-                break;
+	            //Navigate to Monthly Sales Report page
+	            Navigation.NavigateTo("/monthly-item-sales-report");
+	            break;
+            case "TEST Monthly Sales By Item Report":
+	            //Navigate to Monthly Sales Report page
+                Navigation.NavigateTo("/monthly-item-sales-with-qty");
+	            break;
             case "Shipments Report":
                 //Navigate to Monthly Sales Report page
                 Navigation.NavigateTo("/shipments-report");

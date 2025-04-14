@@ -15,14 +15,19 @@ public class SalesService
     private readonly AuthenticationStateProvider _authenticationStateProvider;
     private readonly IRepCodeContext _repCodeContext;
     private readonly DbConnectionFactory _dbConnectionFactory;
+    private readonly ILogger<SalesService> _logger;
 
 
-    public SalesService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider, IRepCodeContext repCodeContext, DbConnectionFactory dbConnectionFactory)
+
+    public SalesService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider, 
+        IRepCodeContext repCodeContext, DbConnectionFactory dbConnectionFactory, ILogger<SalesService> logger)
     {
         _connectionString = configuration.GetConnectionString("BatAppConnection");
         _authenticationStateProvider = authenticationStateProvider;
         _repCodeContext = repCodeContext;
         _dbConnectionFactory = dbConnectionFactory;
+        _logger = logger;
+
     }
 
     public async Task<string> GetRepIDAsync()
@@ -209,6 +214,7 @@ ORDER BY FY{fiscalYear - 1} DESC;";
             await connection.OpenAsync();
             var query = GetDynamicQueryForItemsMonthly(out fiscalYear);
             var parameters = new { RepCode = repCode };
+            _logger.LogInformation($"{query}");
             var results = await connection.QueryAsync(query, parameters, commandType: CommandType.Text);
 
             Console.WriteLine($"Fiscal year used: {fiscalYear}");
@@ -383,6 +389,7 @@ ORDER BY FY{fiscalYear - 1} DESC;";
             await connection.OpenAsync();
             var query = GetDynamicQueryForItemsMonthlyWithQty(out fiscalYear);
             var parameters = new { RepCode = repCode };
+            _logger.LogInformation($"The query is: {query}");
             var results = await connection.QueryAsync(query, parameters, commandType: CommandType.Text);
 
             Console.WriteLine($"Fiscal year used: {fiscalYear}");

@@ -7,15 +7,24 @@
 <div class="page">
   
 
-    <main>
+	<main>
 
+		<header>
+			<Appbar />
+		</header>
 
-        <Appbar></Appbar>
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+		<article class="content px-4">
+			@Body
+		</article>
+	</main>
+	
+	<!-- Common footer -->
+	<Footer></Footer>
+	
+
 </div>
+
+
 @code {
     protected override void OnInitialized()
     {

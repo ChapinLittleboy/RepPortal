@@ -1,8 +1,6 @@
 @import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
 
-html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-}
+
 
 h1:focus {
     outline: none;
@@ -69,4 +67,32 @@ a, .btn-link {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+html, body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* ensures the container is at least as tall as the viewport */
+}
+
+
+main {
+    flex: 1; /* makes the main section expand to take available space */
+}
+.content {
+    flex: 1; /* This allows the main content to expand */
+}
+/* Optional: style the footer if needed */
+.footer {
+    border-top: 1px solid #e4e4e4;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    text-align: center;
+}
 
