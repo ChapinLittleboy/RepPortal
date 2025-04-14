@@ -9,6 +9,7 @@
 @using RepPortal.Models
 @using Syncfusion.Blazor.Grids
 @inject SalesService SalesService
+@inject CustomerService CustomerService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
@@ -24,6 +25,7 @@
     }
     else
     {
+        @if(isReady) {
         <EditForm Model="@parameters" OnValidSubmit="LoadShipments">
             <DataAnnotationsValidator />
             <ValidationSummary />
@@ -44,20 +46,20 @@
                         <InputText @bind-Value="parameters.CustNum" />
                     </div>
                     <div class="form-group">
-                        <label>Corporate Number (Optional):</label>
-                        <InputText @bind-Value="parameters.CorpNum" />
-                    </div>
-                </div>
-                <div class="column">
-                    <div class="form-group">
                         <label>Customer Type (Optional):</label>
-                        <InputText @bind-Value="parameters.CustType" />
-                    </div>
-                    <div class="form-group">
-                        <label>End User Type (Optional):</label>
-                        <InputText @bind-Value="parameters.EndUserType" />
+                        <InputSelect @bind-Value="parameters.CustType" class="form-control">
+                            <!-- Placeholder/blank option -->
+                            <option value="">-- Select a customer type --</option>   // This is for all types
+                            @foreach (var type in CustomerTypes)
+                            {
+                                <option value="@type">@type</option>
+                            }
+                        </InputSelect>
                     </div>
                 </div>
+
+                <!-- Empty 3rd column -->
+                <div class="column empty-column"></div>
                 <!-- Empty 4th column -->
                 <div class="column empty-column"></div>
             </div>
@@ -66,126 +68,132 @@
                 <InputText @bind-Value="parameters.RepCode" />
             </div>
             <div class="button-row">
-	            <button type="submit">Load Shipments</button>
-	  
+                <button type="submit">Load Shipments</button>
+
             </div>
 
             @if (showTip){
 
-            <div style="margin-top: 5px; color: red; font-size: small">
-                Tip: Set Items per page to 'ALL' before grouping records
-            </div>
+                <div style="margin-top: 5px; color: red; font-size: small">
+                    Tip: Set Items per page to 'ALL' before grouping records
+                </div>
             }
 
         </EditForm>
 
-        <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@ShipmentsData" AllowTextWrap="true" AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })">
-            <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
-            <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="CustomerShipment"></GridEvents>
-            <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })"  PageSize="20" ></GridPageSettings>
-            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
-            <GridSortSettings>
-                <GridSortColumns>
-                    <GridSortColumn Field="CustName" Direction="SortDirection.Ascending"></GridSortColumn>
-                    <GridSortColumn Field="PoNumber" Direction="SortDirection.Ascending"></GridSortColumn>
-                    <GridSortColumn Field="CoLine" Direction="SortDirection.Ascending"></GridSortColumn>
-                    <GridSortColumn Field="ShipDate" Direction="SortDirection.Ascending"></GridSortColumn>
-                </GridSortColumns>
-            </GridSortSettings>
-            <GridColumns >
-                <GridColumn Field="CustNum" HeaderText="Cust Num" Width="100"></GridColumn>
-                <GridColumn Field="CustName" HeaderText="Customer Name" Width="150"></GridColumn>
-                <GridColumn Field="PoNumber" HeaderText="PO Num" Width="100"></GridColumn>
-                <GridColumn Field="OrderNumber" HeaderText="Order Num" Width="100"></GridColumn>
+        <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@ShipmentsData" AllowTextWrap="true" AllowSorting="true" AllowGrouping="true"
+                AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })">
+	        <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
+	        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="CustomerShipment"></GridEvents>
+	        <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })"  PageSize="20" ></GridPageSettings>
+	        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
+	        <GridSortSettings>
+		        <GridSortColumns>
+			        <GridSortColumn Field="CustName" Direction="SortDirection.Ascending"></GridSortColumn>
+			        <GridSortColumn Field="PoNumber" Direction="SortDirection.Ascending"></GridSortColumn>
+			        <GridSortColumn Field="CoLine" Direction="SortDirection.Ascending"></GridSortColumn>
+			        <GridSortColumn Field="ShipDate" Direction="SortDirection.Ascending"></GridSortColumn>
+		        </GridSortColumns>
+	        </GridSortSettings>
+	        <GridColumns >
+		        <GridColumn Field="CustNum" HeaderText="Cust Num" Width="100"></GridColumn>
+		        <GridColumn Field="CustName" HeaderText="Customer Name" Width="150"></GridColumn>
+		        <GridColumn Field="PoNumber" HeaderText="PO Num" Width="100"></GridColumn>
+		        <GridColumn Field="OrderNumber" HeaderText="Order Num" Width="100"></GridColumn>
 
-                <GridColumn Field="CoLine" HeaderText="CO Line" Width="100"></GridColumn>
-                <GridColumn Field="ItemNum" HeaderText="Item" Width="100"></GridColumn>
-                <GridColumn Field="ItemDesc" HeaderText="Description" Width="150"></GridColumn>
-                <GridColumn Field="DueDate" HeaderText="Due Date" Format="d" Width="100"></GridColumn>
-                <GridColumn Field="ShipDate" HeaderText="Ship Date" Format="d" Width="100"></GridColumn>
-                <GridColumn HeaderText="Qty Shipped" TextAlign="TextAlign.Right" Width="100">
-                    <Template>
-                        @{
-                            var sd = (context as CustomerShipment);
-                            <div class="right-padding">
-                                @sd.ShipQty
-                            </div>
-                        }
-                    </Template>
-                </GridColumn>
-                <GridColumn Field="ExtLinePrice" HeaderText="Ext Price" Format="C2" Width="120" TextAlign="TextAlign.Right"></GridColumn>
-                <GridColumn Field="Whse" HeaderText="Whse" Width="100"></GridColumn>
-                <GridColumn Field="CarrierCode" HeaderText="Carrier Code" Width="100"></GridColumn>
-                <GridColumn Field="ServiceType" HeaderText="Service Type"  Width="100"></GridColumn>
-                <GridColumn Field="ShipCode" HeaderText="Ship Code" Width="100"></GridColumn>
-                <GridColumn Field="TrackingNumber" HeaderText="Tracking Number" Width="150"></GridColumn>
+		        <GridColumn Field="CoLine" HeaderText="CO Line" Width="100"></GridColumn>
+		        <GridColumn Field="ItemNum" HeaderText="Item" Width="100"></GridColumn>
+		        <GridColumn Field="ItemDesc" HeaderText="Description" Width="150"></GridColumn>
+		        <GridColumn Field="DueDate" HeaderText="Due Date" Format="d" Width="100"></GridColumn>
+		        <GridColumn Field="ShipDate" HeaderText="Ship Date" Format="d" Width="100"></GridColumn>
+		        <GridColumn HeaderText="Qty Shipped" TextAlign="TextAlign.Right" Width="100">
+			        <Template>
+				        @{
+					        var sd = (context as CustomerShipment);
+					        <div class="right-padding">
+						        @sd.ShipQty
+					        </div>
+				        }
+			        </Template>
+		        </GridColumn>
+		        <GridColumn Field="ExtLinePrice" HeaderText="Ext Price" Format="C2" Width="120" TextAlign="TextAlign.Right"></GridColumn>
+		        <GridColumn Field="Whse" HeaderText="Whse" Width="100"></GridColumn>
+		        <GridColumn Field="CarrierCode" HeaderText="Carrier Code" Width="100"></GridColumn>
+		        <GridColumn Field="ServiceType" HeaderText="Service Type"  Width="100"></GridColumn>
+		        <GridColumn Field="ShipCode" HeaderText="Ship Code" Width="100"></GridColumn>
+		        <GridColumn Field="TrackingNumber" HeaderText="Tracking Number" Width="150"></GridColumn>
 
-                <GridColumn Field="Whse" HeaderText="Whse" Width="100"></GridColumn>
-                <GridColumn Field="ShipmentID" HeaderText="Shipment ID" Width="100"></GridColumn>
-            </GridColumns>
+		        <GridColumn Field="Whse" HeaderText="Whse" Width="100"></GridColumn>
+		        <GridColumn Field="ShipmentID" HeaderText="Shipment ID" Width="100"></GridColumn>
+	        </GridColumns>
         </SfGrid>
+        }
 
     }
 </div>
 
 
 @code {
-    private SfGrid<CustomerShipment> Grid;
-    private List<CustomerShipment> ShipmentsData = new List<CustomerShipment>();
+	private SfGrid<CustomerShipment> Grid;
+	private List<CustomerShipment> ShipmentsData = new List<CustomerShipment>();
 
-    private bool isLoading = false;
-    private bool showTip = false;
+	private bool isLoading = false;
+	private bool showTip = false;
+	private IEnumerable<string> CustomerTypes;
+	private bool isReady = false;
+
+	private AuthenticationState authState;
+	private ApplicationUser currentUser;
+
+	private SalesService.ShipmentsParameters parameters = new SalesService.ShipmentsParameters();
+
+	protected override async Task OnInitializedAsync()
+	{
+		authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+		var user = authState.User;
+		if (user.Identity.IsAuthenticated)
+		{
+			currentUser = await UserManager.GetUserAsync(user);
+			// parameters.RepCode = currentUser.RepCode;
+			parameters.RepCode = RepCodeContext.CurrentRepCode;
+
+		}
+
+		TitleService.PageSubtitle = "Shipments Report";
+
+		parameters.BeginShipDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
+		parameters.EndShipDate = DateTime.Now; // Default to today
+
+		CustomerTypes = await CustomerService.GetCustomerTypesAsync();
+		isReady = true;
+
+	}
+
+	private async Task LoadShipments()
+	{
+		showTip = true;
+		isLoading = true;
+		ShipmentsData = await SalesService.GetShipmentsData(parameters);
 
 
-    private AuthenticationState authState;
-    private ApplicationUser currentUser;
+		isLoading = false;
+	}
 
-    private SalesService.ShipmentsParameters parameters = new SalesService.ShipmentsParameters();
-
-    protected override async Task OnInitializedAsync()
-    {
-        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        if (user.Identity.IsAuthenticated)
-        {
-            currentUser = await UserManager.GetUserAsync(user);
-            // parameters.RepCode = currentUser.RepCode;
-            parameters.RepCode = RepCodeContext.CurrentRepCode;
-
-        }
-
-        TitleService.PageSubtitle = "Shipments Report";
-
-        parameters.BeginShipDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
-        parameters.EndShipDate = DateTime.Now; // Default to today
-
-    }
-
-    private async Task LoadShipments()
-    {
-        showTip = true;
-        isLoading = true;
-        ShipmentsData = await SalesService.GetShipmentsData(parameters);
-
-
-        isLoading = false;
-    }
-
-    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
-    {
-        if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
-        {
-            var ExcelFileName = $"Chapin Shipments Report({RepCodeContext.CurrentRepCode}).xlsx";
-            ExcelExportProperties exportProperties = new ExcelExportProperties
-            {
-                FileName = ExcelFileName
-            };
-            await this.Grid.ExportToExcelAsync(exportProperties);
-        }
-    }
-
+	public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+	{
+		if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
+		{
+			var ExcelFileName = $"Chapin Shipments Report({RepCodeContext.CurrentRepCode}).xlsx";
+			ExcelExportProperties exportProperties = new ExcelExportProperties
+			{
+				FileName = ExcelFileName
+			};
+			await this.Grid.ExportToExcelAsync(exportProperties);
+		}
+	}
 
 }
+
 
 
 

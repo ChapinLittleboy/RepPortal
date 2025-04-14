@@ -773,11 +773,11 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
     {
         public DateTime BeginShipDate { get; set; }
         public DateTime EndShipDate { get; set; }
-        public string RepCode { get; set; }
-        public string CustNum { get; set; }
-        public string CorpNum { get; set; }
-        public string CustType { get; set; }
-        public string EndUserType { get; set; }
+        public string? RepCode { get; set; }
+        public string? CustNum { get; set; }
+        public string? CorpNum { get; set; }
+        public string? CustType { get; set; }
+        public string? EndUserType { get; set; }
     }
 
     public string GetRepAgency(string repCode)

@@ -58,6 +58,17 @@ WHERE  cu.slsman = @RepCode ORDER BY ca.[name]";
     }
 
 
+    public async Task<IEnumerable<string>> GetCustomerTypesAsync()
+    {
+        // NOTE:  Always uses the repCode from the RepCodeContext
+        const string sql = @"
+            SELECT Distinct cust_type as CustomerType
+FROM   customer_mst cu 
+WHERE  cu.slsman = @RepCode ORDER BY cust_type";
 
+        using var connection = new SqlConnection(_batAppConnection);
+        return await connection.QueryAsync<string>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
+        // NOTE: Using the repCode from the RepCodeContext!!
+    }
 
 }
