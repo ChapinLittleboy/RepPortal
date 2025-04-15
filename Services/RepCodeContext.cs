@@ -7,6 +7,8 @@ public interface IRepCodeContext
     void OverrideRepCode(string newCode);
     void ResetRepCode();
     string CurrentLastName { get; }
+    string CurrentFirstName { get; }
+
 }
 
 
@@ -38,6 +40,14 @@ public class RepCodeContext : IRepCodeContext
         {
             var user = _httpContextAccessor.HttpContext?.User;
             return user?.FindFirst("LastName")?.Value ?? string.Empty;
+        }
+    }
+    public string CurrentFirstName
+    {
+        get
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            return user?.FindFirst("FirstName")?.Value ?? string.Empty;
         }
     }
     public event Action OnRepCodeChanged;
