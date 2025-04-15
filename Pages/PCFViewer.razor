@@ -70,15 +70,12 @@ else if (isReady )
 
                 <!-- Row 4: Buying Group and Promo Terms (conditional) -->
                 <div class="row mb-2">
-                    <div class="col-md-4">
-                        <strong>Buying Group:</strong>
-                        <div>@pcfHeader.BuyingGroup</div>
-                    </div>
+
                     @if (pcfHeader.PcfType == "PD" || pcfHeader.PcfType == "PW")
                     {
                         <div class="col-md-4">
                             <strong>Promo Payment Terms:</strong>
-                            <div>@pcfHeader.PromoPaymentTermsDescription</div>
+                            <div>@pcfHeader.PromoPaymentTermsText</div>
                         </div>
                         <div class="col-md-4">
                             <strong>Promo Freight Terms:</strong>
@@ -86,9 +83,13 @@ else if (isReady )
                         </div>
                         <div class="col-md-4">
                             <strong>Promo Freight Minimums:</strong>
-                            <div>@pcfHeader.PromoFreightMinimums</div>
+                            <div>@pcfHeader.FreightMinimums</div>
                         </div>
                     }
+                    <div class="col-md-4">
+	                    <strong>Buying Group:</strong>
+	                    <div>@pcfHeader.BuyingGroup</div>
+                    </div>
                 </div>
 
                 <!-- Row 5: Representative Info -->

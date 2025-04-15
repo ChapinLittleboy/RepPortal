@@ -1,8 +1,10 @@
 ﻿@inject PcfService PcfService
 @inject IJSRuntime JSRuntime
 @inject ILogger<PcfListing> Logger
+@inject NavigationManager NavigationManager
 @using RepPortal.Models
 @using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Buttons
 
 @page "/pcflist"
 
@@ -75,7 +77,7 @@ else
 
                 <GridColumn HeaderText="Action!" Width="7%">
                     <Template Context="pcfObj">
-                  
+	                    <SfButton CssClass="custom-edit-button e-small" @onclick="() => NavigateToPCFDetails(((PCFHeader)pcfObj).PcfNumber)">Details</SfButton>
                     </Template>
                 </GridColumn>
 
@@ -143,6 +145,13 @@ else
 		}
 	}
 
+	private  void NavigateToPCFDetails(string pcfNumber)
+	{
+	
+
+		NavigationManager.NavigateTo($"/pcfviewer/{pcfNumber}");
+
+	}
 
 	public class StatusOptions
 	{
