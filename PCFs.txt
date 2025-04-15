@@ -1,63 +1,96 @@
-﻿@inject PcfService PcfService
+﻿
+@page "/PCFs"
+@using FilteringEventArgs = Syncfusion.Blazor.Grids.FilteringEventArgs
+
+
+
+@inject DataService DataService
+@inject IConfiguration Configuration
+@inject IUserService UserService
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+@inject NavigationManager NavigationManager
+@inject CustomerService CustomerService
 @inject IJSRuntime JSRuntime
-@inject ILogger<PcfListing> Logger
-@using RepPortal.Models
-@using Syncfusion.Blazor.Grids
-
-@page "/pcflist"
 
 
+
+<h3>Pricing Control Forms</h3>
+
+<div>
+    <div class="active-filters">
+        <button @onclick="ClearFilters">Clear Filters</button>
+        
+        <!--
+        <span class="divider">|</span>
+        <strong class="small-text">Active Filters:</strong>
+        <span class="small-text">@activeFilters</span>
+        -->
+    </div>
+
+</div>
+<br/>
+<label>Select Database: </label>
+<select  @onchange="OnDatabaseChange">
+    <option value="Chapin">Chapin</option>
+
+</select>
+<!--
+<div>
+<SfDropDownList TValue="string" TItem="StatusOptions" @bind-Value="selectedPcfStatus" DataSource="@pcfStatusOptions" Placeholder="Select PCF Status" EnablePersistence="true">
+<DropDownListFieldSettings Value="StatusCode" Text="StatusCode"></DropDownListFieldSettings>
+<DropDownListEvents TValue="string" TItem="StatusOptions" ValueChange="OnPcfStatusChange" ></DropDownListEvents>
+</SfDropDownList>
+</div>
+-->
 @if (isLoading)
 {
-	<div>Loading...</div>
+    <div>Loading...</div>
 }
 else
 {
-	 <div>
-        <SfGrid ID="PcfsGrid" @ref="MyGrid" DataSource="@pcfHeaders" Height="600px" Width="100%" CssClass="custom-grid" AllowResizing="true"
+    <div>
+        <SfGrid ID="PcfsGrid" @ref="MyGrid" DataSource="@pcfHeaders" Height="600px" Width="100%" CssClass="custom-grid"
                 AllowFiltering="true" AllowMultiSorting="true" AllowSorting="true" AllowExcelExport="true" Toolbar="@(new string[] { "ExcelExport"})"
-        AllowPaging="false" EnablePersistence="false" AllowTextWrap="true"   >
+        AllowPaging="true" EnablePersistence="true" >
             <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-            <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
+          
 
             <GridSortSettings>
                 <GridSortColumns>
-                    <GridSortColumn Field="PcfStatus" Direction="SortDirection.Ascending"></GridSortColumn>
+                    <GridSortColumn Field="ApprovalStatus" Direction="SortDirection.Ascending"></GridSortColumn>
                     <GridSortColumn Field="CustomerName" Direction="SortDirection.Ascending"></GridSortColumn>
-                    <GridSortColumn Field="StartDate" Direction="SortDirection.Descending"></GridSortColumn>
                 </GridSortColumns>
             </GridSortSettings>
-            <GridEvents OnToolbarClick="ToolbarClickHandler"  TValue="PCFHeader"></GridEvents>
-          
+            <GridEvents OnToolbarClick="ToolbarClickHandler" Filtering="FilteringHandler" TValue="PCFHeaderDTO"></GridEvents>
+            <GridPageSettings PageSize="200" PageSizes="true" PageCount="8"></GridPageSettings>
             <GridColumns>
                 <GridColumn Field="CustomerNumber" HeaderText="Cust Num" Width="8%" TextAlign="TextAlign.Left"></GridColumn>
                 <GridColumn Field="CustomerName" HeaderText="Customer Name" Width="15%" TextAlign="TextAlign.Left"></GridColumn>
-                <GridColumn Field="BuyingGroup" HeaderText="Buying Group" Width="15%" TextAlign="TextAlign.Left"></GridColumn>
                 <GridColumn Field="StartDate" HeaderText="Start Date" Format="d" Width="8%" TextAlign="TextAlign.Center"></GridColumn>
                 <GridColumn Field="EndDate" HeaderText="End Date" Format="d" Width="8%" TextAlign="TextAlign.Center"></GridColumn>
                 <GridColumn Field="PcfNumber" HeaderText="PCF Number" Width="8%" TextAlign="TextAlign.Center" IsPrimaryKey="true"></GridColumn>
                 <!-- Status icon column using a template -->
-                <GridColumn Field="PCFStatusDescription" HeaderText="Status" FilterSettings="@(new FilterSettings { Type = Syncfusion.Blazor.Grids.FilterType.CheckBox })" Width="100">
+                <GridColumn Field="ApprovalStatus" HeaderText="Stat" FilterSettings="@(new FilterSettings { Type = Syncfusion.Blazor.Grids.FilterType.CheckBox })" Width="100">
                     <Template>
                         @{
-                            var header = (PCFHeader)@context;
-                            string status = header.PCFStatusDescription;
+                            var header = (PCFHeaderDTO)@context;
+                            string status = header.ApprovalStatus.ToString();
                             @if (status == "New")
                             {
                                 <div class="statusback e-newcolor">
-                                    <span class="statustxt e-newcolor">@header.PCFStatusDescription</span>
+                                    <span class="statustxt e-newcolor">@header.ApprovalStatus.ToString()</span>
                                 </div>
                             }
                             else if (status == "Approved")
                             {
                                 <div class="statusback e-approvedcolor">
-                                    <span class="statustxt e-approvedcolor">@header.PCFStatusDescription</span>
+                                    <span class="statustxt e-approvedcolor">@header.ApprovalStatus.ToString()</span>
                                 </div>
                             }
                             else
                             {
                                 <div class="statusback e-expiredcolor">
-                                    <span class="statustxt e-expiredcolor">@header.PCFStatusDescription</span>
+                                    <span class="statustxt e-expiredcolor">@header.ApprovalStatus.ToString()</span>
                                 </div>
                             }
 
@@ -67,99 +100,22 @@ else
                     </Template>
                 </GridColumn>
 
-                <GridColumn Field="RepCode" HeaderText="RepCode" Width="8%" TextAlign="TextAlign.Left"></GridColumn>
-                <GridColumn Field="Salesman" HeaderText="SalesRep" Width="8%" TextAlign="TextAlign.Left"></GridColumn>
-
-                <GridColumn Field="PCFTypeDescription" HeaderText="PCF Type" Width="12%" TextAlign="TextAlign.Left"></GridColumn>
+                <GridColumn Field="RepID" HeaderText="Rep ID" Width="8%" TextAlign="TextAlign.Left"></GridColumn>
+                <GridColumn Field="BuyingGroup" HeaderText="BuyGroup" Width="8%" TextAlign="TextAlign.Left"></GridColumn>
+                <GridColumn Field="PcfType" HeaderText="PCF Type" Width="8%" TextAlign="TextAlign.Left"></GridColumn>
+                <GridColumn Field="MarketType" HeaderText="Market" Width="8%" TextAlign="TextAlign.Left"></GridColumn>
                 <GridColumn Field="SalesManager" HeaderText="SalesMgr" Width="8%"></GridColumn>
 
                 <GridColumn HeaderText="Action!" Width="7%">
                     <Template Context="pcfObj">
-                  
+                        <SfButton CssClass="custom-edit-button e-small" @onclick="() => NavigateToPCFDetails(((PCFHeaderDTO)pcfObj).PcfNumber)">Edit</SfButton>
                     </Template>
                 </GridColumn>
 
             </GridColumns>
         </SfGrid>
     </div>
-
 }
-
-
-
-
-
-
-
-@code {
-	
-	private string? _errorMessage;
-	private bool isLoading = false;
-
-	private List<PCFHeader> pcfHeaders = new List<PCFHeader>();
-	private SfGrid<PCFHeader> MyGrid;
-
-	protected override async Task OnInitializedAsync()
-	{
-		try
-		{
-			pcfHeaders = await PcfService.GetPCFHeadersForRepBySlsman();
-			if (pcfHeaders != null)
-			{
-
-				Console.WriteLine(pcfHeaders.Count);
-			}
-			if (pcfHeaders.Any())
-			{
-				var firstRecord = pcfHeaders.First();
-				Logger.LogInformation("First PCFHeader Record:");
-				foreach (var property in typeof(PCFHeader).GetProperties())
-				{
-					var value = property.GetValue(firstRecord);
-					Logger.LogInformation("{PropertyName}: {Value}", property.Name, value);
-				}
-			}
-		}
-		catch (Exception ex)
-		{
-			_errorMessage = $"Error loading PCF files: {ex.Message}";
-		}
-		finally
-		{
-			isLoading = false;
-		}
-	}
-
-	public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
-	{
-		if (args.Item.Id == "PcfsGrid_excelexport") //Id is combination of Grid's ID and itemname
-		{
-			var ExcelFileName = $"PCFListing.xlsx";
-			ExcelExportProperties exportProperties = new ExcelExportProperties
-			{
-				FileName = ExcelFileName
-			};
-			await this.MyGrid.ExportToExcelAsync(exportProperties);
-		}
-	}
-
-
-	public class StatusOptions
-	{
-		public string StatusCode { get; set; }
-	}
-	private List<StatusOptions> pcfStatusOptions = new List<StatusOptions>
-	{
-		new StatusOptions() {StatusCode = "New" },
-		new StatusOptions() {StatusCode = "Active" },
-		new StatusOptions() {StatusCode = "Future" },
-		new StatusOptions() {StatusCode = "Expired" },
-		new StatusOptions() {StatusCode = "All" }
-	};
-
-}
-
-
 <style>
     /* Grid base styles */
     .e-grid {
@@ -311,14 +267,11 @@ else
     .e-add-icon::before {
         content: '\e70a';
     }
-
     .e-grid .e-headercell .e-filtered::before {
         color: red; /* or add a dot, background, etc. */
         font-weight: bold;
     }
-    .e-sortnumber {
-	    display: none !important;
-    }
+
     /* Responsive styles */
     @@media screen and (max-width: 1200px) {
         .custom-grid .e-rowcell,
@@ -340,6 +293,168 @@ else
         }
     }
 
+
+
 </style>
+
+
+@code {
+    [Inject] PCFPageState PageState { get; set; }
+    private List<PCFHeaderDTO> pcfHeaders;
+    private string selectedPcfStatus = "All";
+    private string SelectedDatabase { get; set; } = "Chapin";
+    private string userName;
+    private bool isLoading = false;
+    private SfGrid<PCFHeaderDTO> MyGrid;
+    private string databaseName = "custinfo_zbldb";   // set the default to the dev db
+    string databaseKey = "PCFDB";
+    // private List<int> AccessibleCustomers;     
+    private string activeFilters = "None"; // Default text
+
+    private GridFilterSettings filterSettings = new GridFilterSettings();
+  
+ 
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserService.CurrentUser == null)
+        {
+
+            await UserService.InitializeUserAsync(); // Ensure initialization completes
+
+        }
+        userName = UserService.UserName;
+
+        UserService.SetDatabaseNames(SelectedDatabase);
+        // AccessibleCustomers = UserService.GetAccessibleCustomers(UserService.DomainUserName);
+        //  Console.WriteLine($"Accessible Customers: {string.Join(", ", AccessibleCustomers)}");
+
+        await LoadPCFHeaders();
+        // Set initial filter
+
+
+    }
+
+    private async Task LoadPCFHeaders()
+    {
+        isLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        databaseKey = SelectedDatabase switch
+        {
+            "Chapin" => "PCFDB",
+            "Heath" => "PCFDBHeath",
+            _ => "PCFDB"
+        };
+
+        // Fetch the database name using the configuration
+        string databaseName = Configuration.GetSection("DBNames")[databaseKey];
+
+        pcfHeaders = await DataService.GetPCFHeadersAsync(selectedPcfStatus);
+        // Assuming pcfHeaders is your list of PCFHeaderDTO
+        //var tasks = pcfHeaders.Select(async phDTO =>
+        //{
+        //     phDTO.CustomerInfo = await CustomerService.GetSalesManagerForCustomerAsync(phDTO.CustomerNumber);
+        // });
+
+        //  await Task.WhenAll(tasks);
+
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async void OnDatabaseChange(ChangeEventArgs e)
+    {
+        SelectedDatabase = e.Value?.ToString();
+        UserService.SetDatabaseNames(SelectedDatabase);
+        await LoadPCFHeaders();
+    }
+
+    public async Task OnPcfStatusChange(ChangeEventArgs<string, StatusOptions> args)
+    {
+        selectedPcfStatus = args?.Value?.ToString();
+        isLoading = true;
+        StateHasChanged();
+        await LoadPCFHeaders();
+        isLoading = false;
+    }
+
+    private  void NavigateToPCFDetails(string pcfNumber)
+    {
+        //NavigationManager.NavigateTo($"/PCFEditor/{pcfNumber}");
+        // databaseName = Configuration.GetSection("DBNames")[databaseName];
+
+        //   var parameters = new Dictionary<string, object>
+        //   {
+        //       { "pcfNumber", pcfNumber },
+        //       { "databaseName", databaseName }
+        //   };
+
+        NavigationManager.NavigateTo($"/PCFEditor/{pcfNumber}");
+
+    }
+    public class StatusOptions
+    {
+        public string StatusCode { get; set; }
+    }
+    private List<StatusOptions> pcfStatusOptions = new List<StatusOptions>
+    {
+        new StatusOptions() {StatusCode = "New" },
+        new StatusOptions() {StatusCode = "Active" },
+        new StatusOptions() {StatusCode = "Future" },
+        new StatusOptions() {StatusCode = "Expired" },
+        new StatusOptions() {StatusCode = "All" }
+    };
+
+
+
+
+    private async Task ClearFilters()
+    {
+        await MyGrid.ClearFilteringAsync();
+        //await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "PcfsGrid");
+       // await JSRuntime.InvokeVoidAsync("location.reload");
+       // activeFilters = "None";
+       // StateHasChanged();
+    }
+
+    private void UpdateActiveFilters()
+    {
+        if (MyGrid != null && MyGrid.FilterSettings.Columns.Any())
+        {
+            var filters = MyGrid.FilterSettings.Columns
+                .Select(f => $"{f.Field}: {string.Join(", ", f.Value)}")
+                .ToList();
+
+            activeFilters = string.Join(" | ", filters);
+        }
+        else
+        {
+            activeFilters = "None";
+        }
+
+        StateHasChanged(); // Update UI
+    }
+    public void FilteringHandler(FilteringEventArgs args)
+    {
+      
+            UpdateActiveFilters();
+        
+    }
+
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+	    if (args.Item.Id == "PcfsGrid_excelexport") //Id is combination of Grid's ID and itemname
+	    {
+		    var ExcelFileName = $"PCFListing.xlsx";
+		    ExcelExportProperties exportProperties = new ExcelExportProperties
+		    {
+			    FileName = ExcelFileName
+		    };
+		    await this.MyGrid.ExportToExcelAsync(exportProperties);
+	    }
+    }
+}
 
 

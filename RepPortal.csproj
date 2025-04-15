@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <Content Remove="Pages\OpenOrdersOriginal.razor" />
+    <Content Remove="PCFEditor.razor" />
   </ItemGroup>
 
   <ItemGroup>

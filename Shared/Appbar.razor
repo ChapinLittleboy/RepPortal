@@ -39,32 +39,36 @@
                     </MenuItem>
                 </MenuItems>
             </SfMenu>
-            <SfMenu CssClass="e-inherit" TValue="MenuItem">
-                <MenuItems>
-                    <MenuItem Text="Pricing">
-                        <MenuItems>
-                            <MenuItem Text="PCF Viewer"></MenuItem>
-                            <MenuItem Text="Analytics"></MenuItem>
-                            <MenuItem Text="Help Desk"></MenuItem>
-                        </MenuItems>
-                    </MenuItem>
-                </MenuItems>
-            </SfMenu>
-            <SfMenu CssClass="e-inherit" TValue="MenuItem">
-                <MenuItems>
-                    <MenuItem Text="Forms"></MenuItem>
-                </MenuItems>
-            </SfMenu>
-            <SfMenu CssClass="e-inherit" TValue="MenuItem">
-                <MenuItems>
-                    <MenuItem Text="Marketing"></MenuItem>
-                </MenuItems>
-            </SfMenu>
-            <SfMenu CssClass="e-inherit" TValue="MenuItem">
-                <MenuItems>
-                    <MenuItem Text="Chapin Contacts"></MenuItem>
-                </MenuItems>
-            </SfMenu>
+	        <SfMenu CssClass="e-inherit" TValue="MenuItem">
+		        <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+		        <MenuItems>
+			        <MenuItem Text="Pricing">
+				        <MenuItems>
+					        <MenuItem Text="PCF Viewer"></MenuItem>
+					        <MenuItem Text="Analytics"></MenuItem>
+					        <MenuItem Text="Help Desk"></MenuItem>
+				        </MenuItems>
+			        </MenuItem>
+		        </MenuItems>
+	        </SfMenu>
+	        <SfMenu CssClass="e-inherit" TValue="MenuItem">
+		        <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+		        <MenuItems>
+			        <MenuItem Text="Forms"></MenuItem>
+		        </MenuItems>
+	        </SfMenu>
+	        <SfMenu CssClass="e-inherit" TValue="MenuItem">
+		        <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+		        <MenuItems>
+			        <MenuItem Text="Marketing"></MenuItem>
+		        </MenuItems>
+	        </SfMenu>
+	        <SfMenu CssClass="e-inherit" TValue="MenuItem">
+		        <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+		        <MenuItems>
+			        <MenuItem Text="Chapin Contacts"></MenuItem>
+		        </MenuItems>
+	        </SfMenu>
 
             @if (isAdmin)
             {
@@ -225,9 +229,13 @@
                 Navigation.NavigateTo("/openorders-report");
                 break;
             case "Customer Invoices Report":
-                //Navigate to Monthly Sales Report page
-                Navigation.NavigateTo("/invoices-report");
-                break;
+	            //Navigate to Monthly Sales Report page
+	            Navigation.NavigateTo("/invoices-report");
+	            break;
+            case "PCF Viewer":
+	            //Navigate to PCF Listing page
+	            Navigation.NavigateTo("/pcflist");
+	            break;
         }
     }
 }

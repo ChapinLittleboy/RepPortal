@@ -1,0 +1,1248 @@
+﻿@page "/PCFEditor/{pcfNumber:int}"
+@using System.Runtime.CompilerServices
+
+
+@inject IConfiguration Configuration
+@inject NavigationManager Navigation
+@inject IUserService UserService
+@inject DbConnectionFactory DbConnectionFactory
+@inject RepRepository RepRepository
+@inject DataService DataService
+@inject CustomerService CustomerService
+@inject IValidator<PCFHeaderDTO> Validator
+@inject IJSRuntime JSRuntime
+@inject FluentValidationValidator FluentValidationValidator
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment hostingEnvironment
+@inject ExportService ExportService
+@inject ILogger<PCFEditor> Logger
+
+
+
+
+
+@if (!string.IsNullOrEmpty(userName))
+{
+
+}
+else
+{ 
+    <p>Retrieving User settings.</p>
+}
+<PageTitle>PCF Editor</PageTitle>
+<div id="form-container">
+    <h3>
+        <span class="icon">
+            <i class="fas fa-file-alt"></i>
+        </span>
+        <span class="title">PCF Editor</span>
+        <span class="divider">|</span>
+        <span class="subtitle">for PCF @pcfNumber</span>
+        <span class="divider">|</span>
+        <a href="/audit-log/@pcfNumber" class="audit-log-link">View Audit Log</a>
+        <span class="divider">|</span>
+        <a href="javascript:void(0);" @onclick="OpenAuditLogDialog" class="audit-log-link">Quick view</a>
+    </h3>
+
+    <SfDialog @ref="ProgramDialog" Width="600px" IsModal="true" @bind-Visible="ShowProgramDialog" ShowCloseIcon="true">
+        <DialogTemplates>
+            <Content >
+                <div class="dialog-content">
+                    <h3>Sales Program Allowances for @phDTO.CustomerNumber</h3>
+                    @if (ProgramAllowances != null && ProgramAllowances.Any())
+                    {
+                        <p>Total Programs: @ProgramAllowances.Count</p>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Allowance Type</th>
+                                    <th>Percentage / Amount</th>
+                                    <th>Uf_ProgNotes</th>
+                                    <th>Uf_ProgOtherNotes</th>
+                                    <th>UfGrossNet</th>
+                                    <th>Uf_FixVar</th>
+                                    <th>Uf_PolicyA</th>
+                                    <th>Uf_ProgTiers</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var program in ProgramAllowances)
+                                {
+                                    <tr>
+                                        <td>@program.AllowanceType</td>
+                                        <td>@program.PercentageOrAmount</td>
+                                        <td>@program.Uf_ProgNotes</td>
+                                        <td>@program.Uf_ProgOtherNotes</td>
+                                        <td>@program.Uf_GrossNet</td>
+                                        <td>@program.Uf_FixVar</td>
+                                        <td>@program.Uf_PolicyA</td>
+                                        <td>@program.Uf_ProgTiers</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p>No program allowances available for this customer.</p>
+                    }
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+
+<SfDialog @bind-Visible="isAuditLogDialogVisible" Width="600px" Header="Audit Log" ShowCloseIcon="true">
+    <DialogPositionData X="400" Y="100" />
+    <div>
+        @if (isLoadingAuditLog)
+        {
+            <p>Loading audit log...</p>
+        }
+        else if (auditLogEntries is not null && auditLogEntries.Any())
+        {
+            <SfGrid DataSource="auditLogEntries" CssClass="custom-grid">
+                <GridColumns>
+                    <GridColumn Field="ChangedDate" AutoFit="true" HeaderText="Changed Date" Format="MM/dd/yyyy" Type="ColumnType.DateTime" TextAlign="TextAlign.Center"></GridColumn>
+                    <GridColumn Field="ChangedBy" AutoFit="true" HeaderText="Changed By" TextAlign="TextAlign.Left"></GridColumn>
+                    <GridColumn Field="FieldName" AutoFit="true" HeaderText="Field Name" TextAlign="TextAlign.Left"></GridColumn>
+                    <GridColumn Field="OldValue" AutoFit="true" HeaderText="Old Value" TextAlign="TextAlign.Left"></GridColumn>
+                    <GridColumn Field="NewValue" AutoFit="true" HeaderText="New Value" TextAlign="TextAlign.Left"></GridColumn>
+                </GridColumns>
+            </SfGrid>
+        }
+        else
+        {
+            <p>No audit log entries found.</p>
+        }
+    </div>
+</SfDialog>
+
+
+<SfDialog @ref="emailDialog" Width="400px" IsModal="true" ShowCloseIcon="true" @bind-Visible="showEmailDialog">
+    <DialogTemplates>
+        <Header>Email PDFs? </Header>
+          
+        <Content>@EmailQuestion</Content>
+    </DialogTemplates>
+    <DialogButtons>
+            <DialogButton Content="Yes, send the emails!" IsPrimary="true" OnClick="EmailPdfAsync"></DialogButton>
+            <DialogButton Content="No" IsPrimary="true" OnClick="CloseDialog"></DialogButton>
+    </DialogButtons>
+</SfDialog>
+
+
+@if (isLoading)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        <div class="col-lg-12 control-section toast-default-section">
+            <SfToast ID="toast_default" @ref="ToastObj" Title="PCF Editor" Content="@ToastContent" Timeout="8000" Icon="e-meeting">
+                <ToastPosition X="@ToastPosition"></ToastPosition>
+            </SfToast>
+
+        </div>
+
+
+        <!-- Add the link to the Excel spreadsheet here 
+        <div>
+        <a href="@GetCmaFileLink()" target="_blank">Download Excel Spreadsheet</a>
+        </div>
+        -->
+
+        <SfDataForm  ID="MyForm" Model="@phDTO" OnSubmit="@SubmitFormAsync"  ButtonsAlignment="FormButtonsAlignment.Center" Width="90%" @ref="MyForm"
+        >
+            <FormValidator>
+                <FluentValidationValidator @ref="_fluentValidationValidator"  ></FluentValidationValidator>
+                <ValidationSummary id="validation-summary" class="validation-summary"/>
+            </FormValidator>
+            <FormTemplate>
+
+
+                <!-- Editing Notes Section -->
+                <!-- <h5 class="control-header">Editing Notes</h5> -->
+                <HeaderTemplate>
+
+                    <div class="section-head">Editing Notes</div>
+                </HeaderTemplate>
+                <ContentTemplate>
+                    <div style="display: grid; gap: 1em; grid-template-columns: 1fr 7fr;">
+                        <!-- Left Column -->
+                        <div style="display: flex; flex-direction: column; gap: 1em;">
+                            <div>
+                                <label class="e-form-label">Last Edited By</label><br/>
+                                <SfTextBox @bind-Value="@phDTO.LastEditedBy" Readonly="true"/>
+                            </div>
+                            <div>
+                                <label class="e-form-label">Last Edit Date</label><br/>
+                                <SfDatePicker @bind-Value="@phDTO.LastEditDate" Readonly="true" AllowNull="True" />
+                            </div>
+                        </div>
+
+                        <!-- Right Column (LastEditNotes) -->
+                        <div>
+                            <label class="e-form-label">Edit Notes</label><br/>
+                            <SfTextBox Multiline="true" Rows="3" @bind-Value="@phDTO.LastEditNotes"/>
+                        </div>
+                    </div>
+                </ContentTemplate>
+
+
+                <HeaderTemplate>
+                    <div class="section-head">Effective Dates</div>
+                </HeaderTemplate>
+                <ContentTemplate>
+                    <!-- Row 1: PCFNumber, startdate, enddate, Pcfstatus -->
+                    <div style="display: flex; gap: 1em; margin-bottom: 1em;">
+                        <div style="flex: 1;">
+                            <label class="e-form-label">PCF Number</label><br/>
+                            <SfTextBox @bind-Value="@phDTO.PcfNumber"   Readonly="true"/>
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="e-form-label">Start Date</label><br/>
+                            <SfDatePicker @bind-Value="@phDTO.StartDate" Readonly="!IsAdministrator" />
+                            <ValidationMessage For="@(() => phDTO.StartDate)"/>
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="e-form-label">End Date</label><br/>
+                            <SfDatePicker @bind-Value="@phDTO.EndDate" Readonly="!IsAdministrator" />
+                            <ValidationMessage For="@(() => phDTO.EndDate)"/>
+                        </div>
+
+                    </div>
+                    <!-- Row 2: Pcfstatus, Pcf Type -->
+                    <div style="display: flex; gap: 1em; margin-bottom: 1em;">
+                        <div style="flex: 1;">
+
+                            <label class="e-form-label">PCF Status</label><br/>
+                            <SfDropDownList TItem="KeyValuePair<int, string>"
+                            Readonly="!IsAdministratorAndNotReplacedPCF"
+                            TValue="int?"
+                            DataSource="@StatusOptions"
+                            @bind-Value="phDTO.PCFStatus"
+                            Placeholder="Select a status">
+                                <DropDownListFieldSettings Text="Value" Value="Key" />
+                            </SfDropDownList>
+                            <ValidationMessage For="@(() => phDTO.PCFStatus)" />
+                        </div>
+                        <div style="flex: 1;">
+
+                            <label class="e-form-label">PCF Type</label><br/>
+                            <SfDropDownList TItem="KeyValuePair<string, string>"
+                            TValue="string"
+                            Readonly="!IsAdministrator"
+                            DataSource="@PcfTypeOptions"
+                            @bind-Value="phDTO.PcfType"
+                            Placeholder="Select a PCF Type">
+                                <DropDownListFieldSettings Text="Value" Value="Key"/>
+                            </SfDropDownList>
+                            <ValidationMessage For="@(() => phDTO.PcfType)" />
+                        </div>
+
+                        <div style="flex: 1;">
+
+                            <label class="e-form-label">Submitted Email</label><br/>
+                            <SfTextBox @bind-Value="@phDTO.SubmitterEmail" Readonly="true"/>
+
+                        </div>
+
+                    </div>
+
+                </ContentTemplate>
+
+
+                <HeaderTemplate>
+                    <div class="section-head">Customer Information</div>
+                </HeaderTemplate>
+                <ContentTemplate>
+                    <!-- Row 1: CustomerNumber, status, buyinggroup -->
+                    <div style="display: flex; gap: 1em; margin-bottom: 1em;">
+                        <div style="flex: 1; cursor: pointer;" @onclick="LoadCustomerProgramsAsync">
+                            <label class="e-form-label">Customer Number</label><br/>
+                            <SfTextBox @bind-Value="@phDTO.CustomerNumber" Readonly="true"/>
+                        </div>
+
+                        <div style="flex: 1;">
+                            <label class="e-form-label">Customer Status</label><br/>
+                            <SfTextBox Value="@phDTO.CustomerInfo.Status" Readonly="true"/>
+                        </div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label">Buying Group</label><br/>
+                            <SfTextBox @bind-Value="@phDTO.BuyingGroup" Readonly="true"/>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Name, PricingMethod, MarketType -->
+                    <div style="display: flex; gap: 1em; margin-bottom: 1em;">
+                        <div style="flex: 1;">
+                            <label class="e-form-label">Customer Name</label><br/>
+                            <SfTextBox @bind-Value="@phDTO.CustomerName" Readonly="true"/>
+                        </div>
+
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label">Pricing Method</label><br/>
+                            <SfTextBox @bind-Value="@phDTO.CustomerInfo.PricingMethod" Readonly="true"/>
+                        </div>
+
+
+                        <div>
+                            <label class="e-form-label">Market Type</label><br/>
+                            <SfTextBox @bind-Value="@phDTO.MarketType" Readonly="true"/>
+                        </div>
+                    </div>
+
+
+                    <!-- Row 3: BTAddress, cust_contact, repName-->
+                    <div style="display: flex; flex-wrap: wrap; gap: 1em; margin-bottom: 1em;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label">Bill To Address</label><br/>
+                                <SfTextBox @bind-Value="@phDTO.BillToAddress" Readonly="true"/>
+                        </div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label">Buyer Name</label><br/>
+                            <SfTextBox @bind-Value="@phDTO.Buyer"/>
+                        </div>
+
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label"></label><br/>
+
+                        </div>
+
+
+                    </div>
+                    <!-- Row 4: BTCity, ContactEmail, RepPhone -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 1em; margin-bottom: 1em;">
+
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label">Bill To City</label><br/>
+                                <SfTextBox @bind-Value="@phDTO.BillToCity" Readonly="true"/>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 5px; flex: 1; min-width: 150px;">
+                            <div style="flex: 1;">
+                                <label class="e-form-label">Buyer Email</label><br/>
+                                <SfTextBox @bind-Value="@phDTO.BuyerEmail"/>
+                                <ValidationMessage For="@(() => phDTO.BuyerEmail)" />
+                            </div>
+
+                        </div>
+
+
+
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label"></label><br/>
+
+                        </div>
+
+                    </div>
+                    <!-- Row 5 : BTState, contactPhone, SalesManager-->
+                    <div style="display: flex; flex-wrap: wrap; gap: 1em; margin-bottom: 1em;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label">Bill To State</label><br/>
+                                <SfTextBox @bind-Value="@phDTO.BTState" Readonly="true"/>
+                        </div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label">Buyer Phone</label><br/>
+                            <SfTextBox @bind-Value="@phDTO.BuyerPhone"/>
+                        </div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label"></label><br/>
+
+                        </div>
+                    </div>
+                    <!-- Row 6 : BTZip, Buyer, RepID (RepCode)-->
+                    <div style="display: flex; flex-wrap: wrap; gap: 1em; margin-bottom: 1em;">
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label">Bill To Zip</label><br/>
+                                <SfTextBox @bind-Value="@phDTO.BTZip" Readonly="true"/>
+                        </div>
+
+
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label">Sales Manager</label><br/>
+                            <SfTextBox @bind-Value="@phDTO.CustomerInfo.SalesManager" Readonly="true" />
+                        </div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="e-form-label">Rep ID</label><br/>
+                            <SfTextBox @bind-Value="@phDTO.RepID" ReadOnly="true"/>
+                        </div>
+                    </div>
+                </ContentTemplate>
+
+
+                <!-- Terms Section -->
+
+                <HeaderTemplate>
+                    <div class="section-head">PCF Terms</div>
+                </HeaderTemplate>
+
+                <ContentTemplate>
+                    <div style="display: flex; gap: 2em;">
+                        <!-- Left Container (2-column layout) -->
+                        <div style="display: grid; gap: 1em; grid-template-columns: 1fr 1fr; width: 600px;">
+                            <!-- Row 1: Promo Terms & Customer Standard Terms -->
+                            <div>
+                                <label class="e-form-label">Promo Terms</label><br/>
+                                @if (phDTO.PcfType == "PD" || phDTO.PcfType == "PW")
+                                    {
+                                        <SfDropDownList TValue="string" TItem="PaymentTerm"
+                                        @bind-Value="@phDTO.PromoPaymentTerms"
+                                        Readonly="!IsAdministrator"
+                                        DataSource="@paymentTermsList"
+                                        Placeholder="Select Promo Terms">
+                                            <DropDownListFieldSettings Text="Description" Value="Terms_Code" />
+                                        </SfDropDownList>
+                                    }
+                                    else
+                                    {
+                                        <SfDropDownList TValue="string" TItem="PaymentTerm"
+                                        @bind-Value="@phDTO.PromoPaymentTerms"
+                                        Readonly="true"
+                                        DataSource="@(new List<PaymentTerm>())"
+                                        Placeholder="Not Applicable">
+                                            <DropDownListFieldSettings Text="Description" Value="Terms_Code" />
+                                        </SfDropDownList>
+                                    }
+                                    <ValidationMessage For="@(() => phDTO.PromoPaymentTerms)" />
+                                </div>
+                                <div>
+                                    <label class="e-form-label">Customer Standard Terms</label><br/>
+                                    <SfTextBox @bind-Value="@phDTO.CustomerInfo.PaymentTermsDescription" Readonly="true"/>
+                                </div>
+
+                                <!-- Row 2: Promo Freight Terms & Standard Freight Terms -->
+                                <div>
+                                    @if (phDTO.PcfType == "PD" || phDTO.PcfType == "PW")
+                                    {
+                                        <label class="e-form-label">Promo Freight Terms</label><br/>
+                                        <SfTextBox @bind-Value="@phDTO.FreightTerms" Readonly="!IsAdministrator" />
+                                    }
+                                    else
+                                    {
+                                        <label class="e-form-label">Promo Freight Terms</label><br/>
+                                        <SfTextBox 
+                                        Readonly="true" 
+                                        Enabled="false" 
+                                        Placeholder="Not Applicable" />
+                                    }
+                                </div>
+                                <div>
+                                    <label class="e-form-label">Standard Freight Terms</label><br/>
+                                    <SfTextBox @bind-Value="@phDTO.CustomerInfo.FreightTerms" Readonly="true" />
+                                </div>
+
+                                <!-- Row 3: Promo Freight Minimums & Standard Freight Minimums -->
+                                <div>
+                                    @if (phDTO.PcfType == "PD" || phDTO.PcfType == "PW")
+                                    {
+                                        <label class="e-form-label">Promo Freight Minimums</label><br/>
+                                        <SfTextBox @bind-Value="@phDTO.FreightMinimums" Readonly="!IsAdministrator" />
+                                    }
+                                    else
+                                    {
+                                        <label class="e-form-label">Promo Freight Minimums</label><br/>
+                                        <SfTextBox 
+                                        Readonly="true" 
+                                        Enabled="false" 
+                                        Placeholder="Not Applicable" />
+                                    }
+                                </div>
+                                <div>
+                                    <label class="e-form-label">Standard Freight Minimums</label><br/>
+                                    <SfNumericTextBox @bind-Value="@phDTO.CustomerInfo.FreightMinimums" Readonly="true" />
+                                </div>
+                            </div>
+
+                            <!-- Right Container (General Notes) -->
+                            <div style="flex-grow: 1; display: flex; flex-direction: column;">
+                                <label class="e-form-label">General Notes</label>
+                                        <SfTextBox Multiline="true" Rows="3" @bind-Value="@phDTO.GeneralNotes"  Readonly="!IsAdministrator"
+                                class="@GetBorderStyle()"
+                                Style="resize: vertical; min-height: 60px; max-height: 200px; overflow-y: auto; flex-grow: 1;" />
+
+                                @if (!string.IsNullOrWhiteSpace(phDTO.GeneralNotes))
+                                {
+                                    <small style="color: orange;">This text may be sent to the customer. Please review carefully.</small>
+                                }
+                            </div>
+                        </div>
+                    </ContentTemplate>
+
+
+
+                    <!--  PCF Items Section  -->
+                    <HeaderTemplate>
+                        <p></p>
+                        <div class="section-head">PCF Items</div>
+                    </HeaderTemplate>
+
+                    <ContentTemplate>
+
+                        <div>
+
+                            <SfGrid DataSource="@phDTO.PCFLines" ID="MyGrid" CssClass="custom-grid" AllowResizing="true" AllowExcelExport="true" Toolbar="@(new string[] { "ExcelExport"})">
+
+                                <GridEvents OnToolbarClick="ToolbarClick" QueryCellInfo="OnQueryCellInfo" OnActionComplete="OnCellEdit" TValue="PCFItemDTO"></GridEvents>
+
+                                <GridColumns>
+                                    <GridColumn Field="ItemNum" HeaderText="Item Number" Width="125" IsPrimaryKey="true" TextAlign="TextAlign.Left"></GridColumn>
+                                    <GridColumn Field="ItemDesc" HeaderText="Description" Width="350" TextAlign="TextAlign.Left" AllowEditing="false" ></GridColumn>
+                                    <GridColumn HeaderText="Item Status" Width="100" TextAlign="TextAlign.Center" AllowEditing="false">
+                                        <Template>
+                                            @{
+                                                var itemStatus = (context as PCFItemDTO)?.ItemStatus;
+                                                <span>@GetItemStatusDefinition(itemStatus)</span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn Field="ProposedPrice" HeaderText="Accepted Price" Width="150" TextAlign="TextAlign.Right" Format="N2" EditType="EditType.NumericEdit"></GridColumn>
+
+                                    <GridColumn Field="PP1Price" HeaderText="$4k Price (PP1)" Width="150" TextAlign="TextAlign.Right" Format="N2" AllowEditing="false"></GridColumn>
+                                    <GridColumn HeaderText="Pct to 4k" Width="75" TextAlign="TextAlign.Right" Template="@PercentageTemplate" />
+                                    <GridColumn Field="PP2Price" HeaderText="$12.5k Price (PP2)" Width="150" TextAlign="TextAlign.Right" Format="N2" AllowEditing="false" ></GridColumn>
+                                    <GridColumn Field="FOBPrice" HeaderText="FOB Price" Width="150" TextAlign="TextAlign.Right" Format="N2" AllowEditing="false" ></GridColumn>
+                                    <GridColumn Field="Family_Code" HeaderText="Family Code" Width="150" TextAlign="TextAlign.Left" AllowEditing="false"></GridColumn>
+
+                                </GridColumns>
+                            </SfGrid>
+                        </div>
+                    </ContentTemplate>
+                    <!-- <p><span class="highlight">Note:Yellow highlighted prices are lower than the $4k price</span> </p> -->
+                </FormTemplate>
+
+                <FormButtons>
+                    <SfButton Type="Button" OnClick="SanityClickHandler">Validation Check</SfButton>
+                    <SfButton @onclick="ReloadData" disabled="@isLoading">Refresh Data</SfButton>
+                    <SfButton Type="Submit">Save</SfButton>
+
+                    @if (!string.IsNullOrEmpty(CmaFileLink))
+                    {
+                        <SfButton onclick="DownloadCMA">Download CMA</SfButton>
+                    }
+                    <SfButton @onclick="PrintPDF" disabled="@((isLoading || phDTO.PCFStatus != 3))"> PDF Print</SfButton>
+
+                </FormButtons>
+            </SfDataForm>
+    }
+</div>
+
+
+
+@if (!string.IsNullOrEmpty(SuccessMessage))
+{
+    <div class="alert alert-success">@SuccessMessage</div>
+}
+
+@if (!string.IsNullOrEmpty(SaveMessage))
+{
+    <div class="alert alert-success">@SaveMessage</div>
+}
+
+
+
+<style>
+    .highlight {
+    background-color: yellow;
+    }
+    /* Adjust the font size and row height for the Syncfusion grid */
+    .custom-grid .e-rowcell, 
+    .custom-grid .e-headercell {
+    font-size: 10px; /* Change this to your desired font size */
+    line-height: 15px; /* Adjust the line height */
+    height: 20px; /* Set the row height */
+    }
+    .custom-grid .e-grid .e-row {
+    height: 20px; /* Ensure the row height is consistent */
+    }
+    .audit-log-link {
+    text-decoration: none;
+    font-size: 15px;
+    color: #007bff; /* Bootstrap primary color */
+    margin-left: 5px;
+    }
+    .audit-log-link:hover {
+    text-decoration: underline;
+    }
+    .refresh-button {
+    height: 54%; /* Makes it the same height as the text box */
+    background-color: white !important; /* Override default Syncfusion blue */
+    color: black; /* Adjust text color for visibility */
+    border: 1px solid #ccc; /* Match input field border */
+    padding: 0 10px; /* Keep width manageable */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-end;
+    }
+    .e-data-form, .e-grid {
+    width: 95% !important;
+    max-width: none !important;
+    }
+
+</style>
+
+@code {
+
+    // Parameters
+    [Parameter] public int pcfNumber { get; set; } 
+    [Parameter] public string databaseKey { get; set; } 
+    [Parameter] public string repCode { get; set; }
+
+    private bool isAuditLogDialogVisible = false;
+    private bool isLoadingAuditLog = false;
+    private List<PcfAuditLog> auditLogEntries; // Replace with your actual Audit Log entry type.
+
+
+    private SfDialog emailDialog;
+    private bool showEmailDialog = false;
+
+
+
+    private bool HasUnsavedChanges = false;
+    // Fields and Properties
+    private bool isLoading = true;
+    public PCFHeaderEntity pcfHeader;
+    public PCFHeaderDTO PcfHeaderDto;
+    public string? PcfNumberString;
+    private string ApprovalValue = "Undetermined";
+    private string EUT = "EndUserType";
+    public List<PCFItemEntity> pcfItems;
+    public PCFHeaderDTO phDTO;
+    public List<PCFItemDTO> piDTOs;
+    private string StatusDescription = "TBD";
+    private string SuccessMessage { get; set; }
+    private string SaveMessage = string.Empty;
+    private SfDataForm MyForm;
+    private List<PaymentTerm> paymentTermsList = new();
+    private List<ItemBookPrice> itemBookPrices = new();
+    private PCFHeaderDTOValidator headerValidator;
+    private SfToast ToastObj;
+    private string ToastPosition = "Right";
+    private string ToastContent = "Please press Save again";
+    private FluentValidationValidator? _fluentValidationValidator;
+    private string? userName;
+    private string? DatabaseKey;
+    private List<SalesProgram> ProgramAllowances = new List<SalesProgram>();
+    
+    private SfDialog ProgramDialog;
+
+    private bool ShowProgramDialog { get; set; } = false;
+
+    private string? CmaFileLink { get; set; }
+    private string CmaFileName { get; set; } = string.Empty;
+    private bool IsAdministrator { get; set; }
+    private bool IsAdministratorAndNotReplacedPCF { get; set; }
+
+    private bool firstRender = true;
+    private bool ErrorsShown = false;
+    private bool doNotShowPdfButton = true;
+
+    private string EmailQuestion = "Would you like to email a PDF of the Pricing Control Form to the Sales Manager and Sales Rep?";
+
+
+
+    private void MarkAsDirty()
+    {
+        HasUnsavedChanges = true;
+    }
+
+
+    private async Task LoadCustomerProgramsAsync()
+    {
+        if (!string.IsNullOrEmpty(phDTO.CustomerNumber))
+        {
+            ProgramAllowances = await CustomerService.GetCustomerProgramsAsync(phDTO.CustomerNumber);
+            ShowProgramDialog = true;
+        }
+
+    }
+
+
+    private string GetCmaFileLink()
+    {
+        string basePath = Configuration["FilePathSettings:CmaArchivePath"];
+        string fileName = phDTO.CmaRef;
+        CmaFileName = fileName;
+
+        if (string.IsNullOrEmpty(fileName))
+        {
+            CmaFileLink = string.Empty;
+            return string.Empty;
+        }
+        CmaFileLink = Path.Combine(basePath, fileName);
+        return Path.Combine(basePath, fileName);
+    }
+    // Dropdown Options
+    private readonly List<KeyValuePair<int, string>> StatusOptions = new()
+    {
+        new KeyValuePair<int, string>(0, "New"),
+        new KeyValuePair<int, string>(3, "Approved"),
+       new KeyValuePair<int, string>(98, "Replaced"),
+       new KeyValuePair<int, string>(99, "Expired")
+      //  new KeyValuePair<int, string>(-1, "Reopened")
+    };
+
+    private readonly List<KeyValuePair<string, string>> PcfTypeOptions = new()
+    {
+        new KeyValuePair<string, string>("W", "Warehouse (Standard)"),
+        new KeyValuePair<string, string>("DS", "Dropship (Standard)"),
+        new KeyValuePair<string, string>("PW", "Promo Warehouse"),
+        new KeyValuePair<string, string>("PD", "Promo Dropship"),
+        new KeyValuePair<string, string>("T", "Truckload"),
+        new KeyValuePair<string, string>("PL", "Private Label Only"),
+        new KeyValuePair<string, string>("D", "Direct"),
+        new KeyValuePair<string, string>("PART", "Parts Only")
+        //new KeyValuePair<string, string>("P", "Promo"),
+        //new KeyValuePair<string, string>("PLO", "Private Label and Other"),
+        //new KeyValuePair<string, string>("N", "Ningbo"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        // UserService.InitializeUser();
+        if (UserService.CurrentUser == null)
+        {
+            await UserService.InitializeUserAsync(); // Ensure initialization completes
+        }
+        userName = UserService.UserName;
+        phDTO = new PCFHeaderDTO
+        {
+
+          LoggedInUser = UserService.GetCurrentUserFromWindowsAuth()
+        };
+        headerValidator = new PCFHeaderDTOValidator(DataService);
+        await LoadDataAsync();
+
+        // Get the current user name
+        // userName = UserService.GetCurrentUserFromWindowsAuth();
+        userName = UserService.UserName + ", you have  " + UserService.UserRole + " privileges";
+
+        IsAdministrator = UserService.IsUserInRole("Administrator");
+        IsAdministratorAndNotReplacedPCF = IsAdministrator && phDTO.PCFStatus != 98;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        //if (firstRender)
+        {
+            // Adding a short delay can help ensure the internal validation has finished.
+            await Task.Delay(50);
+            var res = _fluentValidationValidator?.GetFailuresFromLastValidation();
+            if (!isLoading && !ErrorsShown)
+            {
+
+                await _fluentValidationValidator.ValidateAsync();
+                ErrorsShown = true;
+            }
+            // await ((Syncfusion.Blazor.DataForm.SfDataForm)MyForm).Validate();
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadDataAsync() 
+    {
+        PcfNumberString = pcfNumber.ToString();
+        DatabaseKey = databaseKey;
+        // string PCFDatabaseName = DataService.GetDatabaseNameFromDatabaseKey(DatabaseKey);
+        // string SytelineDatabaseName = DataService.GetSytelineDatabaseNameFromDatabaseKey(DatabaseKey);
+        string PCFDatabaseName = UserService.CurrentPCFDatabaseName;
+        string SytelineDatabaseName = UserService.CurrentSytelineDatabaseName;
+
+
+
+        if (!string.IsNullOrEmpty(PcfNumberString))
+        {
+            isLoading = true;
+            try
+            {
+                pcfHeader = await DataService.GetPCFHeaderAsync(pcfNumber);
+                if (pcfHeader == null)
+                {
+                    // Inform the user they don't have access
+                    Console.WriteLine("You do not have access to view this PCF.");
+                    ToastObj.Content = "Security Violation! You do not have access to requested PCF";
+                    ToastObj.CssClass = "e-toast-failure";
+                    await this.ToastObj.ShowAsync();
+                }
+                else
+                {
+                    itemBookPrices = await DataService.GetItemBookPricesAsync();
+                    pcfItems = await DataService.GetPcfItemsAndPricesAsync(PcfNumberString);
+
+
+                    phDTO = await DataService.GetHeaderDtoNorepAsync(pcfNumber);
+                    //piDTOs = await DataService.GetItemsDtoNorepAsync(PcfNumberString);
+                    piDTOs = (await DataService.GetItemsDtoNorepAsync(PcfNumberString))
+                        .OrderBy(dto => dto.ItemNum)
+                        .ToList(); // Convert to a list if PCFLines expects a List<T>
+                    PcfHeaderDto = phDTO;
+
+                    phDTO.PCFLines = piDTOs;
+
+                    phDTO.CustomerInfo = await CustomerService.GetCustomerInformationForCustomerAsync(phDTO.CustomerNumber);
+                    paymentTermsList = await DataService.GetPaymentTermsAsync();
+                    phDTO.PaymentTermsList = paymentTermsList;
+
+
+
+                    await UpdatePCFHeaderDTOAsync(phDTO, phDTO.CustomerNumber, pcfNumber);
+
+                    CmaFileLink = GetCmaFileLink();
+                    Console.WriteLine("mapping done");
+                }
+
+
+            }
+            finally
+            {
+                SaveMessage = string.Empty;
+                SuccessMessage = string.Empty;
+                isLoading = false;
+
+
+            }
+        }
+    }
+
+    private void OnClick()
+    {
+
+    }
+
+
+
+    // Initialization
+    private async Task ReloadData()
+    {
+        await LoadDataAsync();
+    }
+
+    private string GetBorderStyle()
+    {
+        return string.IsNullOrWhiteSpace(phDTO.GeneralNotes) ? "border-gray" : "border-orange";
+    }
+
+    public async Task ToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Id == "MyGrid_excelexport") //Id is combination of Grid's ID and itemname
+        {
+            await ExportSinglePcf();
+        }
+    }
+    // Data Loading
+    public async Task UpdatePCFHeaderDTOAsync(PCFHeaderDTO phDto, string custNum, int currentPcfNum)
+    {
+        if (phDto == null) throw new ArgumentNullException(nameof(phDto));
+
+        var result = await DataService.GetBuyerInfoAsync(custNum);
+        // Changing logic to always update buyer info if found in the CustomerBuyerInformation table.
+        if (!string.IsNullOrWhiteSpace(result?.BuyerName))
+        {
+            phDto.Buyer = result.BuyerName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(result?.BuyerPhone))
+        {
+            phDto.BuyerPhone = result.BuyerPhone;
+        }
+
+        if (!string.IsNullOrWhiteSpace(result?.BuyerEmail))
+        {
+            phDto.BuyerEmail = result.BuyerEmail;
+        }
+
+
+        if (string.IsNullOrWhiteSpace(phDto.PromoPaymentTerms) && !string.IsNullOrWhiteSpace(phDto.PromoPaymentTermsText))
+        {
+            var matchingTerm = paymentTermsList.FirstOrDefault(pt => pt.Description == phDto.PromoPaymentTermsText);
+            if (matchingTerm != null)
+            {
+                phDto.PromoPaymentTerms = matchingTerm.Terms_Code;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(phDto.BillToAddress))
+            phDto.BillToAddress = phDto.CustomerInfo.BillToAddress1;
+
+        if (string.IsNullOrWhiteSpace(phDto.CustomerName))
+            phDto.CustomerName = phDto.CustomerInfo.CustName;
+
+        if (string.IsNullOrWhiteSpace(phDto.BillToCity))
+            phDto.BillToCity = phDto.CustomerInfo.BillToCity;
+
+        if (string.IsNullOrWhiteSpace(phDto.BTState))
+            phDto.BTState = phDto.CustomerInfo.BillToState;
+
+        if (string.IsNullOrWhiteSpace(phDto.BTZip))
+            phDto.BTZip = phDto.CustomerInfo.BillToZip;
+
+        if (string.IsNullOrWhiteSpace(phDto.RepID))
+            phDto.RepID = phDto.CustomerInfo.RepCode;
+
+        if (string.IsNullOrWhiteSpace(phDto.BuyingGroup))
+            phDto.BuyingGroup = phDto.CustomerInfo.BuyingGroup;
+
+        //if (string.IsNullOrWhiteSpace(phDto.EUT))
+        phDto.EUT = phDto.CustomerInfo.EUT;
+
+        if (string.IsNullOrWhiteSpace(phDto.LoggedInUser))
+            phDto.LoggedInUser = userName ?? UserService.CurrentUser.Username;
+
+        foreach (var line in phDto.PCFLines)
+        {
+            //var matchingPrice = itemBookPrices.FirstOrDefault(ip => ip.Item == line.ItemNum);
+            var matchingPrice = itemBookPrices
+                .FirstOrDefault(ip => ip.Item.Equals(line.ItemNum, StringComparison.OrdinalIgnoreCase));
+            if (matchingPrice != null)
+            {
+                line.PP1Price = matchingPrice.PP1Price;
+                line.PP2Price = matchingPrice.PP2Price;
+                line.BM1Price = matchingPrice.BM1Price;
+                line.BM2Price = matchingPrice.BM2Price;
+                line.ListPrice = matchingPrice.ListPrice;
+                line.FOBPrice = matchingPrice.FOBPrice;
+                line.Family_Code = matchingPrice.Family_Code ?? string.Empty;
+                line.Family_Code_Description = matchingPrice.Family_Code_Description ?? string.Empty;
+                line.ItemStatus = matchingPrice.ItemStatus ?? string.Empty;
+            }
+        }
+    }
+
+    // Event Handlers
+    public void ClickHandler()
+    {
+        MyForm?.Refresh();
+    }
+
+    public async Task SanityClickHandler()
+    {
+        SuccessMessage = string.Empty;
+        SaveMessage = string.Empty;
+
+        var x =  MyForm.IsValid();
+
+        if (x == true)
+        {
+            SuccessMessage = string.Empty;
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("scrollToTop", "form-container", "validation-summary");
+            SaveMessage = "Please fix the errors displayed on the top of the form.";
+        }
+        await JSRuntime.InvokeVoidAsync("scrollToTop", "form-container", "validation-summary");
+        StateHasChanged();
+    }
+
+    // Validation and Saving
+    private async Task SaveData()
+    {
+        var validationResult = await Validator.ValidateAsync(phDTO);
+
+        if (validationResult.IsValid)
+        {
+            SaveMessage = "Form is valid. Data saved successfully!";
+            await SaveToDatabase();
+            HasUnsavedChanges = false;
+        }
+        else
+        {
+            SaveMessage = "Form is invalid. Please fix the errors and try again.";
+            await JSRuntime.InvokeVoidAsync("scrollToTop", "form-container", "validation-summary");
+        }
+    }
+
+    private Task SaveToDatabase()
+    {
+        Console.WriteLine("Saving to database...");
+        return Task.CompletedTask;
+    }
+
+
+
+
+
+    private void OnQueryCellInfo(QueryCellInfoEventArgs<PCFItemDTO> args)
+    {
+
+        if (args.Column.Field == "ProposedPrice" && args.Data != null)
+        {
+            var row = (PCFItemDTO)args.Data; 
+            if (args.Data.ProposedPrice < args.Data.PP1Price)  
+            {
+                // args.Cell.AddClass(new string[] { "below-pp1" });  // yellow highlight no longer needed
+            }
+        }
+    }
+
+    private void OnCellEdit(ActionEventArgs<PCFItemDTO> args)
+    {
+
+        Console.WriteLine("Args properties:");
+        foreach (var prop in args.GetType().GetProperties())
+        {
+            Console.WriteLine($"{prop.Name}: {prop.GetValue(args)}");
+        }
+
+        if (args.Action == "Add")
+        {
+            foreach (var line in phDTO.PCFLines)
+            {
+                // Find the matching item in the itemBookPrices
+                line.PCFNumber = phDTO.PcfNumber;
+                line.CustNum = phDTO.CustomerNumber;
+
+                var matchingPrice = itemBookPrices.FirstOrDefault(ip => ip.Item == line.ItemNum);
+                if (matchingPrice != null)
+                {
+                    line.ItemDesc = matchingPrice.Description;
+                    line.PP1Price = matchingPrice.PP1Price;
+                    line.PP2Price = matchingPrice.PP2Price;
+                    line.BM1Price = matchingPrice.BM1Price;
+                    line.BM2Price = matchingPrice.BM2Price;
+                    line.ListPrice = matchingPrice.ListPrice;
+                    line.FOBPrice = matchingPrice.FOBPrice;
+                    line.Family_Code = matchingPrice.Family_Code ?? string.Empty;
+                    line.Family_Code_Description = matchingPrice.Family_Code_Description ?? string.Empty;
+                }
+            }
+        }
+
+
+    }
+    /////////////////////////////////////////////////////////////////////
+    /// ///////////////////////////////////////////////////////////////////
+    private async void SubmitFormAsync()
+    {
+        if (await _fluentValidationValidator!.ValidateAsync())
+        {
+
+
+            await DataService.UpdateProgcontrolTableAsync(phDTO);
+            await DataService.UpsertPCFItemsAsync(phDTO.PCFLines);
+            //SaveMessage = "Data saved successfully!";
+            this.ToastContent = "The PCF was saved";
+            await Task.Delay(100);
+            ToastObj.Content = "Data saved successfully!";
+            ToastObj.CssClass = "e-toast-success";
+            await this.ToastObj.ShowAsync();
+            // Send the PDF to a third party if the status is approved
+
+            // After successful save, prompt the user
+            //showEmailDialog = true; 
+
+
+            if (phDTO.PCFStatus == 3)
+            {
+                //await SendPCFEmailToSalesManagerAndRep(phDTO.CustomerNumber);
+                // After successful save, prompt the user
+                EmailQuestion = $"Would you like to email a PDF of the Pricing Control Form to the Sales Manager and Sales Rep? " +
+                                $"Email will be sent to {phDTO.CustomerInfo.SalesManagerName} and  {phDTO.RepName} .";
+
+                showEmailDialog = true;
+            }
+
+        }
+        else
+        {
+            ToastObj.CssClass = "e-toast-danger";
+
+            ToastContent = "Unable to save!";
+            ToastObj.Content = ToastContent;
+            await this.ToastObj.ShowAsync();
+        }
+    }
+
+    private async Task EmailPdfAsync()
+    {
+        showEmailDialog = false;
+
+        await SendPCFEmailToSalesManagerAndRep(phDTO.CustomerNumber);
+        StateHasChanged();
+    }
+
+    private void CloseDialog()
+    {
+        showEmailDialog = false;
+    }
+
+    public async Task DownloadCMA()
+    {
+
+
+        // Trigger JavaScript download
+        //await JS.InvokeVoidAsync("downloadFile", "PCF_Template.xlsm", "application/vnd.ms-excel.sheet.macroEnabled.12", fileContent);
+        //await JS.SaveAs("Sample.xlsx", fileResult);
+        //string repCode = "GUL"; // Already set when logging in
+
+
+        //await JSRuntime.InvokeVoidAsync("downloadFile", CmaFileLink, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        var downloadUrl = Navigation.ToAbsoluteUri($"/api/FileDownload/Download?filePath={Uri.EscapeDataString(CmaFileLink)}");
+        await JSRuntime.InvokeVoidAsync("open", downloadUrl, "_blank");
+
+    }
+
+
+    private async Task ExportSinglePcf()
+    {
+        var excelGenerator = new ExcelGenerator(DataService, UserService, RepRepository, CustomerService);
+        var excelBytes = await ExcelGenerator.ExportPcfToExcel(phDTO);
+
+        //await FileUtils.DownloadFileFromByteArrayAsync("PCF_Header.xlsx", excelBytes, 
+        //    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", JS);
+
+
+        var fileName = $"{phDTO.CustomerNumber}_{phDTO.CustomerName}_Pcf_{phDTO.PcfNumber}.xlsx";
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/vnd.ms-excel.sheet.macroEnabled.12", excelBytes);
+    }
+    private RenderFragment<object> PercentageTemplate => (context) => builder =>
+    {
+        var data = context as PCFItemDTO;
+        double percentage;
+        if (data.PP1Price != 0)
+        {
+            percentage = ((data.ProposedPrice - data.PP1Price) / data.PP1Price) * 100;
+
+
+            //builder.AddContent(0, $"{percentage:F2}%");
+            builder.OpenElement(0, "span");
+            builder.AddAttribute(1, "style", percentage < 0 
+            ? "color: red; font-weight: bold;" 
+            : "color: black; font-weight: normal;");
+            builder.AddContent(2, $"{percentage:F2}%");
+            builder.CloseElement();
+        }
+        else
+        {
+            // Leave the cell blank if PP1Price is zero
+            builder.AddContent(0, string.Empty);
+        }
+
+    };
+
+    private string GetItemStatusDefinition(object itemStatus)
+    {
+        return itemStatus?.ToString() switch
+        {
+            "A" => "Active",
+            "I" => "Inactive",
+            "O" => "Obsolete",
+            "S" => "Slow Moving",
+            _ => string.Empty // Leave blank for other values
+        };
+    }
+
+    private async Task OpenAuditLogDialog()
+    {
+        isAuditLogDialogVisible = true;
+        isLoadingAuditLog = true;
+
+        try
+        {
+            // Simulate API call or database query to fetch audit log entries.
+            auditLogEntries = await DataService.GetAuditLogs(pcfNumber.ToString());
+        }
+        catch (Exception ex)
+        {
+            // Handle error (e.g., log it or show a message).
+            Console.WriteLine($"Error loading audit log: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingAuditLog = false;
+        }
+    }
+
+    private async void PrintPDF()
+    {
+        //ExportService service = new ExportService(hostingEnvironment, Configuration);
+        MemoryStream documentStream = ExportService.CreatePCFPDF(phDTO);
+        await JSRuntime.InvokeAsync<object>(
+            "saveAsFile",
+            "Pricing Control Form.pdf",
+            Convert.ToBase64String(documentStream.ToArray()));
+
+
+    }
+    private async Task FetchLatestEmail()
+    {
+        if (string.IsNullOrWhiteSpace(phDTO.CustomerNumber))
+        {
+            return; // Prevent query if CustNum is not set
+        }
+
+        try
+        {
+            // Assuming DataService has a method to fetch the latest email
+            var latestEmail = await DataService.GetLatestBuyerEmailAsync(phDTO.CustomerNumber);
+            if (!string.IsNullOrEmpty(latestEmail))
+            {
+                phDTO.CustContactEmail = latestEmail;
+                StateHasChanged(); // Ensure UI updates
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching email: {ex.Message}");
+        }
+    }
+
+
+
+
+
+
+    private async Task SendPCFEmailToSalesManagerAndRep(string custNum)
+    {
+       // ExportService service = new ExportService(hostingEnvironment, Configuration);
+
+        
+
+
+       // var smEmailAddress = await DataService.GetSalesManagerEmailAsync(phDTO.CustomerInfo.SalesManager);
+       // var srEmailAddress = await DataService.GetSalesRepEmailAsync(phDTO.CustomerInfo.RepCode);
+       //  Email addresses already set in CustomerInfo !
+
+       var smEmailAddress = phDTO.CustomerInfo.SalesManagerEmail;
+       var srEmailAddress = phDTO.CustomerInfo.SalesRepEmail;
+
+
+        Console.WriteLine($"Sending PCF email to {smEmailAddress} and {srEmailAddress}");
+        Logger.LogInformation($"Sending PCF {phDTO.PcfNumber} email to {smEmailAddress} and {srEmailAddress}");
+        //Console.WriteLine($"Overwriting email with wlittleboy@chapinmfg.com and bill.littleboy@gmail.com");
+       // smEmailAddress = "wlittleboy@chapinmfg.com";
+       // srEmailAddress = "bill.littleboy@gmail.com";
+        
+
+        if (!string.IsNullOrWhiteSpace(smEmailAddress))
+        {
+            ExportService.SendPcfPdfEmailWithAttachment(phDTO, smEmailAddress, srEmailAddress);
+        }
+
+        if (!string.IsNullOrWhiteSpace(srEmailAddress))
+        {
+            // ExportService.SendPcfPdfEmailWithAttachment(phDTO, srEmailAddress);
+        }
+
+
+
+    }    
+    
+    private async Task SendPCFEmailToSalesRep(string salesRep)
+    
+    
+    
+    {
+       // ExportService service = new ExportService(hostingEnvironment, Configuration);
+
+        var srEmailAddress = await DataService.GetSalesRepEmailAsync(salesRep);
+        //Console.WriteLine($"Sending PCF email to {srEmailAddress}");
+        //Console.WriteLine($"Overwriting email with wlittleboy@chapinmfg.com");
+        //srEmailAddress = "wlittleboy@chapinmfg.com";
+        
+        //service.SendPcfPdfEmailWithAttachment(phDTO, srEmailAddress);
+    }
+
+}
