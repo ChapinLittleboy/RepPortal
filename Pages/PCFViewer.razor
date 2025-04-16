@@ -2,20 +2,26 @@
 @inject ILogger<PCFViewer> Logger
 @inject SalesService SalesService
 @inject IRepCodeContext RepCodeContext
+@inject ExportService ExportService
+@inject IJSRuntime JSRuntime
 
-@page "/pcfviewer/{pcfNumber:int}"
+
 @using System.Globalization
 @using System.Net.Http.Json
 @using Microsoft.AspNetCore.Components.Web
 @using RepPortal.Models
+@using Syncfusion.Blazor.Buttons
+
+
+@page "/pcfviewer/{pcfNumber:int}"
 
 @if(isLoading)
 {
-<p>Loading...</p>
+    <p>Loading...</p>
 }
 else if (!string.IsNullOrEmpty(_errorMessage))
 {
-<p class="text-danger">@_errorMessage</p>
+    <p class="text-danger">@_errorMessage</p>
 }
 else if (isReady )
 {
@@ -87,8 +93,8 @@ else if (isReady )
                         </div>
                     }
                     <div class="col-md-4">
-	                    <strong>Buying Group:</strong>
-	                    <div>@pcfHeader.BuyingGroup</div>
+                        <strong>Buying Group:</strong>
+                        <div>@pcfHeader.BuyingGroup</div>
                     </div>
                 </div>
 
@@ -140,47 +146,103 @@ else if (isReady )
                 <GridColumn Field="ItemStatusDescription" HeaderText="Item Status" Width="150"></GridColumn>
             </GridColumns>
         </SfGrid>
-    </div>
 
+        <SfButton @onclick="PrintPDF" disabled="@(isLoading)"> Print PDF</SfButton>
+        <SfButton @onclick="PrintPDFNicer" disabled="@(isLoading)"> Print nicer PDF</SfButton>
+
+    </div>
 }
 
 
 
 @code {
-	[Parameter] 
-	public int pcfNumber { get; set; }
+    [Parameter] 
+    public int pcfNumber { get; set; }
 
 
-	private string? _errorMessage;
-	private PCFHeader? pcfHeader;
-	private bool isLoading = true;
-	private bool isReady = false;
+    private string? _errorMessage;
+    private PCFHeader? pcfHeader;
+    private bool isLoading = true;
+    private bool isReady = false;
 
 
 
-	protected override async Task OnInitializedAsync()
-	{
-		try
-		{
-			pcfHeader = await PcfService.GetPCFHeaderWithItemsAsync(pcfNumber);
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            pcfHeader = await PcfService.GetPCFHeaderWithItemsAsync(pcfNumber);
 
-			if (pcfHeader != null)
-			{
-				Displaylogging();
-				isLoading = false;
-				isReady = true;
-			}
-			else
-			{
-				Logger.LogWarning("No PCFHeader found for PCFNumber: {PcfNumber}", pcfNumber);
-			}
-		}
-		catch (Exception ex)
-		{
-			_errorMessage = $"Error loading PCF file: {ex.Message}";
-			Logger.LogError(ex, "Error loading PCF file for PCFNumber: {PcfNumber}", pcfNumber);
-		}
+            if (pcfHeader != null)
+            {
+                Displaylogging();
+                isLoading = false;
+                isReady = true;
+            }
+            else
+            {
+                Logger.LogWarning("No PCFHeader found for PCFNumber: {PcfNumber}", pcfNumber);
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error loading PCF file: {ex.Message}";
+            Logger.LogError(ex, "Error loading PCF file for PCFNumber: {PcfNumber}", pcfNumber);
+        }
+    }
+
+    private async void PrintPDF()
+    {
+        var pdfName = $"PCF_{pcfHeader.PcfNumber} for Customer {pcfHeader.CustomerNumber}.pdf";
+        //ExportService service = new ExportService(hostingEnvironment, Configuration);
+        MemoryStream documentStream = ExportService.CreatePCFPDF(pcfHeader);
+     
+        await JSRuntime.InvokeAsync<object>(
+			"saveAsFile",
+			pdfName,
+			Convert.ToBase64String(documentStream.ToArray()));
+
+
 	}
+
+    private async Task PrintPDFNicer()
+    {
+	    {
+		    // 1) Generate your PDF bytes
+		    byte[] pdfBytes = ExportService.ExportPcfHeaderToPdf2(pcfHeader);
+
+		    // 2) Call the JS function with three args
+		    await JSRuntime.InvokeVoidAsync(
+                "downloadFileFromByteArray",
+			    pdfBytes,
+			    $"PCF_{pcfHeader.PcfNumber}_Cust{pcfHeader.CustomerNumber}.pdf",
+			    "application/pdf"
+		    );
+	    }
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	private void Displaylogging()
 	{

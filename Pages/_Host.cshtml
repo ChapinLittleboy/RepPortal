@@ -69,5 +69,67 @@
             URL.revokeObjectURL(url);
         }
     </script>
+    <script src="downloadHelper.js"></script>
+    <script type="text/javascript">
+        function saveAsFile(filename, bytesBase64) {
+
+            if (navigator.msSaveBlob) {
+                //Download document in Edge browser
+                var data = window.atob(bytesBase64);
+                var bytes = new Uint8Array(data.length);
+                for (var i = 0; i < data.length; i++) {
+                    bytes[i] = data.charCodeAt(i);
+                }
+                var blob = new Blob([bytes.buffer], { type: "application/octet-stream" });
+                navigator.msSaveBlob(blob, filename);
+            }
+            else {
+                var link = document.createElement('a');
+                link.download = filename;
+                link.href = "data:application/octet-stream;base64," + bytesBase64;
+                document.body.appendChild(link); // Needed for Firefox
+                link.click();
+                document.body.removeChild(link);
+            }
+
+
+        }
+    </script>
+    <script>
+        function scrollToTopOfForm(formId, summaryId) {
+            const summaryElement = document.getElementById(summaryId);
+            if (summaryElement) {
+                summaryElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                const formElement = document.getElementById(formId);
+                if (formElement) {
+                    formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+
+            // Optional: Further adjust scroll position
+            setTimeout(() => {
+                window.scrollBy(0, -100);
+            }, 300);
+        }
+    </script>
+    <script>
+        function scrollToTop() {
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        }
+    </script>
+    <script>
+        Blazor.start({
+            reconnectionOptions: {
+                maxRetries: 5,
+                retryIntervalMilliseconds: 2000
+            }
+        });
+    </script>
+	
+    <script src="js/site.js"></script>
+ 
 </body>
 </html>

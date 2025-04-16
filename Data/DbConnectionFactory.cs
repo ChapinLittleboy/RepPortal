@@ -10,7 +10,7 @@ public class DbConnectionFactory
     private readonly string _pcfConnectionString;
     private readonly string _repConnectionString;
 
-    private readonly DbConnectionFactory _dbConnectionFactory;
+    //private readonly DbConnectionFactory _dbConnectionFactory;
 
 
 

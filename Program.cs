@@ -64,6 +64,7 @@ builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStat
 builder.Services.AddSingleton<DbConnectionFactory>();
 builder.Services.AddScoped<PcfService>();
 builder.Services.AddScoped<TitleService>();
+builder.Services.AddScoped<ExportService>();
 
 
 var app = builder.Build();
