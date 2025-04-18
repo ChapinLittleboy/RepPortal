@@ -8,6 +8,7 @@
 @inject IItemService ItemService
 @inject ILogger<GetItemPricing> Logger
 @inject IPriceBookService PriceBookService
+@using Syncfusion.Blazor.Navigations
 
 
 @* at top of your Razor component *@
@@ -54,7 +55,8 @@
 
 	<!-- Right column: folder links + file lists -->
 	<div class="col-lg-6">
-		<h4>Price Book Folders</h4>
+		<h4>Pricing Folders</h4>
+		<!--
 		<div>
 			@foreach (var folder in PriceBookFolders)
 			{
@@ -69,10 +71,41 @@
 				</ul>
 			}
 		</div>
-	
+		-->
+		<SfAccordion ExpandMode="ExpandMode.Single"> @* Or Multiple *@
+			<AccordionItems>
+				@foreach (var folder in PriceBookFolders)
+				{
+					// Start of the AccordionItem for this folder
+					<AccordionItem Expanded="false"> @* Optional: Control initial state *@
 
+						@* --- Content for the collapsed header MUST be inside HeaderTemplate --- *@
+						<HeaderTemplate>
+							<strong>@folder.DisplayName</strong> (@folder.Files.Count files)
+						</HeaderTemplate>
 
+						@* --- Content for the expanded panel MUST be inside ContentTemplate --- *@
+						<ContentTemplate>
+							@* Only put content related to the expanded view here *@
+							<ul>
+								@foreach (var file in folder.Files)
+								{
+									<li>
+										<a href="@file.Url" target="_blank">@file.Name</a>
+									</li>
+								}
+							</ul>
+							@if (!folder.Files.Any())
+							{
+								<p><em>No files in this folder.</em></p>
+							}
+						</ContentTemplate>
 
+					</AccordionItem> 
+					@* End of the AccordionItem for this folder. No other text/HTML allowed between here and </AccordionItem> *@
+				}
+			</AccordionItems>
+		</SfAccordion>
 
 	</div>
 </div>
