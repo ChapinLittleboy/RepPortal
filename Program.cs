@@ -68,6 +68,8 @@ builder.Services.AddScoped<TitleService>();
 builder.Services.AddScoped<ExportService>();
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<IPriceBookService, PriceBookService>();
+builder.Services.AddScoped<IFormsDownloadService, FormsDownloadService>();
+
 
 
 var app = builder.Build();
