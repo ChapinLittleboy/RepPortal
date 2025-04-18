@@ -1,4 +1,6 @@
 ﻿@page "/getitempricing"
+@attribute [Authorize]
+
 @using FilterType = Syncfusion.Blazor.DropDowns.FilterType
 @attribute [Authorize]
 @using Syncfusion.Blazor.Lists
@@ -13,14 +15,19 @@
 <div class="row mt-4">
 	<!-- Left column: lookup input + detail -->
 	<div class="col-lg-6">
-		<h3>Item Price Lookup (non-contract)</h3>
-		<div class="d-flex mb-2">
-			<SfTextBox CssClass="flex-grow-1 me-2" Placeholder="Enter Item number"
-					   @bind-Value="selectedItem" />
+		
+
+		<div class="col-12 text-center mb-3">
+			<h4>Item Price Lookup (non-contract)</h4>
+		</div>
+		<div class="col-12 d-flex justify-content-center mb-2 mt-2">
+			<SfTextBox CssClass="me-2" Placeholder="Enter Item number" Width="150px"
+			           @bind-Value="selectedItem"/>
 			<button class="btn btn-primary" @onclick="LoadItem">
 				<i class="fa fa-search"></i>
 			</button>
 		</div>
+
 
 		@if (lookupPerformed)
 		{
