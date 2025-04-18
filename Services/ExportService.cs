@@ -137,9 +137,12 @@ public class ExportService
         {
             worksheet.Range[rowIndex, 1].Text = item.ItemNum;
             worksheet.Range[rowIndex, 2].Text = item.ItemDesc;
-            worksheet.Range[rowIndex, 3].Number = item.ApprovedPrice;
-            worksheet.Range[rowIndex, 4].Text = item.Family_Code;
-            worksheet.Range[rowIndex, 5].Text = item.Family_Code_Description;
+            if (item != null)
+            {
+                worksheet.Range[rowIndex, 3].Number = (double)item.ApprovedPrice;
+                worksheet.Range[rowIndex, 4].Text = item.Family_Code;
+                worksheet.Range[rowIndex, 5].Text = item.Family_Code_Description;
+            }
 
 
             rowIndex++;
@@ -338,7 +341,7 @@ Prices and product availability are also subject to change at any time due to ma
 
             row.Cells[0].Value = item.ItemNum;
             row.Cells[1].Value = item.ItemDesc;
-            row.Cells[2].Value = item.ApprovedPrice.ToString("C2");
+            if (item.ApprovedPrice != null) row.Cells[2].Value = item.ApprovedPrice.ToString("C2");
         }
 
 

@@ -27,9 +27,9 @@ else
 
 
 
-        <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowGrouping="true"
+        <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowGrouping="true" ShowColumnChooser="true"
                 AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" AllowResizing="true" AllowTextWrap="true"
-                Toolbar="@(new List<string>() { "Export to Excel" })" AllowReordering="true">
+                Toolbar="@(new List<string>() { "Export to Excel", "ColumnChooser" })" AllowReordering="true">
 
 	        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
 	        <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>

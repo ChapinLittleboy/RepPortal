@@ -65,6 +65,8 @@ builder.Services.AddSingleton<DbConnectionFactory>();
 builder.Services.AddScoped<PcfService>();
 builder.Services.AddScoped<TitleService>();
 builder.Services.AddScoped<ExportService>();
+builder.Services.AddScoped<IItemService, ItemService>();
+
 
 
 var app = builder.Build();

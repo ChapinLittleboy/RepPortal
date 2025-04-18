@@ -25,12 +25,12 @@ else
 {
     <!-- Toggle button for switching between Revenue and Quantity columns -->
     <div style="margin-bottom: 10px;">
-        <SfButton OnClick="ToggleDataType">Toggle Data Type</SfButton>
+        <SfButton OnClick="ToggleDataType">Toggle Revenue or Quantity</SfButton>
         <span style="margin-left:20px;">@(showRevenue ? "Showing Revenue Data" : "Showing Quantity Data")</span>
     </div>
 
-    <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowFiltering="true" AllowPaging="true"
-    AllowGrouping="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })" AllowResizing="true" AllowTextWrap="true">
+    <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowFiltering="true" AllowPaging="true" ShowColumnChooser="true" AllowReordering="true"
+    AllowGrouping="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" , "ColumnChooser"})" AllowResizing="true" AllowTextWrap="true">
 	    <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
 	    <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
         <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })" PageSize="20"></GridPageSettings>

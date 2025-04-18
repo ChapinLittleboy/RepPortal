@@ -131,7 +131,7 @@ public class PCFHeader : INotifyPropertyChanged
     #region Approval Information
     public int? PCFStatus { get; set; } // 0 = New, 1 = Awaiting SM Approval, 2 = Awaiting VP Approval, 3 = Approved, -1 = Reopened, 99 = Expired
 
-    public string PCFStatusDescription
+    public string? PCFStatusDescription
     {
         get
         {
@@ -148,7 +148,7 @@ public class PCFHeader : INotifyPropertyChanged
         }
     }
 
-    public int Approved { get; set; }
+    public int? Approved { get; set; }
     public string? Salesman { get; set; }
     public string? SalesManager { get; set; }
     public DateTime? VPSalesDate { get; set; }
@@ -158,7 +158,7 @@ public class PCFHeader : INotifyPropertyChanged
 
     #region Related Collections
     // Navigation property for details
-    public List<PCFItem> PCFLines { get; set; } = new();
+    public List<PCFItem>? PCFLines { get; set; } = new();
     #endregion
     #region Constants and Static Data
     private static readonly Dictionary<string, string> PcfTypeDescriptions = new Dictionary<string, string>
@@ -186,24 +186,24 @@ public class PCFHeader : INotifyPropertyChanged
 
 public class PaymentTerm
 {
-    public required string Terms_Code { get; set; }
-    public required string Description { get; set; }
-    public int Uf_BillingTermActive { get; set; }
+    public  string? Terms_Code { get; set; }
+    public  string? Description { get; set; }
+    public int? Uf_BillingTermActive { get; set; }
 }
 
 public class PCFItem
 {
-    public string PCFNumber { get; set; }
-    public string ItemNum { get; set; }
-    public string CustNum { get; set; }
-    public string ItemDesc { get; set; }
+    public string? PCFNumber { get; set; }
+    public string? ItemNum { get; set; }
+    public string? CustNum { get; set; }
+    public string? ItemDesc { get; set; }
     public double ApprovedPrice { get; set; }
     
     public string? Family_Code { get; set; }
     public string? Family_Code_Description { get; set; }
     public string? UserName { get; set; }  // set and used only in the update query
     public string? ItemStatus { get; set; }
-    public string ItemStatusDescription
+    public string? ItemStatusDescription
     {
         get
         {
@@ -220,5 +220,5 @@ public class PCFItem
 
 public class StatusOptions
 {
-    public string StatusCode { get; set; }
+    public string? StatusCode { get; set; }
 }

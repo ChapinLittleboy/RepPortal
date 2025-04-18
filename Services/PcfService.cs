@@ -16,23 +16,26 @@ public class PcfService
     private readonly IRepCodeContext _repCodeContext;
     private readonly IConfiguration _configuration;
     private readonly CustomerService _customerService;
+    private readonly ILogger<PcfService> _logger;
     
 
 
     public PcfService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider,
-        IRepCodeContext repCodeContext, DbConnectionFactory dbConnectionFactory, CustomerService customerService)
+        IRepCodeContext repCodeContext, DbConnectionFactory dbConnectionFactory, CustomerService customerService, ILogger<PcfService> logger)
     {
         _authenticationStateProvider = authenticationStateProvider;
         _repCodeContext = repCodeContext;
         _dbConnectionFactory = dbConnectionFactory;
         _configuration = configuration;
         _customerService = customerService;
-        
+        _logger = logger;
+
+
 
 
     }
 
-    public async Task<List<PCFHeader>> GetPCFHeadersAsync() // Uses RepCode on PCF
+/*    public async Task<List<PCFHeader>> GetPCFHeadersAsync() // Uses RepCode on PCF
     {
         string query =
             @"SELECT distinct Upper(SRNum) as RepID, ProgControl.CustNum as CustomerNumber, CustName as CustomerName,
@@ -50,7 +53,7 @@ public class PcfService
         var result = await connection.QueryAsync<PCFHeader>(query, new { RepCode = _repCodeContext.CurrentRepCode });
         return result.ToList();
     }
-
+*/
 
 
     public async Task<List<PCFHeader>> GetPCFHeadersByRepCodeAsync() // Uses RepCode assigned to Customers
@@ -64,8 +67,13 @@ public class PcfService
                 left join ConsolidatedCustomers cc on ProgControl.CustNum = cc.CustNum and cc.custseq = 0
                 WHERE (1 = 1 AND  progcontrol.CustNum is not null AND progcontrol.ProgSDate is not null)
                 AND progcontrol.ProgSDate > '2019-12-31'
-                AND SRNum = @RepCode
+                AND  (
+        @RepCode = 'Admin'    
+        OR SRNum = @RepCode) 
                ORDER BY PCFNum DESC";
+
+        _logger.LogInformation($"GetPCFHeadersByRepCodeAsync: {query}");
+
         using var connection = _dbConnectionFactory.CreatePcfConnection();
         var result = await connection.QueryAsync<PCFHeader>(query, new { RepCode = _repCodeContext.CurrentRepCode });
         return result.ToList();
@@ -79,10 +87,17 @@ public class PcfService
         var customerNumbers = await connection.QueryAsync<string>(
             @"SELECT DISTINCT LTRIM(RTRIM(Cust_Num)) as CustNum
               FROM Customer_mst
-              WHERE slsman = @RepCode",
-            new { RepCode = repCode });
+              WHERE  (
+        @RepCode = 'Admin'    
+        OR slsman = @RepCode) ",
+            new { RepCode = _repCodeContext.CurrentRepCode});
 
+        _logger.LogInformation("Selected customers");
         var custlist = customerNumbers.ToList();
+        foreach (var cust in custlist)
+        {
+            _logger.LogInformation($"Customer Number: {cust}");
+        }
 
         return custlist;
 
@@ -91,6 +106,7 @@ public class PcfService
     public async Task<List<PCFHeader>> GetPCFHeadersForRepBySlsman()
     {
         List<string> allowedCustomerNumbers = await GetAllowedCustomerNumbersAsync();
+        // Note if RepCode is Admin, then all customers are allowed
 
         string query =
             @"SELECT distinct Upper(SRNum) as RepCode, ProgControl.CustNum as CustomerNumber, ProgControl.CustName as CustomerName,
@@ -104,8 +120,10 @@ public class PcfService
                 AND ProgControl.CustNum in @CustNumList
                 AND PCFNum >0
                ORDER BY ProgControl.PCFStatus, CustName DESC";
+        _logger.LogInformation($"GetPCFHeadersForRepBySlsman: {query}");
+
         using var connection = _dbConnectionFactory.CreatePcfConnection();
-        var result = await connection.QueryAsync<PCFHeader>(query, new { CustNumList = allowedCustomerNumbers });
+        var result = await connection.QueryAsync<PCFHeader>(query, new { CustNumList = allowedCustomerNumbers, RepCode = _repCodeContext.CurrentRepCode });
         return result.ToList();
     }
 
@@ -151,8 +169,9 @@ public class PcfService
         LEFT JOIN ConsolidatedCustomers cc 
             ON h.CustNum = cc.CustNum and cc.custseq = 0
         LEFT JOIN CIISQL10.Bat_App.dbo.Item_mst it on i.ItemNum = it.Item
-        WHERE h.PCFNum = @PcfNum and h.SRNum = @RepCode";
+        WHERE h.PCFNum = @PcfNum and (h.SRNum = @RepCode OR @RepCode = 'Admin)";
 
+        _logger.LogInformation($"GetPCFHeaderWithItemsAsync: {sql}");
         using var connection = _dbConnectionFactory.CreatePcfConnection();
         var headerDict = new Dictionary<int, PCFHeader>();
 
@@ -190,6 +209,10 @@ public class PcfService
             headerResult.RepAgency = agency;
             headerResult.RepCode = _repCodeContext.CurrentRepCode;
             headerResult.RepName = $"{_repCodeContext.CurrentFirstName} {_repCodeContext.CurrentLastName}";
+            if (_repCodeContext.CurrentRepCode == "Admin")
+            {
+                headerResult.RepAgency = "Chapin Administrator";
+            }
 
         }
 

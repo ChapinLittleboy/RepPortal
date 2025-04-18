@@ -28,8 +28,12 @@ public class CustomerService
             FROM Customer_mst cu
             Join CustAddr_mst ca on cu.cust_num = ca.cust_num and cu.cust_seq = ca.cust_seq 
             left join Chap_SalesManagers sm on cu.uf_c_slsmgr = sm.SalesManagerInitials
-            WHERE cu.slsman = @RepCode and cu.cust_seq = 0
-            ORDER BY ca.Name";
+           WHERE 
+    cu.cust_seq = 0
+    AND (
+        @RepCode = 'Admin'    
+        OR cu.slsman = @RepCode)"; // if Admin, include all customers otherwise only their own
+   
 
         using var connection = new SqlConnection(_batAppConnection);
         return await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
@@ -50,7 +54,9 @@ public class CustomerService
 FROM   customer_mst cu 
 JOIN custaddr_mst ca ON cu.cust_num = ca.cust_num AND cu.cust_seq = ca.cust_seq AND cu.cust_seq = 0
 LEFT JOIN Chap_SalesManagers sm ON cu.slsman = sm.SalesManagerInitials
-WHERE  cu.slsman = @RepCode ORDER BY ca.[name]";
+WHERE  (
+        @RepCode = 'Admin'    
+        OR cu.slsman = @RepCode) ORDER BY ca.[name]";
 
         using var connection = new SqlConnection(_batAppConnection);
         return await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
@@ -64,7 +70,9 @@ WHERE  cu.slsman = @RepCode ORDER BY ca.[name]";
         const string sql = @"
             SELECT Distinct cust_type as CustomerType
 FROM   customer_mst cu 
-WHERE  cu.slsman = @RepCode ORDER BY cust_type";
+WHERE   (
+        @RepCode = 'Admin'    
+        OR cu.slsman = @RepCode) ORDER BY cust_type";
 
         using var connection = new SqlConnection(_batAppConnection);
         return await connection.QueryAsync<string>(sql, new { RepCode = _repCodeContext.CurrentRepCode });

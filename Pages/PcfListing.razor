@@ -7,7 +7,7 @@
 @using Syncfusion.Blazor.Buttons
 
 @page "/pcflist"
-
+@attribute [Authorize]
 
 @if (isLoading)
 {
@@ -17,8 +17,8 @@ else
 {
 	 <div>
         <SfGrid ID="PcfsGrid" @ref="MyGrid" DataSource="@pcfHeaders" Height="600px" Width="100%" CssClass="custom-grid" AllowResizing="true"
-                AllowFiltering="true" AllowMultiSorting="true" AllowSorting="true" AllowExcelExport="true" Toolbar="@(new string[] { "ExcelExport"})"
-        AllowPaging="false" EnablePersistence="false" AllowTextWrap="true"   >
+                AllowFiltering="true" AllowMultiSorting="true" AllowSorting="true" AllowExcelExport="true" Toolbar="@(new string[] { "ExcelExport", "ColumnChooser"})"
+        AllowPaging="false" EnablePersistence="false" AllowTextWrap="true"  AllowReordering="true" ShowColumnChooser="true" >
             <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
             <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
 
@@ -106,6 +106,7 @@ else
 		try
 		{
 			pcfHeaders = await PcfService.GetPCFHeadersForRepBySlsman();
+            Logger.LogInformation("starting try");
 			if (pcfHeaders != null)
 			{
 

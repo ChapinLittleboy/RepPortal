@@ -2,18 +2,19 @@
 
 public class ItemCls
 {
-    public string SiteRef { get; }
+    public string? SiteRef { get; }
     public string Item { get; }
     public string Description { get; }
-    public string UM { get; }
-    public string AbcCode { get; }
-    public string ProductCode { get; }
-    public string PMTCode { get; }
-    public decimal UnitCost { get; }
-    public string FamilyCode { get; }
-    public decimal CurUCost { get; }
+    public string? UM { get; }
+    public string? AbcCode { get; }
+    public string? ProductCode { get; }
+    public string? PMTCode { get; }
+    public decimal? UnitCost { get; }
+    public string? FamilyCode { get; }
+    public decimal? CurUCost { get; }
     public Guid RowPointer { get; }
 
+    public string DisplayText => $"{Item} – {Description}";
 
     public ItemCls(
         string siteRef,
@@ -40,4 +41,20 @@ public class ItemCls
         CurUCost = curUCost;
         RowPointer = rowPointer;
     }
+}
+public class ItemDetail
+{
+    public string Item { get; set; }
+    public string Description { get; set; }
+    public decimal Price1 { get; set; }
+    public decimal Price2 { get; set; }
+    public decimal Price3 { get; set; }
+}
+
+public class ItemInfo
+{
+    public string Item { get; set; }
+    public string Description { get; set; }
+    // what shows up + gets filtered on in the combo
+    public string DisplayText => $"{Item} – {Description}";
 }

@@ -8,10 +8,11 @@
     <div class="d-flex align-items-center gap-2">
         <label>View as Rep:</label>
         <select @bind="selectedCode" class="form-select form-select-sm" style="width: 150px;">
-            @foreach (var code in allRepCodes)
-            {
-                <option value="@(code)">@(code)</option>
-            }
+            <!-- <option value="Admin">Admin</option>  -->
+	        @foreach (var code in allRepCodes)
+	        {
+		        <option value="@(code)">@(code)</option>
+	        }
         </select>
         <button class="btn btn-sm btn-primary" @onclick="ApplyOverride">Set</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="ResetOverride">Reset</button>

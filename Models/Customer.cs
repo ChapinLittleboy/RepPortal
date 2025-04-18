@@ -32,7 +32,17 @@ public class Customer
     public string? PaymentTermsDescription { get; set; }
     public string? Corp_Cust { get; set; }
     public int CreditHold { get; set; }
-    public DateTime CreditHoldDate { get; set; }
+    private DateTime? _creditHoldDate;
+
+    public DateTime? CreditHoldDate
+    {
+        get => _creditHoldDate == DateTime.MinValue ? null : _creditHoldDate;
+        set => _creditHoldDate = value;
+    }
+
+    // This property is just for display purposes
+    public string CreditHoldDateDisplay =>
+        CreditHoldDate == null ? "" : CreditHoldDate.Value.ToString("d");
     public string? CreditHoldReason { get; set; }
     public string? PricingCode { get; set; }
 

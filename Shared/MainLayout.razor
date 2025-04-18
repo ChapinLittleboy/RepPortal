@@ -1,6 +1,9 @@
 ﻿@inherits LayoutComponentBase
 @inject IHttpContextAccessor HttpContextAccessor
 @inject ILogger<MainLayout> Logger 
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IItemService ItemService
+
 
 <PageTitle>RepPortal</PageTitle>
 
@@ -40,6 +43,28 @@
             // You could also inspect request headers here if needed, e.g., for WWW-Authenticate
              var headers = HttpContextAccessor.HttpContext?.Request?.Headers;
         }
+        AuthStateProvider.AuthenticationStateChanged += OnAuthChanged;
         base.OnInitialized();
     }
+
+    private async void OnAuthChanged(Task<AuthenticationState> task)
+    {
+	    var state = await task;
+	    if (state.User.Identity?.IsAuthenticated == true)
+	    {
+		    // load combo‑list once in background
+		    _ = ItemService.GetItemsAsync();
+
+		    // if you really want *all* details warmed:
+		    //_ = Task.Run(async () => {
+		    //    var all = await ItemService.GetItemsAsync();
+		    //    foreach (var i in all)
+		    //        await ItemService.GetItemDetailAsync(i.Item);
+		    //});
+	    }
+    }
+
+    public void Dispose()
+	    => AuthStateProvider.AuthenticationStateChanged -= OnAuthChanged;
+
 }

@@ -29,8 +29,8 @@
                         <MenuItems>
                             <MenuItem Text="Customer List"/>
                             <MenuItem Text="Monthly Sales Report"></MenuItem>
+                            <!--  <MenuItem Text="Monthly Sales By Item Report"></MenuItem> -->
                             <MenuItem Text="Monthly Sales By Item Report"></MenuItem>
-                            <MenuItem Text="TEST Monthly Sales By Item Report"></MenuItem>
                             <MenuItem Text="Shipments Report"></MenuItem>
                             <MenuItem Text="Open Orders Report"></MenuItem>
                             <MenuItem Text="Customer Invoices Report"></MenuItem>
@@ -44,9 +44,9 @@
 		        <MenuItems>
 			        <MenuItem Text="Pricing">
 				        <MenuItems>
-					        <MenuItem Text="PCF Viewer"></MenuItem>
-					        <MenuItem Text="Analytics"></MenuItem>
-					        <MenuItem Text="Help Desk"></MenuItem>
+                            <MenuItem Text="SPR/PCF Log" title="View Customer Contract Pricing">></MenuItem>
+                            <MenuItem Text="Item Pricing" title="Non-contract pricing lookup"></MenuItem>
+                            <MenuItem Text="Special Pricing" title="View/Download Special Group pricing"></MenuItem>
 				        </MenuItems>
 			        </MenuItem>
 		        </MenuItems>
@@ -212,9 +212,9 @@
                 //Navigate to Monthly Sales Report page
                 Navigation.NavigateTo("/monthly-sales-report");
                 break;
-            case "Monthly Sales By Item Report":
+            case "Monthly Sales By Item Report old":
 	            //Navigate to Monthly Sales Report page
-	            Navigation.NavigateTo("/monthly-item-sales-report");
+                Navigation.NavigateTo("/monthly-item-sales-with-qty");
 	            break;
             case "TEST Monthly Sales By Item Report":
 	            //Navigate to Monthly Sales Report page
@@ -232,10 +232,18 @@
 	            //Navigate to Monthly Sales Report page
 	            Navigation.NavigateTo("/invoices-report");
 	            break;
-            case "PCF Viewer":
-	            //Navigate to PCF Listing page
-	            Navigation.NavigateTo("/pcflist");
-	            break;
+            case "SPR/PCF Log":
+                //Navigate to PCF Listing page
+                Navigation.NavigateTo("/pcflist");
+                break;
+            case "Item Pricing":
+                //Navigate to PCF Listing page
+                Navigation.NavigateTo("/getitempricing");
+                break;
+            case "Special Pricing":
+                //Navigate to PCF Listing page
+                Navigation.NavigateTo("/getspecialpricing");
+                break;
         }
     }
 }
