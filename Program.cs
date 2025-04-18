@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using RepPortal.Areas.Identity;
 using RepPortal.Data;
@@ -66,10 +67,13 @@ builder.Services.AddScoped<PcfService>();
 builder.Services.AddScoped<TitleService>();
 builder.Services.AddScoped<ExportService>();
 builder.Services.AddScoped<IItemService, ItemService>();
-
+builder.Services.AddScoped<IPriceBookService, PriceBookService>();
 
 
 var app = builder.Build();
+var cfg = app.Configuration.GetSection("PriceBooks");
+var rootPath = cfg["RootPath"]!;      // should be \\ciiws01\ChapinRepDocs
+var requestPath = cfg["RequestPath"]!;   // should be /RepDocs
 
 var scope = app.Services.CreateScope();
 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -87,7 +91,12 @@ else
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(rootPath),
+    RequestPath = requestPath,
+    ServeUnknownFileTypes = true
+});
 
 app.UseRouting();
 

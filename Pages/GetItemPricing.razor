@@ -5,57 +5,69 @@
 @using Syncfusion.Blazor.DropDowns
 @inject IItemService ItemService
 @inject ILogger<GetItemPricing> Logger
+@inject IPriceBookService PriceBookService
+
 
 @* at top of your Razor component *@
-<div class="d-flex flex-column align-items-center" style="margin-top:1in;">
-	<h3>Item Price Lookup (Non-Contract pricing)</h3>
-</div>
-<div class="d-flex flex-column align-items-center" style="margin-top:0.5in;">
+
+<div class="row mt-4">
+	<!-- Left column: lookup input + detail -->
+	<div class="col-lg-6">
+		<h3>Item Price Lookup (non-contract)</h3>
+		<div class="d-flex mb-2">
+			<SfTextBox CssClass="flex-grow-1 me-2" Placeholder="Enter Item number"
+					   @bind-Value="selectedItem" />
+			<button class="btn btn-primary" @onclick="LoadItem">
+				<i class="fa fa-search"></i>
+			</button>
+		</div>
+
+		@if (lookupPerformed)
+		{
+			@if (detail != null)
+			{
+				<div class="d-flex">
+					<img src="@GetImageUrl(detail.Item)" alt="Item" width="200" height="300"
+						 class="me-4" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image';" />
+					<div>
+						<p><strong>Part #:</strong> @detail.Item</p>
+						<p><strong>Description:</strong> @detail.Description</p>
+						<p><strong>List:</strong> @detail.Price1.ToString("C2")</p>
+						<p><strong>4K Book:</strong> @detail.Price2.ToString("C2")</p>
+						<p><strong>12.5K Book:</strong> @detail.Price3.ToString("C2")</p>
+					</div>
+				</div>
+			}
+			else
+			{
+				<p class="text-danger"><strong>Item Not Found!</strong></p>
+			}
+		}
+	</div>
+
+	<!-- Right column: folder links + file lists -->
+	<div class="col-lg-6">
+		<h4>Price Book Folders</h4>
+		<div>
+			@foreach (var folder in PriceBookFolders)
+			{
+				<p><strong>@folder.DisplayName</strong> (@folder.Files.Count files):</p>
+				<ul>
+					@foreach (var file in folder.Files)
+					{
+						<li>
+							<a href="@file.Url" target="_blank">@file.Name</a>
+						</li>
+					}
+				</ul>
+			}
+		</div>
 	
 
-	@if (isReady)
-	{
-		<div class="w-100" style="max-width:400px;">
-			<div class="d-flex">
-				<SfTextBox
-					CssClass="flex-grow-1 me-2"
-					Placeholder="Enter Item number"
-					@bind-Value="selectedItem" />
-				<button class="btn btn-primary" @onclick="LoadItem">Lookup</button>
-			</div>
-		</div>
-	}
 
-	@if (isLoading)
-	{
-		<p class="mt-3"><em>Loading…</em></p>
-	}
-	else if (lookupPerformed)
-	{
-		@if (detail != null)
-		{
-			<div class="d-flex align-items-start mt-4">
-				<img
-					src="@GetImageUrl(detail.Item)"
-					onerror="this.onerror=null;this.src='https://via.placeholder.com/300x300?text=No+Image';"
-					alt="Item Image"
-					width="200" height="300"
-					class="me-4" />
 
-				<div>
-					<p><strong>Part Number:</strong> @detail.Item</p>
-					<p><strong>Description:</strong> @detail.Description</p>
-					<p><strong>List Price:</strong> @detail.Price1.ToString("C2")</p>
-					<p><strong>4K Book Pricing:</strong> @detail.Price2.ToString("C2")</p>
-					<p><strong>12.5K Book Pricing:</strong> @detail.Price3.ToString("C2")</p>
-				</div>
-			</div>
-		}
-		else
-		{
-			<p class="text-danger mt-3"><strong>Item Number Not Found!</strong></p>
-		}
-	}
+
+	</div>
 </div>
 
 
@@ -66,14 +78,34 @@
 	private bool isLoading;
 	private bool lookupPerformed;
 	private bool isReady = false;
+	public List<PriceBookFolder> PriceBookFolders = new();
 
-	public string ChangeValue { get; set; } = "Basketball";
+	public string ChangeValue { get; set; } = "Give Bill a raise";
 	public void OnChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, ItemInfo> args)
 	{
 		//this.ChangeValue = args.items?.Text;
 	}
 	protected override async Task OnInitializedAsync()
 	{
+		string StaticRequestPath = "/RepDocs";
+
+
+		// Retrieve the folders
+		PriceBookFolders = await PriceBookService.GetPriceBookFoldersAsync();
+
+		// Log the contents of the /RepDocs folder
+		var repDocsFolder = PriceBookFolders.FirstOrDefault(folder => folder.FolderRelativePath == StaticRequestPath);
+		if (repDocsFolder != null)
+		{
+			foreach (var file in repDocsFolder.Files)
+			{
+				Logger.LogInformation("File: {Name}, Size: {SizeText}, URL: {Url}", file.Name, file.SizeText, file.Url);
+			}
+		}
+		else
+		{
+			Logger.LogWarning("The folder '/RepDocs' was not found.");
+		}
 		//items = await ItemService.GetItemsAsync();
 		//Logger.LogInformation("DIAGNOSTIC: Loaded {Count} items", items.Count);
 		isReady = true;
@@ -84,10 +116,10 @@
 	{
 		lookupPerformed = false;
 		detail = null;
-		
+
 		if (string.IsNullOrWhiteSpace(selectedItem))
 			return;
-		
+
 		isLoading = true;
 		detail = await ItemService.GetItemDetailAsync(selectedItem);
 		isLoading = false;
@@ -103,6 +135,7 @@
 			return $"https://www.chapinportal.com/Images/Sprayers/{item}.gif";
 	}
 }
+
 
 
 
