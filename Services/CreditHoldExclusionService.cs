@@ -20,13 +20,13 @@ public class CreditHoldExclusionService
     public async Task<List<CreditHoldReasonCode>> GetAllAsync()
     {
         using var conn = _dbConnectionFactory.CreateRepConnection();
-        var sql = "SELECT Code, Description FROM dbo.CreditHoldReasonCodeExceptions ORDER BY Code";
+        var sql = "SELECT Code, Description FROM dbo.CreditHoldReasonCodeExclusions ORDER BY Code";
         return (await conn.QueryAsync<CreditHoldReasonCode>(sql)).ToList();
     }
     public async Task<List<string>> GetAllExcludedCodesAsync()
     {
         using var conn = _dbConnectionFactory.CreateRepConnection();
-        var sql = "SELECT Code FROM dbo.CreditHoldReasonCodeExceptions ORDER BY Code";
+        var sql = "SELECT Code FROM dbo.CreditHoldReasonCodeExclusions ORDER BY Code";
         return (await conn.QueryAsync<string>(sql)).ToList();
     }
 
@@ -58,14 +58,14 @@ public class CreditHoldExclusionService
     public async Task AddAsync(string code, string description)
     {
         using var conn = _dbConnectionFactory.CreateRepConnection();
-        var sql = "INSERT INTO dbo.CreditHoldReasonCodes (Code, Description) VALUES (@Code, @Description)";
+        var sql = "INSERT INTO dbo.CreditHoldReasonCodeExclusions  (Code, Description) VALUES (@Code, @Description)";
         await conn.ExecuteAsync(sql, new { Code = code, Description = description });
     }
 
     public async Task DeleteAsync(string code)
     {
         using var conn = _dbConnectionFactory.CreateRepConnection();
-        var sql = "DELETE FROM dbo.CreditHoldReasonCodes WHERE Code = @Code";
+        var sql = "DELETE FROM dbo.CreditHoldReasonCodeExclusions  WHERE Code = @Code";
         await conn.ExecuteAsync(sql, new { Code = code });
     }
 }

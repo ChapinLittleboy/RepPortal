@@ -1,5 +1,7 @@
 ﻿@page "/admin/credit-hold-codes"
 @inject CreditHoldExclusionService CreditHoldService
+@inject ILogger<CreditHoldExclusionService> Logger
+
 
 
 
@@ -55,6 +57,15 @@
 	protected override async Task OnInitializedAsync()
 	{
 		codes = await CreditHoldService.GetAllAsync();
+		if (codes == null)
+		{
+			Logger.LogError("Failed to load credit hold reason codes.");
+			codes = new List<CreditHoldReasonCode>();
+		}
+		else
+		{
+			Logger.LogInformation($"Loaded {codes.Count} credit hold reason codes.");
+		}
 	}
 
 	private async Task Add()
