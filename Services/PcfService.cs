@@ -58,6 +58,8 @@ public class PcfService
 
     public async Task<List<PCFHeader>> GetPCFHeadersByRepCodeAsync() // Uses RepCode assigned to Customers
     {
+        List<string> excludedCustomerList = await _customerService.GetExcludedCustomerListAsync();
+
         string query =
             @"SELECT distinct Upper(SRNum) as RepID, ProgControl.CustNum as CustomerNumber, CustName as CustomerName,
                ProgSDate as StartDate, ProgEDate as EndDate, PCFNum as PcfNumber, PCFStatus as ApprovalStatus
@@ -66,8 +68,8 @@ public class PcfService
                FROM ProgControl 
                 left join ConsolidatedCustomers cc on ProgControl.CustNum = cc.CustNum and cc.custseq = 0
                 WHERE (1 = 1 AND  progcontrol.CustNum is not null AND progcontrol.ProgSDate is not null)
+                AND ProgControl.CustNum not in @ExcludedCustomerList
                 AND progcontrol.ProgSDate > '2019-12-31'
-                AND  (
         @RepCode = 'Admin'    
         OR SRNum = @RepCode) 
                ORDER BY PCFNum DESC";
@@ -75,7 +77,7 @@ public class PcfService
         _logger.LogInformation($"GetPCFHeadersByRepCodeAsync: {query}");
 
         using var connection = _dbConnectionFactory.CreatePcfConnection();
-        var result = await connection.QueryAsync<PCFHeader>(query, new { RepCode = _repCodeContext.CurrentRepCode });
+        var result = await connection.QueryAsync<PCFHeader>(query, new { RepCode = _repCodeContext.CurrentRepCode, ExcludedCustomerList = excludedCustomerList });
         return result.ToList();
     }
 
@@ -83,14 +85,17 @@ public class PcfService
     {
         var repCode = _repCodeContext.CurrentRepCode;
         using var connection = _dbConnectionFactory.CreateBatConnection();
+        List<string> excludedCustomerList = await _customerService.GetExcludedCustomerListAsync();
 
         var customerNumbers = await connection.QueryAsync<string>(
             @"SELECT DISTINCT LTRIM(RTRIM(Cust_Num)) as CustNum
               FROM Customer_mst
-              WHERE  (
+              WHERE  
+        cust_num not in @ExcludedCustomerList AND
+        (
         @RepCode = 'Admin'    
         OR slsman = @RepCode) ",
-            new { RepCode = _repCodeContext.CurrentRepCode});
+            new { RepCode = _repCodeContext.CurrentRepCode, ExcludedCustomerList = excludedCustomerList});
 
         _logger.LogInformation("Selected customers");
         var custlist = customerNumbers.ToList();

@@ -11,11 +11,13 @@ public class CustomerService
 {
     private readonly string _batAppConnection;
     private readonly IRepCodeContext _repCodeContext;
+    //private readonly CreditHoldExclusionService _creditHoldExclusionService;
 
-    public CustomerService(IConfiguration config, IRepCodeContext repCodeContext)
+    public CustomerService(IConfiguration config, IRepCodeContext repCodeContext, CreditHoldExclusionService creditHoldExclusionService)
     {
         _batAppConnection = config.GetConnectionString("BatAppConnection");
         _repCodeContext = repCodeContext;
+        //_creditHoldExclusionService = creditHoldExclusionService;  // gets list from RepPortal.dbo.CreditHoldReasonCodeExceptions
     }
 
 
@@ -27,12 +29,14 @@ public class CustomerService
             cu.uf_c_slsmgr as SalesManager, sm.SalesManagerName as SalesManagerName
             FROM Customer_mst cu
             Join CustAddr_mst ca on cu.cust_num = ca.cust_num and cu.cust_seq = ca.cust_seq 
+            Join CustAddr_mst ca0 on cu.cust_num = ca.cust_num and  ca.cust_seq = 0
             left join Chap_SalesManagers sm on cu.uf_c_slsmgr = sm.SalesManagerInitials
            WHERE 
     cu.cust_seq = 0
+AND ca0.credit_hold_reason not in (Select Code from RepPortal.dbo.CreditHoldReasonCodeExclusions)
     AND (
         @RepCode = 'Admin'    
-        OR cu.slsman = @RepCode)"; // if Admin, include all customers otherwise only their own
+        OR cu.slsman = @RepCode)";  // if Admin, include all customers otherwise only their own
    
 
         using var connection = new SqlConnection(_batAppConnection);
@@ -54,12 +58,14 @@ public class CustomerService
 FROM   customer_mst cu 
 JOIN custaddr_mst ca ON cu.cust_num = ca.cust_num AND cu.cust_seq = ca.cust_seq AND cu.cust_seq = 0
 LEFT JOIN Chap_SalesManagers sm ON cu.slsman = sm.SalesManagerInitials
-WHERE  (
-        @RepCode = 'Admin'    
-        OR cu.slsman = @RepCode) ORDER BY ca.[name]";
+WHERE  1=1
+AND ca.credit_hold_reason not in (Select Code from RepPortal.dbo.CreditHoldReasonCodeExclusions)
+AND (        @RepCode = 'Admin'    
+        OR cu.slsman = @RepCode) 
+ORDER BY ca.[name]";
 
         using var connection = new SqlConnection(_batAppConnection);
-        return await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
+        return await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode});
         // NOTE: Using the repCode from the RepCodeContext!!
     }
 
@@ -79,4 +85,18 @@ WHERE   (
         // NOTE: Using the repCode from the RepCodeContext!!
     }
 
+    public async Task<List<string>> GetExcludedCustomerListAsync()
+    {
+        const string sql = @"
+        SELECT DISTINCT cust_num 
+        FROM custaddr_mst 
+        WHERE credit_hold_reason IN (
+            SELECT Code 
+            FROM RepPortal.dbo.CreditHoldReasonCodeExclusions
+        )";
+
+        using var connection = new SqlConnection(_batAppConnection);
+        var results = await connection.QueryAsync<string>(sql);
+        return results.ToList();
+    }
 }

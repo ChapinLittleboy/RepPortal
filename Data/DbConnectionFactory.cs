@@ -3,7 +3,10 @@ using System.Data;
 
 namespace RepPortal.Data;
 
-public class DbConnectionFactory
+
+
+public class DbConnectionFactory 
+
 {
     private readonly IConfiguration _configuration;
     private readonly string _batConnectionString;

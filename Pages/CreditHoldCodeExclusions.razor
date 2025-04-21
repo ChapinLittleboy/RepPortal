@@ -1,0 +1,73 @@
+﻿@page "/admin/credit-hold-codes"
+@inject CreditHoldExclusionService CreditHoldService
+
+
+
+
+
+
+
+<h3>Manage Credit‑Hold Reason Code Exclusions</h3>
+<h5>Customers with these codes will not be included in the Rep Portal</h5>
+
+<table class="table table-sm">
+	<thead>
+	<tr>
+		<th>Code</th>
+		<th>Description</th>
+		<th></th>
+	</tr>
+	</thead>
+	<tbody>
+	@foreach (var item in codes)
+	{
+		<tr>
+			<td>@item.Code</td>
+			<td>@item.Description</td>
+			<td>
+				<button class="btn btn-danger btn-sm"
+				        @onclick="() => Remove(item.Code)">
+					Remove
+				</button>
+			</td>
+		</tr>
+	}
+	<tr>
+		<td>
+			<InputText @bind-Value="newCode" class="form-control form-control-sm" />
+		</td>
+		<td>
+			<InputText @bind-Value="newDescription" class="form-control form-control-sm" />
+		</td>
+		<td>
+			<button class="btn btn-primary btn-sm" @onclick="Add">
+				Add
+			</button>
+		</td>
+	</tr>
+	</tbody>
+</table>
+
+@code {
+	private List<CreditHoldReasonCode> codes = new();
+	private string newCode, newDescription;
+
+	protected override async Task OnInitializedAsync()
+	{
+		codes = await CreditHoldService.GetAllAsync();
+	}
+
+	private async Task Add()
+	{
+		if (string.IsNullOrWhiteSpace(newCode)) return;
+		await CreditHoldService.AddAsync(newCode.Trim(), newDescription?.Trim());
+		codes = await CreditHoldService.GetAllAsync();
+		newCode = newDescription = string.Empty;
+	}
+
+	private async Task Remove(string code)
+	{
+		await CreditHoldService.DeleteAsync(code);
+		codes = await CreditHoldService.GetAllAsync();
+	}
+}
