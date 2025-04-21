@@ -43,51 +43,45 @@
                 <GridColumn Field=@nameof(Customer.BillToState) HeaderText="State" Width="100"></GridColumn>
                 <GridColumn Field=@nameof(Customer.BillToZip) HeaderText="Zip Code" Width="100"></GridColumn>
                 <GridColumn Field=@nameof(Customer.BillToCountry) HeaderText="Country" Width="150"></GridColumn>
-                <GridColumn Field=@nameof(Customer.SalesManager) HeaderText="Sales Mgr" Width="150"></GridColumn>
+                <GridColumn Field=@nameof(Customer.SalesManagerName) HeaderText="Sales Manager" Width="150"></GridColumn>
                 <GridColumn Field=@nameof(Customer.CreditHoldDate) HeaderText="Credit Hold Date" Width="150">
-
-
-	                <Template>
-		                @{
-			                var data = context as Customer;
-			                if (data != null)
-			                {
-				                // Treat DateTime.MinValue (i.e., new DateTime()) as null and display blank
-				                if (data.CreditHoldDate == DateTime.MinValue)
-				                {
-					                <span></span>
-				                }
-				                else
-				                {
-					                <span>@data.CreditHoldDate</span>
-				                }
-			                }
-		                }
-	                </Template>
-
-
+                    <Template>
+                        @{
+                            var data = context as Customer;
+                            if (data != null)
+                            {
+                                // Treat DateTime.MinValue (i.e., new DateTime()) as null and display blank
+                                if (data.CreditHoldDate == DateTime.MinValue)
+                                {
+                                    <span></span>
+                                }
+                                else
+                                {
+                                    <span>@data.CreditHoldDateDisplay</span> 
+                                }
+                            }
+                        }
+                    </Template>
                 </GridColumn>
-				
-				
-				
-				
-
-                <GridColumn Field=@nameof(Customer.CreditHoldReason) HeaderText="Credit Hold Reason" Width="200"></GridColumn>
-				 <GridColumn Field=@nameof(Customer.PricingCode) HeaderText="Pricing Code" Width="150"></GridColumn>
-			</GridColumns>
-		</SfGrid>
-}
+                <GridColumn Field=@nameof(Customer.CreditHoldReason) HeaderText="Hold Reason" Width="50"></GridColumn>
+                <GridColumn Field=@nameof(Customer.PricingCode) HeaderText="Pricing Code" Width="150"></GridColumn>
+            </GridColumns>
+        </SfGrid>
+    }
 </div>
 
 @code {
     private IEnumerable<Customer> customers;
     private string repCode;
     private bool isLoading = true;
-	private SfGrid<Customer> Grid;
-
+    private SfGrid<Customer> Grid;
+    private List<CreditHoldReasonCode> reasonCodeList = new List<CreditHoldReasonCode>();
 
     protected override async Task OnInitializedAsync()
     {
+
+        reasonCodeList = await CustomerService.GetAllReasonCodesAsync();
+
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         repCode = user.FindFirst("RepCode")?.Value;
@@ -105,6 +99,8 @@
                 isLoading = false;
             }
         }
+
+        await base.OnInitializedAsync();
     }
 
 

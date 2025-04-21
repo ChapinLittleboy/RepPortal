@@ -33,7 +33,8 @@ public class CustomerService
             left join Chap_SalesManagers sm on cu.uf_c_slsmgr = sm.SalesManagerInitials
            WHERE 
     cu.cust_seq = 0
-AND ca0.credit_hold_reason not in (Select Code from RepPortal.dbo.CreditHoldReasonCodeExclusions)
+AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
+    SELECT Code FROM RepPortal.dbo.CreditHoldReasonCodeExclusions))
     AND (
         @RepCode = 'Admin'    
         OR cu.slsman = @RepCode)";  // if Admin, include all customers otherwise only their own
@@ -54,12 +55,13 @@ AND ca0.credit_hold_reason not in (Select Code from RepPortal.dbo.CreditHoldReas
        ca.zip as BillToZip, ca.country as BillToCountry, cu.slsman as RepCode, 
        ca.credit_hold as CreditHold, ca.credit_hold_date as CreditHoldDate, ca.credit_hold_reason as CreditHoldReason,
        cu.terms_code as PaymentTermsCode, cu.Uf_PROG_BASIS as PricingCode, cu.stat as Status,
-        cu.uf_c_slsmgr as SalesManager, sm.SalesManagerName as SalesManagerName
+        cu.uf_c_slsmgr as SalesManager, isnull(sm.SalesManagerName,'Check with SalesOps') as SalesManagerName
 FROM   customer_mst cu 
 JOIN custaddr_mst ca ON cu.cust_num = ca.cust_num AND cu.cust_seq = ca.cust_seq AND cu.cust_seq = 0
-LEFT JOIN Chap_SalesManagers sm ON cu.slsman = sm.SalesManagerInitials
+LEFT JOIN Chap_SalesManagers sm ON cu.uf_c_slsmgr = sm.SalesManagerInitials
 WHERE  1=1
-AND ca.credit_hold_reason not in (Select Code from RepPortal.dbo.CreditHoldReasonCodeExclusions)
+AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
+    SELECT Code FROM RepPortal.dbo.CreditHoldReasonCodeExclusions))
 AND (        @RepCode = 'Admin'    
         OR cu.slsman = @RepCode) 
 ORDER BY ca.[name]";
@@ -98,5 +100,15 @@ WHERE   (
         using var connection = new SqlConnection(_batAppConnection);
         var results = await connection.QueryAsync<string>(sql);
         return results.ToList();
+    }
+
+    public async Task<List<CreditHoldReasonCode>> GetAllReasonCodesAsync()
+    {
+        const string sql = @"Select reason_code as Code, Description from Reason_mst where reason_class = 'CRED HOLD'";
+        using var connection = new SqlConnection(_batAppConnection);
+        var results = await connection.QueryAsync<CreditHoldReasonCode>(sql);
+        return results.ToList();
+
+
     }
 }
