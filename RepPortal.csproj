@@ -21,13 +21,20 @@
 
   <ItemGroup>
     <None Remove="SqlScripts\001_CreateFirstSixTables.sql" />
+    <None Remove="SqlScripts\002_CreateRepCodeIndexes.sql" />
+    <None Remove="SqlScripts\003_Change datetime to datetime2%280%29.sql" />
+    <None Remove="SqlScripts\004_CreateFileDownloadTable.sql" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="SqlScripts\001_CreateFirstSixTables.sql" />
+    <EmbeddedResource Include="SqlScripts\002_CreateRepCodeIndexes.sql" />
+    <EmbeddedResource Include="SqlScripts\003_Change datetime to datetime2(0).sql" />
+    <EmbeddedResource Include="SqlScripts\004_CreateFileDownloadTable.sql" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="dbup-sqlserver" Version="6.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="8.0.14" />

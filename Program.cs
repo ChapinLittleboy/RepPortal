@@ -13,6 +13,7 @@ using Serilog.Events;
 using Syncfusion.Blazor;
 using DbUp;
 using System.Reflection;
+using Blazored.LocalStorage;
 
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NMaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxfcHVWRWBfV0x/VkQ=");
 // Set the global command timeout for Dapper
@@ -58,7 +59,7 @@ builder.Services.AddScoped<UserManager<ApplicationUser>>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<SalesService>();
 builder.Services.AddSyncfusionBlazor();
-
+builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRepCodeContext, RepCodeContext>();
 builder.Services.AddSingleton<UserConnectionTracker>();
@@ -73,8 +74,8 @@ builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<IPriceBookService, PriceBookService>();
 builder.Services.AddScoped<IFormsDownloadService, FormsDownloadService>();
 builder.Services.AddScoped<CreditHoldExclusionService>();
-
-
+//builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
+builder.Services.AddScoped<StateContainer>();
 
 var app = builder.Build();
 var cfg = app.Configuration.GetSection("PriceBooks");
