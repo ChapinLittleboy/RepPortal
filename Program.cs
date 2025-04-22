@@ -11,6 +11,8 @@ using RepPortal.Services;
 using Serilog;
 using Serilog.Events;
 using Syncfusion.Blazor;
+using DbUp;
+using System.Reflection;
 
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NMaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxfcHVWRWBfV0x/VkQ=");
 // Set the global command timeout for Dapper
@@ -115,4 +117,33 @@ app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
+RunDbUp(connectionString);
+
 app.Run();
+
+
+
+
+
+void RunDbUp(string connectionString)
+{
+    var upgrader = DeployChanges.To
+        .SqlDatabase(connectionString)
+        .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly()) // or use FromFileSystem
+        .LogToConsole()
+        .Build();
+
+    var result = upgrader.PerformUpgrade();
+
+    if (!result.Successful)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine(result.Error);
+        Console.ResetColor();
+        throw new Exception("Database upgrade failed");
+    }
+
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine("Database upgrade successful");
+    Console.ResetColor();
+}

@@ -22,7 +22,7 @@
     else
     {
         <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@customers" AllowExcelExport="true" AllowFiltering="true" 
-        Toolbar="@(new List<string>() { "Export to Excel", "ColumnChooser" })"
+        Toolbar="@(new List<string>() { "Export to Excel", "Save layout", "ColumnChooser" })"
         AllowResizing="true" AllowSelection="true" ShowColumnChooser="true" AllowReordering="true"
         AllowTextWrap="true" AllowSorting="true" Height="600" EnableVirtualization="false" EnableVirtualMaskRow="true">
             <GridPageSettings PageSizes="@(new string[] {"30", "60", "100",  "All" })"  PageSize="30" ></GridPageSettings>
@@ -144,6 +144,13 @@
 		    };
 		    await this.Grid.ExportToExcelAsync(exportProperties);
 	    }
+
+	    if (args.Item.Id == "Grid_Save Layout") //Id is combination of Grid's ID and itemname
+	    {
+		    
+	    }
+
+       
     }
 
 
