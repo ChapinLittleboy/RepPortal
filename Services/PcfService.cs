@@ -70,7 +70,7 @@ public class PcfService
                 WHERE (1 = 1 AND  progcontrol.CustNum is not null AND progcontrol.ProgSDate is not null)
                 AND ProgControl.CustNum not in @ExcludedCustomerList
                 AND progcontrol.ProgSDate > '2019-12-31'
-        @RepCode = 'Admin'    
+        AND (@RepCode = 'Admin'    
         OR SRNum = @RepCode) 
                ORDER BY PCFNum DESC";
 
@@ -174,7 +174,7 @@ public class PcfService
         LEFT JOIN ConsolidatedCustomers cc 
             ON h.CustNum = cc.CustNum and cc.custseq = 0
         LEFT JOIN CIISQL10.Bat_App.dbo.Item_mst it on i.ItemNum = it.Item
-        WHERE h.PCFNum = @PcfNum and (h.SRNum = @RepCode OR @RepCode = 'Admin)";
+        WHERE h.PCFNum = @PcfNum and (h.SRNum = @RepCode OR @RepCode = 'Admin')";
 
         _logger.LogInformation($"GetPCFHeaderWithItemsAsync: {sql}");
         using var connection = _dbConnectionFactory.CreatePcfConnection();
