@@ -25,6 +25,7 @@
     }
     else
     {
+
         @if(isReady) {
         <EditForm Model="@parameters" OnValidSubmit="LoadShipments">
             <DataAnnotationsValidator />
@@ -83,7 +84,7 @@
 
         <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@ShipmentsData" AllowTextWrap="true" AllowSorting="true" AllowGrouping="true"
                 AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "ColumnChooser","Export to Excel"})" 
-                AllowResizing="true" ShowColumnChooser="true" AllowReordering="true">
+                AllowResizing="true" ShowColumnChooser="true" AllowReordering="true"> 
 	        <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
 	        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="CustomerShipment"></GridEvents>
 	        <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })"  PageSize="20" ></GridPageSettings>
@@ -168,6 +169,11 @@
 		CustomerTypes = await CustomerService.GetCustomerTypesAsync();
 		isReady = true;
 
+	}
+	private async Task ClearFilters()
+	{
+		await Grid.ClearFilteringAsync();
+		
 	}
 
 	private async Task LoadShipments()

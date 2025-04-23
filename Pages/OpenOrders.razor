@@ -27,10 +27,16 @@
 
 else
 {
+	<div>
+		<div class="active-filters">
+			<button @onclick="ClearFilters">Clear Filters</button>
+		</div>
+
+	</div>
 	<div style="margin-top: 5px; color: red; font-size: small">
 		Tip: Set Items per page to 'ALL' before grouping records
 	</div>
-	<SfGrid @ref="DetailsGrid" DataSource="@openOrderDetails" AllowPaging="true" AllowSorting="true"  AllowReordering="true" AllowResizing="true" ShowColumnChooser="true"
+	<SfGrid @ref="DetailsGrid" DataSource="@openOrderDetails" AllowPaging="true" AllowSorting="true"  AllowReordering="true" AllowResizing="true" ShowColumnChooser="true" EnablePersistence="true"
 	        AllowExcelExport="true" Toolbar="@(new List<string>() { "ExcelExport", "Search" , "ColumnChooser"})" AllowGrouping="true" AllowTextWrap="true" >
 		<GridEvents  OnToolbarClick="ToolbarClickHandler" TValue="OrderDetail"></GridEvents>
 		<GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
@@ -134,6 +140,11 @@ else
 			await DetailsGrid.ExcelExport(exportProperties);
 
 		}
+	}
+	private async Task ClearFilters()
+	{
+		await DetailsGrid.ClearFilteringAsync();
+	
 	}
 
 }

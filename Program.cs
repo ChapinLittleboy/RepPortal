@@ -71,11 +71,15 @@ builder.Services.AddScoped<PcfService>();
 builder.Services.AddScoped<TitleService>();
 builder.Services.AddScoped<ExportService>();
 builder.Services.AddScoped<IItemService, ItemService>();
-builder.Services.AddScoped<IPriceBookService, PriceBookService>();
-builder.Services.AddScoped<IFormsDownloadService, FormsDownloadService>();
+builder.Services.AddScoped<IPriceBookService, DownloadPriceBookService>();
+builder.Services.AddScoped<IFormsDownloadService, DownloadFormsService>();
+builder.Services.AddScoped<IMarketingService, DownloadMarketingInfoService>();
 builder.Services.AddScoped<CreditHoldExclusionService>();
 //builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 builder.Services.AddScoped<StateContainer>();
+builder.Services.AddScoped<FolderAdminService>();
+builder.Services.AddScoped<MarketingFileService>();
+
 
 var app = builder.Build();
 var cfg = app.Configuration.GetSection("PriceBooks");

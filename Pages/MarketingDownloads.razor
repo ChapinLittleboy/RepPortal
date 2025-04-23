@@ -1,0 +1,84 @@
+﻿@page "/marketing-download"
+@attribute [Authorize]
+@using FilterType = Syncfusion.Blazor.DropDowns.FilterType
+@attribute [Authorize]
+@using Syncfusion.Blazor.Lists
+@using Syncfusion.Blazor.DropDowns
+@inject IMarketingService MarketingService
+@inject ILogger<FormsDownloadFile> Logger
+@using Syncfusion.Blazor.Navigations
+
+<h3>Forms and Templates</h3>
+
+
+<SfAccordion ExpandMode="ExpandMode.Single">
+	@* Or Multiple *@
+	<AccordionItems>
+		@foreach (var folder in MarketingFolders)
+		{
+			// Start of the AccordionItem for this folder
+			<AccordionItem Expanded="false">
+				@* Optional: Control initial state *@
+
+				@* --- Content for the collapsed header MUST be inside HeaderTemplate --- *@
+				<HeaderTemplate>
+					<strong>@folder.DisplayName</strong> (@folder.Files.Count files)
+				</HeaderTemplate>
+
+				@* --- Content for the expanded panel MUST be inside ContentTemplate --- *@
+				<ContentTemplate>
+					@* Only put content related to the expanded view here *@
+					<ul>
+						@foreach (var file in folder.Files)
+						{
+							<li>
+								<a href="@file.Url" target="_blank">@file.Name</a>
+							</li>
+						}
+					</ul>
+					@if (!folder.Files.Any())
+					{
+						<p><em>No files in this folder.</em></p>
+					}
+				</ContentTemplate>
+
+			</AccordionItem>
+			@* End of the AccordionItem for this folder. No other text/HTML allowed between here and </AccordionItem> *@
+		}
+	</AccordionItems>
+</SfAccordion>
+
+
+
+@code {
+	public List<MarketingFolder> MarketingFolders = new();
+	private bool isReady = true;
+
+	protected override async Task OnInitializedAsync()
+	{
+		string StaticRequestPath = "/RepDocs";
+
+
+		// Retrieve the folders
+		MarketingFolders = await MarketingService.GetMarketingFoldersAsync();
+
+		
+
+		// Log the contents of the /RepDocs folder
+		var repDocsFolder = MarketingFolders.FirstOrDefault(folder => folder.FolderRelativePath == StaticRequestPath);
+		if (repDocsFolder != null)
+		{
+			foreach (var file in repDocsFolder.Files)
+			{
+				Logger.LogInformation("File: {Name}, Size: {SizeText}, URL: {Url}", file.Name, file.SizeText, file.Url);
+			}
+		}
+		else
+		{
+			Logger.LogWarning("The folder '/RepDocs' was not found.");
+		}
+		//items = await ItemService.GetItemsAsync();
+		//Logger.LogInformation("DIAGNOSTIC: Loaded {Count} items", items.Count);
+		isReady = true;
+	}
+}

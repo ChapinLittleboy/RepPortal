@@ -15,6 +15,9 @@
 }
 else
 {
+	<div class="active-filters">
+		<button @onclick="ClearFilters">Clear Filters</button>
+	</div>
 	 <div>
         <SfGrid ID="PcfsGrid" @ref="MyGrid" DataSource="@pcfHeaders" Height="600px" Width="100%" CssClass="custom-grid" AllowResizing="true"
                 AllowFiltering="true" AllowMultiSorting="true" AllowSorting="true" AllowExcelExport="true" Toolbar="@(new string[] { "ExcelExport", "ColumnChooser"})"
@@ -166,6 +169,13 @@ else
 		new StatusOptions() {StatusCode = "Expired" },
 		new StatusOptions() {StatusCode = "All" }
 	};
+
+
+	private async Task ClearFilters()
+	{
+		await MyGrid.ClearFilteringAsync();
+		
+	}
 
 }
 

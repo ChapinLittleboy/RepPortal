@@ -1,0 +1,5 @@
+<Project>
+	<ItemGroup>
+		<EmbeddedResource Include="SqlScripts\**\*.sql" />
+	</ItemGroup>
+</Project>

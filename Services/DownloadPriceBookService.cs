@@ -1,19 +1,16 @@
 ﻿namespace RepPortal.Services;
 
-
-
 using Dapper;
 using RepPortal.Models;
 using Microsoft.Data.SqlClient;
 using System.IO;
-using global::RepPortal.Models;
 
-public interface IFormsDownloadService
+public interface IPriceBookService
 {
-    Task<List<FormsDownloadFolder>> GetFormsDownFoldersAsync();
+    Task<List<PriceBookFolder>> GetPriceBookFoldersAsync();
 }
 
-public class FormsDownloadService : IFormsDownloadService
+public class DownloadPriceBookService : IPriceBookService
 {
     private readonly string _connString;
     private readonly IWebHostEnvironment _env;
@@ -21,7 +18,7 @@ public class FormsDownloadService : IFormsDownloadService
     private readonly string _route;
 
 
-    public FormsDownloadService(IConfiguration config, IWebHostEnvironment env)
+    public DownloadPriceBookService(IConfiguration config, IWebHostEnvironment env)
     {
         _connString = config.GetConnectionString("RepPortalConnection");
         _env = env;
@@ -29,16 +26,16 @@ public class FormsDownloadService : IFormsDownloadService
         _route = config["PriceBooks:RequestPath"] ?? "/RepDocs";
     }
 
-    public async Task<List<FormsDownloadFolder>> GetFormsDownFoldersAsync()
+    public async Task<List<PriceBookFolder>> GetPriceBookFoldersAsync()
     {
         const string sql = @"
             SELECT Id, DisplayName, FolderRelativePath
-              FROM dbo.FormsFolders
+              FROM dbo.PriceBookFolders
              ORDER BY DisplayOrder;
         ";
 
         using var conn = new SqlConnection(_connString);
-        var folders = (await conn.QueryAsync<FormsDownloadFolder>(sql)).ToList();
+        var folders = (await conn.QueryAsync<PriceBookFolder>(sql)).ToList();
 
         foreach (var folder in folders)
         {
@@ -52,7 +49,7 @@ public class FormsDownloadService : IFormsDownloadService
 
             // only pick up Excel files in that folder
             var filePaths = Directory
-                .GetFiles(physical, "*.*", SearchOption.AllDirectories);
+                .GetFiles(physical, "*.xlsx", SearchOption.TopDirectoryOnly);
 
             folder.Files = filePaths
                 .Select(fp =>
@@ -63,7 +60,7 @@ public class FormsDownloadService : IFormsDownloadService
                     var url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(folder.FolderRelativePath)}/{Uri.EscapeDataString(name)}";
                     var sizeKb = Math.Round(info.Length / 1024.0, 2);
 
-                    return new FormsDownloadFile
+                    return new PriceBookFile
                     {
                         Name = name,
                         Url = url,

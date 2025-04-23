@@ -20,17 +20,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="SqlScripts\001_CreateFirstSixTables.sql" />
-    <None Remove="SqlScripts\002_CreateRepCodeIndexes.sql" />
-    <None Remove="SqlScripts\003_Change datetime to datetime2%280%29.sql" />
-    <None Remove="SqlScripts\004_CreateFileDownloadTable.sql" />
-  </ItemGroup>
-
-  <ItemGroup>
     <EmbeddedResource Include="SqlScripts\001_CreateFirstSixTables.sql" />
     <EmbeddedResource Include="SqlScripts\002_CreateRepCodeIndexes.sql" />
     <EmbeddedResource Include="SqlScripts\003_Change datetime to datetime2(0).sql" />
     <EmbeddedResource Include="SqlScripts\004_CreateFileDownloadTable.sql" />
+    <EmbeddedResource Include="SqlScripts\005_CreateMarketingFolder table.sql" />
   </ItemGroup>
 
   <ItemGroup>
@@ -60,5 +54,15 @@
   <ItemGroup>
     <Folder Include="wwwroot\images\" />
   </ItemGroup>
+
+	<Import Project="SetSqlFilesAsEmbedded.targets" />
+
+	<ItemGroup>
+	  <EmbeddedResource Remove="SqlScripts\001_CreateFirstSixTables.sql" />
+	  <EmbeddedResource Remove="SqlScripts\002_CreateRepCodeIndexes.sql" />
+	  <EmbeddedResource Remove="SqlScripts\003_Change datetime to datetime2%280%29.sql" />
+	  <EmbeddedResource Remove="SqlScripts\004_CreateFileDownloadTable.sql" />
+	  <EmbeddedResource Remove="SqlScripts\005_CreateMarketingFolder table.sql" />
+	</ItemGroup>
 
 </Project>

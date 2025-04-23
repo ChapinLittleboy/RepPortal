@@ -1,0 +1,70 @@
+﻿@page "/admin/marketing-files"
+@inject MarketingFileService FileService
+
+<h3>Manage Marketing Files</h3>
+
+<SfGrid TValue="MarketingFileSingle"
+DataSource="@FileList"
+Toolbar="@(new[] { "Add", "Edit", "Delete", "Update", "Cancel" })"
+AllowPaging="true"
+AllowSorting="true"
+EditSettings="@GridSettings"
+Width="100%">
+    <GridColumns>
+        <GridColumn Field="Id" HeaderText="ID" IsPrimaryKey="true" Visible="false"></GridColumn>
+        <GridColumn Field="DisplayName" HeaderText="Display Name" Width="200"></GridColumn>
+        <GridColumn Field="FolderRelativePath" HeaderText="Folder" Width="200" EditType="EditType.DropDownEdit">
+            <EditTemplate Context="file"> 
+                <SfDropDownList TValue="string" TItem="string"
+                DataSource="@FolderPaths"
+                @bind-Value="abc">
+                </SfDropDownList>
+            </EditTemplate>
+        </GridColumn>
+        <GridColumn Field="FileName" HeaderText="File Name" Width="250"></GridColumn>
+        <GridColumn Field="DisplayOrder" HeaderText="Order" Width="100" TextAlign="TextAlign.Right"></GridColumn>
+    </GridColumns>
+    <GridEvents TValue="MarketingFile"
+    OnActionComplete="@ActionCompleteCallback">
+    </GridEvents>
+</SfGrid>
+
+@code {
+    private List<MarketingFileSingle> FileList = new();
+    private List<string> FolderPaths = new();
+
+    private string abc = "NotSet";
+    private GridEditSettings GridSettings = new()
+        {
+            AllowEditing = true,
+            AllowAdding = true,
+            AllowDeleting = true,
+            Mode = EditMode.Normal
+        };
+
+    private EventCallback<ActionEventArgs<MarketingFile>> ActionCompleteCallback =>
+        EventCallback.Factory.Create<ActionEventArgs<MarketingFile>>(this, OnGridActionComplete);
+
+    protected override async Task OnInitializedAsync()
+    {
+        FolderPaths = await FileService.GetFolderPathsAsync();
+        FileList = await FileService.GetFilesAsync();
+    }
+
+    private async Task OnGridActionComplete(ActionEventArgs<MarketingFile> args)
+    {
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (args.Action == "Add")
+                await FileService.AddFileAsync(args.Data);
+            else if (args.Action == "Edit")
+                await FileService.UpdateFileAsync(args.Data);
+        }
+        else if (args.RequestType == Syncfusion.Blazor.Grids.Action.Delete)
+        {
+           // await FileService.DeleteFileAsync(args.Data.Id.Value);
+        }
+
+        FileList = await FileService.GetFilesAsync();
+    }
+}

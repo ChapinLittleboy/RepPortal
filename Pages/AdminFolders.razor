@@ -1,0 +1,106 @@
+﻿@page "/admin/folders"
+@using System.Diagnostics
+@using SelectionType = Syncfusion.Blazor.Grids.SelectionType
+@inject FolderAdminService FolderService
+
+<h3>Manage Folders</h3>
+
+<select @bind="SelectedTable" class="form-select mb-3" style="width: 300px">
+    <option value="FormsFolders">Forms Folders</option>
+    <option value="MarketingFolders">Marketing Folders</option>
+    <option value="PricebookFolders">Pricebook Folders</option>
+</select>
+
+<SfGrid TValue="FolderRecord" @ref="GridRef"
+        DataSource="@FolderList"
+        Toolbar="@(new[] { "Add", "Edit", "Delete", "Update", "Cancel" })"
+        AllowPaging="true"
+        EditSettings="@GridSettings"
+        Width="100%">
+	<GridSelectionSettings Type="SelectionType.Single" Mode="Syncfusion.Blazor.Grids.SelectionMode.Row"></GridSelectionSettings>
+
+	<GridColumns>
+		<GridColumn Field="Id" HeaderText="ID" IsPrimaryKey="true" Visible="false"></GridColumn>
+		<GridColumn Field="DisplayName" HeaderText="Name" Width="200"></GridColumn>
+		<GridColumn Field="FolderRelativePath" HeaderText="Path" Width="200"></GridColumn>
+		<GridColumn Field="DisplayOrder" HeaderText="Order" Width="100" TextAlign="TextAlign.Right"></GridColumn>
+	</GridColumns>
+	<GridEvents TValue="FolderRecord"
+	           
+	            OnActionComplete="@ActionCompleteCallback">
+	</GridEvents>
+
+</SfGrid>
+
+@code {
+    private string SelectedTable = "FormsFolders";
+    private List<FolderRecord> FolderList = new();
+	private SfGrid<FolderRecord> GridRef;
+
+
+    private GridEditSettings GridSettings = new()
+    {
+        AllowEditing = true,
+        AllowAdding = true,
+        AllowDeleting = true,
+        Mode = EditMode.Normal
+    };
+
+ 
+
+    private EventCallback<ActionEventArgs<FolderRecord>> ActionCompleteCallback =>
+	    EventCallback.Factory.Create<ActionEventArgs<FolderRecord>>(this, OnGridActionComplete);
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFolders();
+    }
+
+    private async Task OnTableChanged(Microsoft.AspNetCore.Components.ChangeEventArgs e)
+    {
+    
+	    SelectedTable = e.Value?.ToString() ?? "FormsFolders";
+	    try
+	    {
+		    await LoadFolders();
+	    }
+	    catch (Exception ex)
+	    {
+		    Console.WriteLine(ex.Message);
+	    }
+    }
+
+    private async Task LoadFolders()
+    {
+        FolderList = await FolderService.GetFoldersAsync(SelectedTable);
+    }
+
+
+
+    private async Task OnGridActionComplete(ActionEventArgs<FolderRecord> args)
+    {
+        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        {
+            if (args.Action == "Add")
+                await FolderService.AddFolderAsync(SelectedTable, args.Data);
+            else if (args.Action == "Edit")
+                await FolderService.UpdateFolderAsync(SelectedTable, args.Data);
+        }
+        else if (args.RequestType == Syncfusion.Blazor.Grids.Action.Delete)
+        {
+	        Debug.Assert(args != null, nameof(args) + " != null");
+	        await FolderService.DeleteFolderAsync(SelectedTable, (int)args.Data.Id);
+        }
+
+        try
+        {
+	        //await LoadFolders();
+        }
+        catch (Exception ex)
+        {
+	        Console.WriteLine(ex.Message);
+        }
+        StateHasChanged();
+    }
+}

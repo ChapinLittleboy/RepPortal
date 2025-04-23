@@ -66,7 +66,12 @@
 	        <SfMenu CssClass="e-inherit" TValue="MenuItem">
 		        <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
 		        <MenuItems>
-			        <MenuItem Text="Chapin Contacts"></MenuItem>
+			        <MenuItem Text="Chapin Contacts">
+				        <MenuItems>
+					        <MenuItem Text="Download Contacts" title="Download Chapin Contacts List"></MenuItem>
+
+				        </MenuItems>
+			        </MenuItem>
 		        </MenuItems>
 	        </SfMenu>
 
@@ -79,8 +84,10 @@
                                 <AuthorizeView Roles="SuperUser">
 		                        <MenuItem Text="Manage User Roles" Url="/admin/user-roles"></MenuItem>
 		                        <MenuItem Text="Debug User Identity" Url="/admin/debug-identity"></MenuItem>
-		                        <MenuItem Text="Manage RepCodes" Url="/admin/manage-repcodes"/>
-                               
+                                    <MenuItem Text="Manage RepCodes" Url="/admin/manage-repcodes" />
+                                    <MenuItem Text="Manage Folders" Url="/admin/folders"/>
+									<MenuItem Text="Manage Marketing Files" Url="/admin/marketing-files" />
+
                                 </AuthorizeView>
                                 <MenuItem Text="Connected Users" Url="/admin/connected"></MenuItem>
                                 <MenuItem Text="Manage Excluded Hold Code" Url="/admin/credit-hold-codes"></MenuItem>
@@ -248,7 +255,17 @@
 	            break;
             case "Forms":
 	            //Navigate to PCF Listing page
-                Navigation.NavigateTo("/forms-download");
+	            Navigation.NavigateTo("/forms-download");
+	            break;
+            case "Marketing":
+                //Navigate to PCF Listing page
+                Navigation.NavigateTo("/marketing-download");
+                break;
+            case "Download Contacts":
+	            Navigation.NavigateTo("/RepDocs/Chapin International Internal Departmental Contacts.docx", forceLoad: true);
+	            break;
+            case "admin/folders":
+	            Navigation.NavigateTo("/RepDocs/Chapin International Internal Departmental Contacts.docx", forceLoad: true);
 	            break;
         }
     }
