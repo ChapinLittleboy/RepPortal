@@ -8,7 +8,7 @@ public class ApplicationUser : IdentityUser
     public string? LastName { get; set; }
     public string? RepCode { get; set; }
     public string? WindowsLogin { get; set; } // eg.Chapin\willit2
-    public bool IsActive { get; set; } = false; // Default to true
+    public bool IsActive { get; set; } = true; // Default to true
 
 
 }

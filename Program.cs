@@ -14,8 +14,9 @@ using Syncfusion.Blazor;
 using DbUp;
 using System.Reflection;
 using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Identity.UI.Services;
 
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NMaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxfcHVWRWBfV0x/VkQ=");
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxcd3VVRGVYUkV3WUBWYEo=");
 // Set the global command timeout for Dapper
 SqlMapper.Settings.CommandTimeout = 60; // Timeout set to 60 seconds
 
@@ -44,13 +45,19 @@ var connectionString = builder.Configuration.GetConnectionString("RepPortalConne
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
+builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddClaimsPrincipalFactory<CustomUserClaimsPrincipalFactory>();
 
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<ApplicationUser>>();
+
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.SignIn.RequireConfirmedEmail = true;
+});
+
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
@@ -79,6 +86,7 @@ builder.Services.AddScoped<CreditHoldExclusionService>();
 builder.Services.AddScoped<StateContainer>();
 builder.Services.AddScoped<FolderAdminService>();
 builder.Services.AddScoped<MarketingFileService>();
+
 
 
 var app = builder.Build();
@@ -115,14 +123,17 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseRouting();
 
-app.UseAuthorization();
 app.UseAuthentication();
+app.UseAuthorization();
+
 
 app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
 RunDbUp(connectionString);
+RunConfigureRoles();
+
 
 app.Run();
 
@@ -151,4 +162,20 @@ void RunDbUp(string connectionString)
     Console.ForegroundColor = ConsoleColor.Green;
     Console.WriteLine("Database upgrade successful");
     Console.ResetColor();
+}
+
+ async Task RunConfigureRoles()
+{
+    var scope = app.Services.CreateScope();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+    string[] roles = new[] { "Administrator", "SalesManager", "SalesRep", "User", "SuperUser"};
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+        {
+            await roleManager.CreateAsync(new IdentityRole(role));
+        }
+    }
+
 }

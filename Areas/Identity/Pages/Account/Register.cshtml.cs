@@ -138,8 +138,18 @@ public class RegisterModel : PageModel
             {
                 _logger.LogInformation("User created a new account with password.");
 
+
+                // Determine role based on email domain
+                // Define internal domains that get the "User" role
+                var internalDomains = new[] { "@chapinmfg.com", "@heathmfg.com", "@ChapinCustomMolding.com" };
+
+                string role = internalDomains.Any(d => Input.Email.EndsWith(d, StringComparison.OrdinalIgnoreCase))
+                    ? "User"
+                    : "SalesRep";
+
+
                 // 🔐 Assign user to a role
-                var roleResult = await _userManager.AddToRoleAsync(user, "Administrator"); // or "Administrator", etc.
+                var roleResult = await _userManager.AddToRoleAsync(user, role);
 
                 if (!roleResult.Succeeded)
                 {

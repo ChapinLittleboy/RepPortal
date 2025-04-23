@@ -1,0 +1,44 @@
+﻿@page "/test-email"
+@using Microsoft.AspNetCore.Identity.UI.Services
+@inject IEmailSender SmtpEmailSender
+
+<h3>Test Email Sender</h3>
+
+<div class="mb-3">
+	<label class="form-label">Recipient Email</label>
+	<input type="email" @bind="toEmail" class="form-control" />
+</div>
+<div class="mb-3">
+	<label class="form-label">Subject</label>
+	<input type="text" @bind="subject" class="form-control" />
+</div>
+<div class="mb-3">
+	<label class="form-label">Message (HTML allowed)</label>
+	<textarea @bind="body" class="form-control" rows="6"></textarea>
+</div>
+<button class="btn btn-primary" @onclick="SendTestEmail">Send Test Email</button>
+
+@if (!string.IsNullOrEmpty(resultMessage))
+{
+	<div class="alert alert-info mt-3">@resultMessage</div>
+}
+
+@code {
+	private string toEmail = "bill.littleboy@pm.me";
+	private string subject = "Test Email from Blazor App";
+	private string body = "<strong>Hello!</strong><br>This is a test email.";
+	private string resultMessage;
+
+	private async Task SendTestEmail()
+	{
+		try
+		{
+			await SmtpEmailSender.SendEmailAsync(toEmail, subject, body);
+			resultMessage = $"Email sent successfully to {toEmail}.";
+		}
+		catch (Exception ex)
+		{
+			resultMessage = $"Failed to send email: {ex.Message}";
+		}
+	}
+}

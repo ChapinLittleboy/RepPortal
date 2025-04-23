@@ -1,6 +1,7 @@
 ﻿@page "/admin/manage-repcodes"
 @attribute [Authorize(Roles = "Administrator")]
 @inject UserManager<ApplicationUser> UserManager
+@inject IJSRuntime JS
 
 <h3>Manage RepCodes</h3>
 
@@ -41,11 +42,16 @@ else
                     </td>
                     <td>@(user.IsActive ? "Active" : "Inactive")</td>
                     <td>
-                        <button class="btn btn-sm @(user.IsActive ? "btn-danger" : "btn-success")"
-                                @onclick="() => ToggleUserStatus(user)">
-                            @(user.IsActive ? "Deactivate" : "Activate")
-                        </button>
+	                    <button class="btn btn-sm @(user.IsActive ? "btn-danger" : "btn-success")"
+	                            @onclick="() => ToggleUserStatus(user)">
+		                    @(user.IsActive ? "Deactivate" : "Activate")
+	                    </button>
+	                    <button class="btn btn-sm btn-outline-danger ms-2"
+	                            @onclick="() => DeleteUser(user)">
+		                    Delete
+	                    </button>
                     </td>
+
                 </tr>
             }
         </tbody>
@@ -100,6 +106,34 @@ else
             }
         }
     }
+    private async Task DeleteUser(UserWithEdit user)
+    {
+	    bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete {user.Email}?");
+	    if (!confirmed)
+		    return;
+
+	    var targetUser = await UserManager.FindByIdAsync(user.Id);
+	    if (targetUser != null)
+	    {
+		    var result = await UserManager.DeleteAsync(targetUser);
+		    if (result.Succeeded)
+		    {
+			    users.Remove(user);
+			    StateHasChanged();
+		    }
+		    else
+		    {
+			    // Optional: log or display errors
+			    Console.WriteLine("Failed to delete user:");
+			    foreach (var error in result.Errors)
+			    {
+				    Console.WriteLine($" - {error.Description}");
+			    }
+		    }
+	    }
+    }
+
+
 
     private class UserWithEdit
     {
