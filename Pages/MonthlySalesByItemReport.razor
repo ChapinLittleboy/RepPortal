@@ -10,7 +10,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
-@inject TitleService TitleService
+
 
 <SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
 
@@ -20,7 +20,18 @@
 }
 else
 {
+	<div>
+		<div class="active-filters">
+			<button @onclick="ClearFilters">Clear Filters</button>
+        
+			<!--
+        <span class="divider">|</span>
+        <strong class="small-text">Active Filters:</strong>
+        <span class="small-text">@activeFilters</span>
+        -->
+		</div>
 
+	</div>
 
 	<SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowFiltering="true" AllowPaging="true"
 	        AllowResizing="true" AllowTextWrap="true" AllowReordering="true" ShowColumnChooser="true"
@@ -109,12 +120,16 @@ else
         var rawData = await SalesService.GetItemSalesReportData();
         ProcessDynamicColumns(rawData);
         ConvertToDictionaries(rawData);
-        TitleService.PageSubtitle = "Monthly Item Sales Report";
         eSalesData = SalesData.Select(d => d.ToExpando()).ToList();
         await base.OnInitializedAsync();
         // Hide the spinner
         isLoading = false;
         //spinner.HideAsync();
+    }
+    private async Task ClearFilters()
+    {
+	    await Grid.ClearFilteringAsync();
+
     }
 
 

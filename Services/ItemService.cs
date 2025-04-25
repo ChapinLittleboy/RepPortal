@@ -65,7 +65,8 @@ public class ItemService : IItemService
                   i.Description,
                   ip.unit_price1 AS Price1,
                   ip.unit_price2 AS Price2,
-                  ip.unit_price3 AS Price3
+                  ip.unit_price3 AS Price3,
+                    i.stat as ItemStatus
                 FROM item_mst i
                 JOIN itemprice_mst ip
                   ON ip.item = i.item

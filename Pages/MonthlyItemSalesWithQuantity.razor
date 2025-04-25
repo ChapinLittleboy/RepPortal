@@ -1,5 +1,4 @@
-﻿
-@page "/monthly-item-sales-with-qty"
+﻿@page "/monthly-item-sales-with-qty"
 @attribute [Authorize]
 @using System.Dynamic
 @using System.Globalization
@@ -13,7 +12,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
-@inject TitleService TitleService
+
 
 <SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
 
@@ -30,10 +29,10 @@ else
     </div>
 
     <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowFiltering="true" AllowPaging="true" ShowColumnChooser="true" AllowReordering="true"
-    AllowGrouping="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" , "ColumnChooser"})" AllowResizing="true" AllowTextWrap="true">
-	    <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
-	    <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
-        <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })" PageSize="20"></GridPageSettings>
+            AllowGrouping="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" , "ColumnChooser"})" AllowResizing="true" AllowTextWrap="true">
+        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
+        <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
+        <GridPageSettings PageSizes="@(new string[] { "20", "50", "100",  "All" })" PageSize="20"></GridPageSettings>
         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
         <GridSortSettings>
             <GridSortColumns>
@@ -86,11 +85,11 @@ else
             {
                 @if (showRevenue)
                 {
-	                <GridColumn Field="@column" HeaderText="@column" Format="C0" Width="140"></GridColumn>
+                    <GridColumn Field="@column" HeaderText="@column" Format="C0" Width="140"></GridColumn>
                 }
                 else
                 {
-	                <GridColumn Field="@column" HeaderText="@column" Format="N0" Width="140"></GridColumn>
+                    <GridColumn Field="@column" HeaderText="@column" Format="N0" Width="140"></GridColumn>
                 }
             }
         </GridColumns>
@@ -120,7 +119,7 @@ else
         {
             currentUser = await UserManager.GetUserAsync(user);
         }
-        TitleService.PageSubtitle = "Monthly Item Sales Report";
+
         var rawData = await SalesService.GetItemSalesReportDataWithQty();
         ProcessDynamicColumns(rawData);
         ConvertToDictionaries(rawData);
@@ -155,7 +154,7 @@ else
     private void ProcessDynamicColumns(List<Dictionary<string, object>> records)
     {
 
-        Console.WriteLine("Records: " + string.Join(Environment.NewLine, records.Select(record => 
+        Console.WriteLine("Records: " + string.Join(Environment.NewLine, records.Select(record =>
             string.Join(", ", record.Select(kvp => $"{kvp.Key}: {kvp.Value}")))));
 
         // Get all possible dynamic column names
@@ -167,7 +166,7 @@ else
             .ToList();
 
         DynamicColumns = allColumns;
-       
+
         // Debugging: Log the dynamic columns
         Console.WriteLine("Dynamic Columns: " + string.Join(", ", DynamicColumns));
     }
@@ -211,7 +210,7 @@ else
         if (columnName.StartsWith("FY", StringComparison.OrdinalIgnoreCase))
         {
             // Extract the integer part after "FY"
-            if (int.TryParse(columnName.Substring(2,4), out int year))
+            if (int.TryParse(columnName.Substring(2, 4), out int year))
             {
                 // Return a value based on the year
                 // For example, FY2024 returns 10, FY2025 returns 11, etc.
@@ -227,7 +226,7 @@ else
         if (columnName.Length >= 3)
         {
             var monthPart = columnName.Substring(0, 3);
-            var yearPart = columnName.Length > 3 ? columnName.Substring(3,4) : "";
+            var yearPart = columnName.Length > 3 ? columnName.Substring(3, 4) : "";
 
             int previouscolumns = 13;
             var monthOrder = monthPart.ToUpper() switch

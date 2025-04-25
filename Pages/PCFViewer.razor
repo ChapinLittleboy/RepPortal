@@ -4,7 +4,7 @@
 @inject IRepCodeContext RepCodeContext
 @inject ExportService ExportService
 @inject IJSRuntime JSRuntime
-@inject TitleService TitleService
+
 
 
 @page "/pcfviewer/{pcfNumber:int}"
@@ -22,7 +22,7 @@ else if (!string.IsNullOrEmpty(_errorMessage))
 else if (isReady)
 {
 	<div class="container pcf-header-details my-4">
-		<h2 class="mb-4">PCF Header Details</h2>
+		<h2 class="mb-4">PCF/SPR Header Details</h2>
 
 		<!-- Header Information Card -->
 		<div class="card mb-4">
@@ -38,7 +38,7 @@ else if (isReady)
 						<div>@pcfHeader.CustomerName</div>
 					</div>
 					<div class="col-md-4">
-						<strong>PCF Number:</strong>
+						<strong>PCF/SPR Number:</strong>
 						<div>@pcfHeader.PcfNumber</div>
 					</div>
 				</div>
@@ -46,7 +46,7 @@ else if (isReady)
 				<!-- Row 2: PCF Type and Dates -->
 				<div class="row mb-2">
 					<div class="col-md-4">
-						<strong>PCF Type:</strong>
+						<strong>PCF/SPR Type:</strong>
 						<div>@pcfHeader.PCFTypeDescription</div>
 					</div>
 					<div class="col-md-4">
@@ -133,7 +133,7 @@ else if (isReady)
 		</div>
 
 		<!-- PCF Lines Grid -->
-		<h3 class="mb-3">PCF Lines</h3>
+		<h3 class="mb-3">PCF/SPR Lines</h3>
 		<SfGrid DataSource="pcfHeader.PCFLines">
 			<GridColumns>
 				<GridColumn Field="ItemNum" HeaderText="Item Number" Width="150"></GridColumn>
@@ -143,8 +143,8 @@ else if (isReady)
 			</GridColumns>
 		</SfGrid>
 
-		<SfButton @onclick="PrintPDF" disabled="@(isLoading)"> Print PDF</SfButton>
-		<SfButton @onclick="PrintPDFNicer" disabled="@(isLoading)"> Print nicer PDF</SfButton>
+		
+		<SfButton @onclick="PrintPDFNicer" disabled="@(isLoading)"> Print PDF</SfButton>
 
 	</div>
 }
@@ -164,7 +164,7 @@ else if (isReady)
 	{
 		try
 		{
-			TitleService.PageSubtitle = "PCF Viewer";
+			
 			pcfHeader = await PcfService.GetPCFHeaderWithItemsAsync(pcfNumber);
 
 			if (pcfHeader != null)

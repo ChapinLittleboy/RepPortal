@@ -20,9 +20,11 @@ else
     <p>Please log in to continue your session.</p>
 }
 
-<AuthorizeView Roles="Administrator">
-    <RepCodeSwitcher />
-</AuthorizeView>
+
+<AuthorizeView Roles="Administrator,User,SalesManager">
+        <RepCodeSwitcher />
+    </AuthorizeView>
+
 
 @code {
     private string repAgency;

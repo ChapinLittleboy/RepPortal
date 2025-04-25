@@ -12,111 +12,115 @@
 
 <div class="control-container">
     <SfAppBar Mode="AppBarMode.Prominent" ColorMode="AppBarColor.Inherit" CssClass="e-appbar">
-        <div class="appbar-content">
-	        <img src="images/ChapinLogo.png" alt="Logo" class="appbar-logo"/>
-            <div class="app-title-wrapper">
-	            <span class="appbar-title" >Rep Portal</span>
-                <span class="appbar-subtitle">@TitleService.PageSubtitle</span>
-            </div>
-            <AppBarSpacer></AppBarSpacer>
-            <SfButton CssClass="e-inherit home-button" OnClick="GoHome">Home</SfButton>
+	    <div class="appbar-content">
+		    <img src="images/ChapinLogo.png" alt="Logo" class="appbar-logo"/>
+		    <div class="app-title-wrapper">
+			    <span class="appbar-title" >Rep Portal</span>
+		    </div>
+		    <AppBarSpacer></AppBarSpacer>
+		    <SfButton CssClass="e-inherit home-button" OnClick="GoHome">Home</SfButton>
 
-            <SfMenu CssClass="e-inherit" TValue="MenuItem">
-                <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+		    <SfMenu CssClass="e-inherit" TValue="MenuItem">
+			    <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
 
-                <MenuItems>
-                    <MenuItem Text="Reports">
-                        <MenuItems>
-                            <MenuItem Text="Customer List"/>
-                            <MenuItem Text="Monthly Sales Report"></MenuItem>
-                            <!--  <MenuItem Text="Monthly Sales By Item Report"></MenuItem> -->
-                            <MenuItem Text="Monthly Sales By Item Report"></MenuItem>
-                            <MenuItem Text="Shipments Report"></MenuItem>
-                            <MenuItem Text="Open Orders Report"></MenuItem>
-                            <MenuItem Text="Customer Invoices Report"></MenuItem>
+			    <MenuItems>
+				    <MenuItem Text="Reports">
+					    <MenuItems>
+						    <MenuItem Text="Customer List"/>
+						    <MenuItem Text="Monthly Sales Report"></MenuItem>
+						    <!--  <MenuItem Text="Monthly Sales By Item Report"></MenuItem> -->
+						    <MenuItem Text="Monthly Sales By Item Report"></MenuItem>
+						    <MenuItem Text="Shipments Report"></MenuItem>
+						    <MenuItem Text="Open Orders Report"></MenuItem>
+						    <MenuItem Text="Customer Invoices Report"></MenuItem>
 
-                        </MenuItems>
-                    </MenuItem>
-                </MenuItems>
-            </SfMenu>
-	        <SfMenu CssClass="e-inherit" TValue="MenuItem">
-		        <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
-		        <MenuItems>
-			        <MenuItem Text="Pricing">
-				        <MenuItems>
-                            <MenuItem Text="SPR/PCF Log" title="View Customer Contract Pricing"></MenuItem>
-                            <MenuItem Text="Item Pricing" title="Non-contract pricing lookup"></MenuItem>
+					    </MenuItems>
+				    </MenuItem>
+			    </MenuItems>
+		    </SfMenu>
+		    <SfMenu CssClass="e-inherit" TValue="MenuItem">
+			    <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+			    <MenuItems>
+				    <MenuItem Text="Pricing">
+					    <MenuItems>
+						    <MenuItem Text="SPR/PCF Log" title="View Customer Contract Pricing"></MenuItem>
+						    <MenuItem Text="Item Pricing" title="Non-contract pricing lookup"></MenuItem>
                            
-				        </MenuItems>
-			        </MenuItem>
-		        </MenuItems>
-	        </SfMenu>
-	        <SfMenu CssClass="e-inherit" TValue="MenuItem">
-		        <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
-		        <MenuItems>
-			        <MenuItem Text="Forms"></MenuItem>
-		        </MenuItems>
-	        </SfMenu>
-	        <SfMenu CssClass="e-inherit" TValue="MenuItem">
-		        <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
-		        <MenuItems>
-			        <MenuItem Text="Marketing"></MenuItem>
-		        </MenuItems>
-	        </SfMenu>
-	        <SfMenu CssClass="e-inherit" TValue="MenuItem">
-		        <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
-		        <MenuItems>
-			        <MenuItem Text="Chapin Contacts">
-				        <MenuItems>
-					        <MenuItem Text="Download Contacts" title="Download Chapin Contacts List"></MenuItem>
+					    </MenuItems>
+				    </MenuItem>
+			    </MenuItems>
+		    </SfMenu>
+		    <SfMenu CssClass="e-inherit" TValue="MenuItem">
+			    <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+			    <MenuItems>
+				    <MenuItem Text="Forms"></MenuItem>
+			    </MenuItems>
+		    </SfMenu>
+		    <SfMenu CssClass="e-inherit" TValue="MenuItem">
+			    <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+			    <MenuItems>
+				    <MenuItem Text="Marketing"></MenuItem>
+			    </MenuItems>
+		    </SfMenu>
+		    <SfMenu CssClass="e-inherit" TValue="MenuItem">
+			    <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+			    <MenuItems>
+				    <MenuItem Text="Chapin Contacts">
+					    <MenuItems>
+						    <MenuItem Text="Download Contacts" title="Download Chapin Contacts List"></MenuItem>
 
-				        </MenuItems>
-			        </MenuItem>
-		        </MenuItems>
-	        </SfMenu>
+					    </MenuItems>
+				    </MenuItem>
+			    </MenuItems>
+		    </SfMenu>
 
-            @if (isAdmin)
-            {
-                <SfMenu CssClass="e-inherit" TValue="MenuItem">
-                    <MenuItems>
-                        <MenuItem Text="Admin">
-	                        <MenuItems>
-                                <AuthorizeView Roles="SuperUser">
-		                        <MenuItem Text="Manage User Roles" Url="/admin/user-roles"></MenuItem>
-		                        <MenuItem Text="Debug User Identity" Url="/admin/debug-identity"></MenuItem>
-                                    <MenuItem Text="Manage RepCodes" Url="/admin/manage-repcodes" />
-                                    <MenuItem Text="Manage Folders" Url="/admin/folders"/>
-									<MenuItem Text="Manage Marketing Files" Url="/admin/marketing-files" />
+		    @if (isAdmin)
+		    {
+			    <SfMenu CssClass="e-inherit" TValue="MenuItem">
+				    <MenuItems>
+					    <MenuItem Text="Admin">
+						    <MenuItems>
+							    <AuthorizeView Roles="SuperUser">
+								    <MenuItem Text="Manage User Roles" Url="/admin/user-roles"></MenuItem>
+								    <MenuItem Text="Debug User Identity" Url="/admin/debug-identity"></MenuItem>
+								    <MenuItem Text="Manage RepCodes" Url="/admin/manage-repcodes" />
+								    <MenuItem Text="Manage Folders" Url="/admin/folders"/>
+								    <MenuItem Text="Manage Marketing Files" Url="/admin/marketing-files" />
 
-                                </AuthorizeView>
-                                <MenuItem Text="Connected Users" Url="/admin/connected"></MenuItem>
-                                <MenuItem Text="Manage Excluded Hold Code" Url="/admin/credit-hold-codes"></MenuItem>
+							    </AuthorizeView>
+							    <MenuItem Text="Connected Users" Url="/admin/connected"></MenuItem>
+							    <MenuItem Text="Manage Excluded Hold Code" Url="/admin/credit-hold-codes"></MenuItem>
 
-	                        </MenuItems>
-                        </MenuItem>
-                    </MenuItems>
-                </SfMenu>
-            }
-            <AppBarSpacer></AppBarSpacer>
-            <AuthorizeView>
-                <Authorized>
-                    <div class="user-info">
-                        <a href="Identity/Account/Manage" class="nav-link" >Hello, @welcomemsg</a>
-                        <div class="rep-name">@GetRepFullName(context.User)</div>
-                    </div>
-                    <form method="post" action="Identity/Account/Logout" class="logout-form">
-                        <button type="submit" class="nav-link btn btn-link">Log out</button>
-                    </form>
-                </Authorized>
-                <NotAuthorized>
-                    <a href="Identity/Account/Register" class="nav-link">Register</a>
-                    <a href="Identity/Account/Login" class="nav-link">Log in</a>
-                </NotAuthorized>
-            </AuthorizeView>
-        </div>
+						    </MenuItems>
+					    </MenuItem>
+				    </MenuItems>
+			    </SfMenu>
+		    }
+		    <AppBarSpacer></AppBarSpacer>
+		    <AuthorizeView>
+			    <Authorized>
+				    <div class="user-info">
+					    <a href="Identity/Account/Manage" class="nav-link" >Hello, @welcomemsg</a>
+					    <div class="rep-name">@GetRepFullName(context.User)</div>
+				    </div>
+				    <form method="post" action="Identity/Account/Logout" class="logout-form">
+					    <button type="submit" class="nav-link btn btn-link">Log out</button>
+				    </form>
+			    </Authorized>
+			    <NotAuthorized>
+				    <a href="Identity/Account/Register" class="nav-link">Register</a>
+				    <a href="Identity/Account/Login" class="nav-link">Log in</a>
+			    </NotAuthorized>
+		    </AuthorizeView>
+	    </div>
     </SfAppBar>
 </div>
-
+@if (!string.IsNullOrEmpty(TitleService.PageSubtitle))
+{
+    <div class="appbar-subtitle">
+		<medium class="text-muted">@TitleService.PageSubtitle</medium>
+	</div>
+}
 
 @code
 {
@@ -211,6 +215,8 @@
         var selectedItem = args.Item.Text;
         this.eventName = "ItemSelected";
 
+		TitleService.PageSubtitle = selectedItem;
+
         switch (selectedItem)
         {
             case "Customer List":
@@ -225,7 +231,7 @@
 	            //Navigate to Monthly Sales Report page
                 Navigation.NavigateTo("/monthly-item-sales-with-qty");
 	            break;
-            case "TEST Monthly Sales By Item Report":
+            case "Monthly Sales By Item Report":
 	            //Navigate to Monthly Sales Report page
                 Navigation.NavigateTo("/monthly-item-sales-with-qty");
 	            break;
@@ -303,8 +309,8 @@
     .appbar-subtitle {
 	    font-size: 1.2rem; /* Adjust as needed */
 	    font-weight: normal;
-	    color: #666;
-	    margin: 0; /* Remove extra margin for tighter spacing */
+	    color: #667;
+	    margin-left: 100px;
     }
     .app-title-wrapper {
 	    display: flex;

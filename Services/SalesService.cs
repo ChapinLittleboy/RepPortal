@@ -743,6 +743,7 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
     {
         using (var connection = new SqlConnection(_connectionString))
         {
+            // Note: This gets both BAT and KENT data
             await connection.OpenAsync();
             var results = await connection.QueryAsync<CustomerShipment>(@"
                 EXEC RepPortal_GetShipmentsSp 

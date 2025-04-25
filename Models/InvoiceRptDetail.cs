@@ -20,6 +20,7 @@ public class InvoiceRptDetail
     public DateTime InvDate { get; set; }
     public string InvNum { get; set; }
     public decimal ExtPrice { get; set; }
+    public DateTime? Ship_Date { get; set; }
 
     // Computed property for Cust_Num
     public string Cust_Num => Cust.PadLeft(7);

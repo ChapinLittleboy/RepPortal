@@ -11,7 +11,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
-@inject TitleService TitleService
+
 
 <SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
 <h5>Monthly Sales Report</h5>
@@ -24,7 +24,18 @@ else
 {
     if (isReady)
     {
+	    <div>
+		    <div class="active-filters">
+			    <button @onclick="ClearFilters">Clear Filters</button>
+        
+			    <!--
+        <span class="divider">|</span>
+        <strong class="small-text">Active Filters:</strong>
+        <span class="small-text">@activeFilters</span>
+        -->
+		    </div>
 
+	    </div>
 
 
         <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowGrouping="true" ShowColumnChooser="true"
@@ -104,7 +115,7 @@ else
         {
             currentUser = await UserManager.GetUserAsync(user);
         }
-        TitleService.PageSubtitle = "Monthly Sales Report";
+      
         var rawData = await SalesService.GetSalesReportData();
         ProcessDynamicColumns(rawData);
         ConvertToDictionaries(rawData);
@@ -117,6 +128,11 @@ else
         isReady = true;
     }
 
+    private async Task ClearFilters()
+    {
+	    await Grid.ClearFilteringAsync();
+
+    }
 
 
     public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)

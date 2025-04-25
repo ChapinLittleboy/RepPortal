@@ -12,9 +12,6 @@
 @using Blazored.LocalStorage
 
 
-<h3>My Customers</h3>
-
-
 <div class="container-fluid">
 <SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
 
@@ -24,18 +21,18 @@
     }
     else
     {
-	    <div>
-		    <div class="active-filters">
-			    <button @onclick="ClearFilters">Clear Filters</button>
-        
-			    <!--
-        <span class="divider">|</span>
-        <strong class="small-text">Active Filters:</strong>
-        <span class="small-text">@activeFilters</span>
-        -->
-		    </div>
+        <div>
+            <div class="active-filters">
+                <button @onclick="ClearFilters">Clear Filters</button>
 
-	    </div>
+                <!--
+                <span class="divider">|</span>
+                <strong class="small-text">Active Filters:</strong>
+                <span class="small-text">@activeFilters</span>
+                -->
+            </div>
+
+        </div>
 
         <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@customers" AllowExcelExport="true" AllowFiltering="true" EnablePersistence="true"
         Toolbar="@(new List<string>() { "Export to Excel",  "ColumnChooser" })"
@@ -79,7 +76,19 @@
                         }
                     </Template>
                 </GridColumn>
-                <GridColumn Field=@nameof(Customer.CreditHoldReason) HeaderText="Hold Reason" Width="150"></GridColumn>
+                <GridColumn Field=@nameof(Customer.CreditHoldReason) HeaderText="Hold Code" Width="100"></GridColumn>
+                <GridColumn Field="CreditHoldReason" HeaderText="Hold Description" Width="300">
+	                <Template>
+		                @{
+			                var data = context as Customer;
+			                if (data != null)
+			                {
+				                var description = GetHoldReasonDescription(data.CreditHoldReason);
+				                <span title="@description">@description</span>
+			                }
+		                }
+	                </Template>
+                </GridColumn>
                 <GridColumn Field=@nameof(Customer.PricingCode) HeaderText="Pricing Code" Width="150"></GridColumn>
             </GridColumns>
         </SfGrid>
@@ -91,14 +100,19 @@
     private string repCode;
     private bool isLoading = true;
     private SfGrid<Customer> Grid;
-    private List<CreditHoldReasonCode> reasonCodeList = new List<CreditHoldReasonCode>();
+    //private List<CreditHoldReasonCode> reasonCodeList = new List<CreditHoldReasonCode>();
     public string _state;
-  
+    private List<CreditHoldReasonCode> _creditHoldReasons = new();
+    private Dictionary<string, string> _reasonLookup = new();
 
     protected override async Task OnInitializedAsync()
     {
 
-        reasonCodeList = await CustomerService.GetAllReasonCodesAsync();
+        //reasonCodeList = await CustomerService.GetAllReasonCodesAsync();
+        _creditHoldReasons = await CustomerService.GetAllReasonCodesAsync();
+        _reasonLookup = _creditHoldReasons
+	        .Where(r => !string.IsNullOrWhiteSpace(r.Code))
+	        .ToDictionary(r => r.Code, r => r.Description);
 
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
@@ -107,7 +121,7 @@
         repCode = RepCodeContext.CurrentRepCode;
         if (user.Identity.IsAuthenticated)
         {
-	        TitleService.PageSubtitle = "Customer Listing";
+	       
             var currentUser = await UserManager.GetUserAsync(user);
             if (!string.IsNullOrEmpty(repCode))
             {
@@ -125,6 +139,11 @@
     {
 	    await Grid.ClearFilteringAsync();
 
+    }
+    private string GetHoldReasonDescription(string code)
+    {
+	    if (string.IsNullOrWhiteSpace(code)) return string.Empty;
+	    return _reasonLookup.TryGetValue(code, out var desc) ? desc : code;
     }
 
     private string GetStatusDescription(string status)

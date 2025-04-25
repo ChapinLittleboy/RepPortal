@@ -12,6 +12,7 @@ public class ItemCls
     public decimal? UnitCost { get; }
     public string? FamilyCode { get; }
     public decimal? CurUCost { get; }
+    public string Stat { get; private set; }
     public Guid RowPointer { get; }
 
     public string DisplayText => $"{Item} – {Description}";
@@ -27,6 +28,7 @@ public class ItemCls
         decimal unitCost,
         string familyCode,
         decimal curUCost,
+        string stat,
         Guid rowPointer)
     {
         SiteRef = siteRef;
@@ -39,6 +41,7 @@ public class ItemCls
         UnitCost = unitCost;
         FamilyCode = familyCode;
         CurUCost = curUCost;
+        Stat = stat;
         RowPointer = rowPointer;
     }
 }
@@ -49,6 +52,16 @@ public class ItemDetail
     public decimal Price1 { get; set; }
     public decimal Price2 { get; set; }
     public decimal Price3 { get; set; }
+
+    public string ItemStatusDescription => ItemStatus switch
+    {
+        "A" => "Active",
+        "O" => "Obsolete",
+        "S" => "Slow Moving",
+        _ => "Unknown"
+    };
+
+    public string ItemStatus { get; set; }
 }
 
 public class ItemInfo

@@ -14,7 +14,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
-@inject TitleService TitleService
+
 
 
 <PageTitle>Open Customer Orders</PageTitle>
@@ -36,7 +36,7 @@ else
 	<div style="margin-top: 5px; color: red; font-size: small">
 		Tip: Set Items per page to 'ALL' before grouping records
 	</div>
-	<SfGrid @ref="DetailsGrid" DataSource="@openOrderDetails" AllowPaging="true" AllowSorting="true"  AllowReordering="true" AllowResizing="true" ShowColumnChooser="true" EnablePersistence="true"
+	<SfGrid ID="DetailsGrid" @ref="DetailsGrid" DataSource="@openOrderDetails" AllowPaging="true" AllowSorting="true"  AllowReordering="true" AllowResizing="true" ShowColumnChooser="true" EnablePersistence="true"
 	        AllowExcelExport="true" Toolbar="@(new List<string>() { "ExcelExport", "Search" , "ColumnChooser"})" AllowGrouping="true" AllowTextWrap="true" >
 		<GridEvents  OnToolbarClick="ToolbarClickHandler" TValue="OrderDetail"></GridEvents>
 		<GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
@@ -105,7 +105,7 @@ else
 	protected override async Task OnInitializedAsync()
 	{
 		isLoading = true;
-		TitleService.PageSubtitle = "Open Orders Report";
+
 		await SalesService.LogReportUsageAsync(RepCodeContext.CurrentRepCode, "Open Orders Report");
 
 		try

@@ -1,9 +1,11 @@
 ﻿@page "/admin/user-roles"
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Identity.UI.Services
 @using Microsoft.EntityFrameworkCore
 @inject UserManager<ApplicationUser> UserManager
 @inject RoleManager<IdentityRole> RoleManager
+@inject IEmailSender _emailSender
 
 <h3>User Role Manager</h3>
 
@@ -60,9 +62,12 @@ else
 @code {
     private List<UserWithRoles> users;
     private List<string> allRoles = new();
+   
 
     protected override async Task OnInitializedAsync()
     {
+		
+
         allRoles = await RoleManager.Roles.Select(r => r.Name).ToListAsync();
         var userList = await UserManager.Users.ToListAsync();
 
@@ -86,6 +91,17 @@ else
         {
             await UserManager.AddToRoleAsync(user, role);
             await RefreshUsers();
+            if (role == "SuperUser")
+            {
+	            
+
+	            // Notify an admin or log the assignment
+	            await _emailSender.SendEmailAsync(
+		            "wlittleboy@chapinmfg.com",
+		            "RepPortal SuperUser Role Assigned",
+		            $"User {user.Email} was just assigned the RepPortal SuperUser role at {DateTime.Now}.");
+            }
+
         }
     }
 

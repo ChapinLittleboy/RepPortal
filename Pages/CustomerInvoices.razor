@@ -13,7 +13,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
-@inject TitleService TitleService
+
 
 
 
@@ -22,23 +22,35 @@
 
     @if (isLoading)
     {
-        <p>Loading shipment data, please wait...</p>
+        <p>Loading invoice data, please wait...</p>
     }
     else
     {
+	    <div>
+		    <div class="active-filters">
+			    <button @onclick="ClearFilters">Clear Filters</button>
+        
+			    <!--
+        <span class="divider">|</span>
+        <strong class="small-text">Active Filters:</strong>
+        <span class="small-text">@activeFilters</span>
+        -->
+		    </div>
+
+	    </div>
 	    if (isReady)
 	    {
-		    <EditForm Model="@parameters" OnValidSubmit="LoadShipments">
+		    <EditForm Model="@parameters" OnValidSubmit="LoadInvoices">
 			    <DataAnnotationsValidator/>
 			    <ValidationSummary/>
 			    <div class="form-grid">
 				    <div class="column">
 					    <div class="form-group">
-						    <label>Begin Ship Date:</label>
+						    <label>Begin Invoice Date:</label>
 						    <InputDate @bind-Value="parameters.BeginInvoiceDate"/>
 					    </div>
 					    <div class="form-group">
-						    <label>End Ship Date: </label>
+						    <label>End Invoice Date: </label>
 						    <InputDate @bind-Value="parameters.EndInvoiceDate"/>
 					    </div>
 				    </div>
@@ -80,11 +92,11 @@
 			    }
 		    </EditForm>
 
-		    <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@InvoiceData" AllowTextWrap="true" AllowSorting="true" AllowGrouping="true"
+		    <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@InvoiceData" AllowTextWrap="true" AllowSorting="true" AllowGrouping="true" AllowReordering="true"
 		            AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })" AllowResizing="true">
 			    <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
 			    <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="InvoiceRptDetail"></GridEvents>
-			    <GridPageSettings PageSizes="@(new string[] { "10", "20", "50", "100", "All" })" PageSize="20"> </GridPageSettings>
+			    <GridPageSettings PageSizes="@(new string[] { "20", "50", "100", "All" })" PageSize="20"> </GridPageSettings>
 			    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
 			    <GridGroupSettings>
 
@@ -92,23 +104,29 @@
 			    <GridColumns >
 				    <GridColumn Field="Cust" HeaderText="Cust Num" Width="100"></GridColumn>
 				    <GridColumn Field="B2Name" HeaderText="Customer Name" Width="150"></GridColumn>
-				    <GridColumn Field="CustPO" HeaderText="PO Num" Width="100"></GridColumn>
+					<GridColumn Field="CustPO" HeaderText="PO Num" Width="100"></GridColumn>
 				    <GridColumn Field="CoNum" HeaderText="Order Num" Width="100"></GridColumn>
-				    <GridColumn HeaderText="Qty Invoiced" TextAlign="TextAlign.Right" Width="100">
+					
+				    <GridColumn Field="InvQty" HeaderText="InvQty" Width="100" Format="N0" TextAlign="TextAlign.Right">
 					    <Template>
 						    @{
-							    var sd = (context as InvoiceRptDetail);
-							    <div class="right-padding">
-								    @sd.InvQty
-							    </div>
+							    var data = context as InvoiceRptDetail;
+							    if (data != null)
+							    {
+								    <div style="text-align: right; padding-right: 10px;">
+										@data.InvQty.ToString("N0", CultureInfo.InvariantCulture)
+								    </div>
+							    }
 						    }
 					    </Template>
 				    </GridColumn>
+
 				    <GridColumn Field="Item" HeaderText="Item" Width="100"></GridColumn>
 				    
 				    <GridColumn Field="ExtPrice" HeaderText="Ext Price" Format="C2" Width="120" TextAlign="TextAlign.Right"></GridColumn>
-				    <GridColumn Field="InvDate" HeaderText="Invoice Date" Format="d" Width="100"></GridColumn>
-					<GridColumn Field="DueDate" HeaderText="Due Date" Format="d" Width="100"></GridColumn>
+				    <GridColumn Field="Ship_Date" HeaderText="Ship Date" Format="d" Width="100"></GridColumn>
+					<GridColumn Field="InvDate" HeaderText="Invoice Date" Format="d" Width="100"></GridColumn>
+					<GridColumn Field="DueDate" HeaderText="Estimated Ship Date" Format="d" Width="140"></GridColumn>
 				    <GridColumn Field="InvNum" HeaderText="Invoice Num" Width="100"></GridColumn>
 				    				    
 
@@ -147,13 +165,12 @@
         parameters.BeginInvoiceDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
         parameters.EndInvoiceDate = DateTime.Now; // Default to today
 
-        TitleService.PageSubtitle = "Customer Invoices Report";
         CustomerTypes = await CustomerService.GetCustomerTypesAsync();
         isReady = true;
 
     }
 
-    private async Task LoadShipments()
+    private async Task LoadInvoices()
     {
         showTip = true;
         isLoading = true;
@@ -174,6 +191,11 @@
             };
             await this.Grid.ExportToExcelAsync(exportProperties);
         }
+    }
+    private async Task ClearFilters()
+    {
+	    await Grid.ClearFilteringAsync();
+
     }
 
 
@@ -252,5 +274,8 @@
 	.right-padding {
 		padding-right: 0px; /* Adjust the padding as needed */
 
+	}
+	.invqty-column {
+		padding-right: 10px; /* Adjust the value as needed for the desired margin */
 	}
 </style>

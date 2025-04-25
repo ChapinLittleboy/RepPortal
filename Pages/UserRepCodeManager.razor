@@ -46,10 +46,15 @@ else
 	                            @onclick="() => ToggleUserStatus(user)">
 		                    @(user.IsActive ? "Deactivate" : "Activate")
 	                    </button>
-	                    <button class="btn btn-sm btn-outline-danger ms-2"
-	                            @onclick="() => DeleteUser(user)">
-		                    Delete
-	                    </button>
+	             
+	                    <AuthorizeView Roles="SuperUser">
+		                    <Authorized>
+			                    <button class="btn btn-sm btn-outline-danger ms-2"
+			                            @onclick="() => DeleteUser(user)">
+				                    Delete
+			                    </button>
+		                    </Authorized>
+	                    </AuthorizeView>
                     </td>
 
                 </tr>

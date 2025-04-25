@@ -271,6 +271,9 @@ else
         color: red; /* or add a dot, background, etc. */
         font-weight: bold;
     }
+    .e-sort-number {
+    display: none;
+}
 
     /* Responsive styles */
     @@media screen and (max-width: 1200px) {
