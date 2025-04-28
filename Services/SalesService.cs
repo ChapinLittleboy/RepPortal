@@ -131,7 +131,7 @@ FROM (
         END AS Period,
         ISNULL(SUM(ii.qty_invoiced * ii.price),0) AS ExtPrice
     FROM inv_item_mst ii 
-    JOIN inv_hdr_mst ih ON ii.inv_num = ih.inv_num
+    JOIN inv_hdr_mst ih ON ii.inv_num = ih.inv_num and ii.inv_seq = ih.inv_seq
     JOIN custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
     JOIN custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
     JOIN customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
@@ -169,12 +169,12 @@ FROM (
         rn.RegionName,
         'FY{fiscalYear}' AS Period,
         ISNULL(SUM(ii.qty_invoiced * ii.price),0) AS ExtPrice
-    FROM inv_item_mst ii 
-    JOIN inv_hdr_mst ih ON ii.inv_num = ih.inv_num
-    JOIN custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
-    JOIN custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
-    JOIN customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
-    LEFT JOIN Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
+    FROM Kent_App.dbo.inv_item_mst ii 
+    JOIN Kent_App.dbo.inv_hdr_mst ih ON ii.inv_num = ih.inv_num and ii.inv_seq = ih.inv_seq
+    JOIN Bat_App.dbo.custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0 
+    JOIN Bat_App.dbo.custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
+    JOIN Bat_App.dbo.customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
+    LEFT JOIN Bat_App.dbo.Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
     WHERE ih.inv_date >= '{fyCurrentStart:yyyy-MM-dd}' 
         AND cu.slsman = @RepCode
     GROUP BY 

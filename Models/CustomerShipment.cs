@@ -18,6 +18,7 @@ public class CustomerShipment
     public string CarrierCode { get; set; }
     public string ServiceType { get; set; }
     public int ShipQty { get; set; }
+    public string? FreightTerms { get; set; }
 
 
 
