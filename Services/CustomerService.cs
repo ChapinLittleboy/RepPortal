@@ -22,7 +22,7 @@ public class CustomerService
 
 
 
-    public async Task<IEnumerable<Customer>> GetCustomersByRepCodeAsync()
+    public async Task<IEnumerable<Customer>> GetCustomersByRepCodeAsync()  // Not used as of 4-25-2025
     {
         const string sql = @"
             SELECT cu.Cust_Num , ca.Name as Cust_Name , cu.slsman as  RepCode, cu.stat as Status,
