@@ -488,8 +488,8 @@ WITH InvoiceData AS (
         ii.qty_invoiced AS QtyInvoiced
     FROM inv_item_mst ii 
     -- Add HINT to enforce join order if needed
-    INNER JOIN inv_hdr_mst ih WITH (NOLOCK) ON ii.inv_num = ih.inv_num
-    INNER JOIN customer_mst cu WITH (NOLOCK) ON ih.cust_num = cu.cust_num
+    INNER JOIN inv_hdr_mst ih WITH (NOLOCK) ON ii.inv_num = ih.inv_num AND ii.inv_seq = ih.inv_seq
+    INNER JOIN customer_mst cu WITH (NOLOCK) ON ih.cust_num = cu.cust_num AND ih.cust_seq = cu.cust_seq
     INNER JOIN custaddr_mst ca0 WITH (NOLOCK) ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
     INNER JOIN custaddr_mst ca WITH (NOLOCK) ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
     LEFT JOIN Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
@@ -498,6 +498,51 @@ WITH InvoiceData AS (
         -- Use a simplified date range that covers both fiscal years
         ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}'
         AND cu.slsman = @RepCode
+
+
+UNION ALL
+   SELECT
+       ih.cust_num AS Customer,
+       ca0.Name AS [Customer Name],
+       ih.cust_seq AS [Ship To Num],
+       ca.City AS [Ship To City],
+       ca.State AS [Ship To State],
+       cu.slsman,
+       ca0.name AS SalespersonName,
+       ca0.state AS [Bill To State],
+       cu.Uf_SalesRegion,
+       rn.RegionName,
+       ii.item AS Item,
+       im.Description AS ItemDescription,
+       -- Create single Period column with appropriate fiscal markers
+       CASE
+           WHEN ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyPriorEnd:yyyy-MM-dd}' 
+               THEN 'FY{fiscalYear - 1}'
+           WHEN ih.inv_date BETWEEN '{fyCurrentStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}' 
+               THEN FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR)
+       END AS Period,
+       -- Pre-calculate fiscal year column for easier aggregation
+       CASE
+           WHEN ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyPriorEnd:yyyy-MM-dd}' 
+               THEN 'FY{fiscalYear - 1}'
+           WHEN ih.inv_date BETWEEN '{fyCurrentStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}' 
+               THEN 'FY{fiscalYear}'
+       END AS FiscalYear,
+       -- Pre-calculate the monetary values
+       ii.qty_invoiced * ii.price AS RevAmount,
+       ii.qty_invoiced AS QtyInvoiced
+   FROM Kent_App.dbo.inv_item_mst ii 
+   -- Add HINT to enforce join order if needed
+   INNER JOIN Kent_App.dbo.inv_hdr_mst ih WITH (NOLOCK) ON ii.inv_num = ih.inv_num and ii.inv_seq = ih.inv_seq
+   INNER JOIN BAT_App.dbo.customer_mst cu WITH (NOLOCK) ON ih.cust_num = cu.cust_num and ih.cust_seq = cu.cust_seq
+   INNER JOIN BAT_App.dbo.custaddr_mst ca0 WITH (NOLOCK) ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
+   INNER JOIN BAT_App.dbo.custaddr_mst ca WITH (NOLOCK) ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
+   LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
+   LEFT JOIN Bat_App.dbo.Item_mst im WITH (NOLOCK) ON ii.item = im.item
+   WHERE 
+       -- Use a simplified date range that covers both fiscal years
+       ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}'
+       AND cu.slsman = @RepCode
 ),
 -- Create a separate CTE for aggregated values
 AggregatedData AS (
