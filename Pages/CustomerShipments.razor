@@ -52,10 +52,13 @@
                     </div>
                 </div>
                 <div class="column">
-                    <div class="form-group">
-                        <label>Customer Number (Optional):</label>
-                        <InputText @bind-Value="parameters.CustNum" />
-                    </div>
+	                <div class="form-group">
+		                <label>Customer Name (Optional):</label>
+		                <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" DataSource="@CustomerEList" @ref="WantedCust">
+							  
+			                <ComboBoxFieldSettings Text="CustNameWithNum" Value="Cust_Num"/>
+		                </SfComboBox>
+	                </div>
                     <div class="form-group">
                         <label>Customer Type (Optional):</label>
                         <InputSelect @bind-Value="parameters.CustType" class="form-control">
@@ -116,7 +119,7 @@
 		        <GridColumn Field="CoLine" HeaderText="CO Line" Width="100"></GridColumn>
 		        <GridColumn Field="ItemNum" HeaderText="Item" Width="100"></GridColumn>
 		        <GridColumn Field="ItemDesc" HeaderText="Description" Width="150"></GridColumn>
-		        <GridColumn Field="DueDate" HeaderText="Due Date" Format="d" Width="100"></GridColumn>
+		        <GridColumn Field="DueDate" HeaderText="Est Ship Date" Format="d" Width="100"></GridColumn>
 		        <GridColumn Field="ShipDate" HeaderText="Ship Date" Format="d" Width="100"></GridColumn>
 		        <GridColumn HeaderText="Qty Shipped" TextAlign="TextAlign.Right" Width="100">
 			        <Template>
@@ -153,6 +156,11 @@
 	private bool showTip = false;
 	private IEnumerable<string> CustomerTypes;
 	private bool isReady = false;
+	private int NumericValue = 50; // Default value for the combo box DeBounceDelay
+	private IEnumerable<Customer> CustomerEList;
+	private List<Customer> CustomerList = new List<Customer>();
+	private string WantedCustNum = string.Empty;
+	public SfComboBox<string, Customer> WantedCust { get; set; }
 
 	private AuthenticationState authState;
 	private ApplicationUser currentUser;
@@ -176,6 +184,9 @@
 		parameters.EndShipDate = DateTime.Now; // Default to today
 
 		CustomerTypes = await CustomerService.GetCustomerTypesAsync();
+
+		CustomerEList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
+		CustomerList = CustomerEList.ToList();
 		isReady = true;
 
 	}
@@ -189,8 +200,8 @@
 	{
 		showTip = true;
 		isLoading = true;
+		parameters.CustNum = WantedCust.Value;
 		ShipmentsData = await SalesService.GetShipmentsData(parameters);
-
 
 		isLoading = false;
 	}
