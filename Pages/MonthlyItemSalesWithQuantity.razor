@@ -231,18 +231,18 @@ else
             int previouscolumns = 13;
             var monthOrder = monthPart.ToUpper() switch
             {
-                "SEP" => previouscolumns + 1,
-                "OCT" => previouscolumns + 2,
-                "NOV" => previouscolumns + 3,
-                "DEC" => previouscolumns + 4,
-                "JAN" => previouscolumns + 5,
-                "FEB" => previouscolumns + 6,
-                "MAR" => previouscolumns + 7,
-                "APR" => previouscolumns + 8,
-                "MAY" => previouscolumns + 9,
-                "JUN" => previouscolumns + 10,
-                "JUL" => previouscolumns + 11,
-                "AUG" => previouscolumns + 12,
+	            "SEP" => previouscolumns + 12,
+	            "OCT" => previouscolumns + 11,
+	            "NOV" => previouscolumns + 10,
+	            "DEC" => previouscolumns + 9,
+	            "JAN" => previouscolumns + 8,
+	            "FEB" => previouscolumns + 7,
+	            "MAR" => previouscolumns + 6,
+	            "APR" => previouscolumns + 5,
+	            "MAY" => previouscolumns + 4,
+	            "JUN" => previouscolumns + 3,
+	            "JUL" => previouscolumns + 2,
+	            "AUG" => previouscolumns + 1,
 
                 _ => -1 // Unknown month
             };
