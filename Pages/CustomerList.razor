@@ -10,6 +10,7 @@
 @using Syncfusion.Blazor.Grids
 @using System.Text.Json
 @using Blazored.LocalStorage
+@using Microsoft.CodeAnalysis.Operations
 
 
 <div class="container-fluid">
@@ -57,7 +58,7 @@
                 <GridColumn Field=@nameof(Customer.BillToZip) HeaderText="Zip Code" Width="100"></GridColumn>
                 <GridColumn Field=@nameof(Customer.BillToCountry) HeaderText="Country" Width="150"></GridColumn>
                 <GridColumn Field=@nameof(Customer.SalesManagerName) HeaderText="Sales Manager" Width="150"></GridColumn>
-                <GridColumn Field=@nameof(Customer.CreditHoldDate) HeaderText="Credit Hold Date" Width="150">
+                <GridColumn Field=@nameof(Customer.CreditHoldDate) HeaderText="Inactive Date" Width="150">
                     <Template>
                         @{
                             var data = context as Customer;
@@ -76,20 +77,11 @@
                         }
                     </Template>
                 </GridColumn>
-                <GridColumn Field=@nameof(Customer.CreditHoldReason) HeaderText="Hold Code" Width="100"></GridColumn>
-                <GridColumn Field="CreditHoldReason" HeaderText="Hold Description" Width="300">
-	                <Template>
-		                @{
-			                var data = context as Customer;
-			                if (data != null)
-			                {
-				                var description = GetHoldReasonDescription(data.CreditHoldReason);
-				                <span title="@description">@description</span>
-			                }
-		                }
-	                </Template>
-                </GridColumn>
+                <!--GridColumn Field=@nameof(Customer.CreditHoldReason) HeaderText="Hold Code" Width="100"></!--GridColumn-->
+                <GridColumn Field=@nameof(Customer.CreditHoldReasonDescription) HeaderText="Hold Reason" Width="140"></GridColumn>
+
                 <GridColumn Field=@nameof(Customer.PricingCode) HeaderText="Pricing Code" Width="150"></GridColumn>
+                <GridColumn Field=@nameof(Customer.FreightTerms) HeaderText="Standard Freight Terms" Width="150"></GridColumn>
             </GridColumns>
         </SfGrid>
     }
@@ -109,10 +101,10 @@
     {
 
         //reasonCodeList = await CustomerService.GetAllReasonCodesAsync();
-        _creditHoldReasons = await CustomerService.GetAllReasonCodesAsync();
-        _reasonLookup = _creditHoldReasons
-	        .Where(r => !string.IsNullOrWhiteSpace(r.Code))
-	        .ToDictionary(r => r.Code, r => r.Description);
+       // _creditHoldReasons = await CustomerService.GetAllReasonCodesAsync();
+       // _reasonLookup = _creditHoldReasons
+	   //     .Where(r => !string.IsNullOrWhiteSpace(r.Code))
+	  //      .ToDictionary(r => r.Code, r => r.Description);
 
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;

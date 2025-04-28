@@ -55,9 +55,12 @@ AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
        ca.zip as BillToZip, ca.country as BillToCountry, cu.slsman as RepCode, 
        ca.credit_hold as CreditHold, ca.credit_hold_date as CreditHoldDate, ca.credit_hold_reason as CreditHoldReason,
        cu.terms_code as PaymentTermsCode, cu.Uf_PROG_BASIS as PricingCode, cu.stat as Status,
-        cu.uf_c_slsmgr as SalesManager, isnull(sm.SalesManagerName,'Check with SalesOps') as SalesManagerName
+        cu.uf_c_slsmgr as SalesManager, isnull(sm.SalesManagerName,'To Be Assigned') as SalesManagerName
+         ,isnull(r.Description,'') as CreditHoldReasonDescription
+,cu.uf_FrtTerms as FreightTerms
 FROM   customer_mst cu 
 JOIN custaddr_mst ca ON cu.cust_num = ca.cust_num AND cu.cust_seq = ca.cust_seq AND cu.cust_seq = 0
+left JOIN reason_mst r ON ca.credit_hold_reason = r.reason_code and r.reason_class = 'CRED HOLD'
 LEFT JOIN Chap_SalesManagers sm ON cu.uf_c_slsmgr = sm.SalesManagerInitials
 WHERE  1=1
 AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
@@ -67,7 +70,8 @@ AND (        @RepCode = 'Admin'
 ORDER BY ca.[name]";
 
         using var connection = new SqlConnection(_batAppConnection);
-        return await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode});
+        var Results =  await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode});
+        return Results;
         // NOTE: Using the repCode from the RepCodeContext!!
     }
 
