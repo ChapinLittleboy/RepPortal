@@ -7,8 +7,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.WebUtilities;
 using RepPortal.Data;
+using RepPortal.Services;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -23,13 +25,15 @@ public class RegisterModel : PageModel
     private readonly IUserEmailStore<ApplicationUser> _emailStore;
     private readonly ILogger<RegisterModel> _logger;
     private readonly IEmailSender _emailSender;
+    private readonly SalesService _salesService;
 
     public RegisterModel(
         UserManager<ApplicationUser> userManager,
         IUserStore<ApplicationUser> userStore,
         SignInManager<ApplicationUser> signInManager,
         ILogger<RegisterModel> logger,
-        IEmailSender emailSender)
+        IEmailSender emailSender, 
+        SalesService salesService)
     {
         _userManager = userManager;
         _userStore = userStore;
@@ -37,7 +41,31 @@ public class RegisterModel : PageModel
         _signInManager = signInManager;
         _logger = logger;
         _emailSender = emailSender;
+        _salesService = salesService;
+        // Initialize the options for RepCode and Region dropdowns
+        RepCodeOptions = new List<SelectListItem>();
+        RegionOptions = new List<SelectListItem>();
     }
+
+
+    public List<SelectListItem> RepCodeOptions { get; set; }
+    public List<SelectListItem> RegionOptions { get; set; }
+
+  
+
+ 
+        private async Task LoadOptionsAsync()
+        {
+            var reps = await _salesService.GetAllRepCodeInfoAsync();
+        RepCodeOptions = reps.Select(r => new SelectListItem { Value = r.RepCode, Text = r.RepName }).ToList();
+
+
+        var regions = await _salesService.GetAllRegionsAsync();
+        RegionOptions = regions.Select(r => new SelectListItem { Value = r.Region, Text = r.RegionName }).ToList();
+
+
+    }
+  
 
     /// <summary>
     ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
@@ -93,20 +121,29 @@ public class RegisterModel : PageModel
         public string ConfirmPassword { get; set; }
 
         // Add custom fields here:
-     
+        [Required]
+        [Display(Name = "First Name")]
         public string FirstName { get; set; }
 
-       
+        [Required]
+        [Display(Name = "Last Name")]
         public string LastName { get; set; }
-       
+        [Required]
+        [Display(Name = "Rep Code")]
         public string RepCode { get; set; }
+
+        [Display(Name = "Region")]
+        public string Region { get; set; }
     }
+
 
 
     public async Task OnGetAsync(string returnUrl = null)
     {
         ReturnUrl = returnUrl;
         ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+        await LoadOptionsAsync();
+
     }
 
     public async Task<IActionResult> OnPostAsync(string returnUrl = null)
@@ -205,6 +242,7 @@ public class RegisterModel : PageModel
             user.FirstName = Input.FirstName;
             user.LastName = Input.LastName;
             user.RepCode = Input.RepCode;
+            user.Region = Input.Region;
 
             return user;
         }

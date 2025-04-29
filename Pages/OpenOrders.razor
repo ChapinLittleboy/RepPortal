@@ -37,9 +37,10 @@ else
 		Tip: Set Items per page to 'ALL' before grouping records
 	</div>
 	<SfGrid ID="DetailsGrid" @ref="DetailsGrid" DataSource="@openOrderDetails" AllowPaging="true" AllowSorting="true"  AllowReordering="true" AllowResizing="true" ShowColumnChooser="true" EnablePersistence="true"
-	        AllowExcelExport="true" Toolbar="@(new List<string>() { "ExcelExport", "Search" , "ColumnChooser"})" AllowGrouping="true" AllowTextWrap="true" >
+	        AllowExcelExport="true" Toolbar="@(new List<string>() { "ExcelExport", "Search" , "ColumnChooser"})" AllowGrouping="true" AllowTextWrap="true" AllowFiltering="true" >
 		<GridEvents  OnToolbarClick="ToolbarClickHandler" TValue="OrderDetail"></GridEvents>
 		<GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
+		<GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
 		<GridPageSettings PageSizes="@(new string[] { "20", "50", "100",  "All" })" PageSize="20"></GridPageSettings>
 		<GridSortSettings AllowUnsort="true">
 			<GridSortColumns>

@@ -848,6 +848,28 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
             return results.ToList();
         }
     }
+    public async Task<List<RepInfo>> GetAllRepCodeInfoAsync()
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var results = await connection.QueryAsync<RepInfo>("SELECT slsman as RepCode, UPPER(name) as RepName FROM Chap_SlsmanNameV  where slsman " +
+                                                              "in (Select distinct slsman from customer_mst where stat = 'A' and cust_seq = 0 and cust_num <> 'LILBOY') ORDER BY slsman");
+            return results.ToList();
+        }
+    }
+    public async Task<List<RegionInfo>> GetAllRegionsAsync()
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var results = await connection.QueryAsync<RegionInfo>(
+                "SELECT Region, RegionName FROM Chap_RegionNames  where LEN(Region) > 1 ORDER BY Region"
+            );
+            return results.ToList();
+        }
+    }
+
     public async Task<List<CustomerOrderSummary>> GetOpenOrderSummariesAsync(/* string salesRepId */)
     {
         // Adjust SQL to filter by Sales Rep if applicable, or filter customers later

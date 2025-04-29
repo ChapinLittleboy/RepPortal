@@ -3,7 +3,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IJSRuntime JS
 
-<h3>Manage RepCodes</h3>
+<h3>Manage RepCodes and Regions</h3>
 
 @if (users == null)
 {
@@ -19,6 +19,8 @@ else
                 <th>Last Name</th>
                 <th>Current RepCode</th>
                 <th>Update RepCode</th>
+                <th>Current Region</th>
+                <th>Update Region</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>
@@ -35,28 +37,33 @@ else
                         <input class="form-control form-control-sm"
                                style="width: 100px;"
                                @bind="user.EditedRepCode" />
-                        <button class="btn btn-sm btn-primary ms-2"
-                                @onclick="() => SaveRepCode(user)">
+                    </td>
+                    <td>@user.Region</td>
+                    <td>
+                        <input class="form-control form-control-sm"
+                               style="width: 100px;"
+                               @bind="user.EditedRegion" />
+                        <button class="btn btn-sm btn-primary mt-1"
+                                @onclick="() => SaveRepAndRegion(user)">
                             Save
                         </button>
                     </td>
                     <td>@(user.IsActive ? "Active" : "Inactive")</td>
                     <td>
-	                    <button class="btn btn-sm @(user.IsActive ? "btn-danger" : "btn-success")"
-	                            @onclick="() => ToggleUserStatus(user)">
-		                    @(user.IsActive ? "Deactivate" : "Activate")
-	                    </button>
-	             
-	                    <AuthorizeView Roles="SuperUser">
-		                    <Authorized>
-			                    <button class="btn btn-sm btn-outline-danger ms-2"
-			                            @onclick="() => DeleteUser(user)">
-				                    Delete
-			                    </button>
-		                    </Authorized>
-	                    </AuthorizeView>
-                    </td>
+                        <button class="btn btn-sm @(user.IsActive ? "btn-danger" : "btn-success")"
+                                @onclick="() => ToggleUserStatus(user)">
+                            @(user.IsActive ? "Deactivate" : "Activate")
+                        </button>
 
+                        <AuthorizeView Roles="SuperUser">
+                            <Authorized>
+                                <button class="btn btn-sm btn-outline-danger ms-2"
+                                        @onclick="() => DeleteUser(user)">
+                                    Delete
+                                </button>
+                            </Authorized>
+                        </AuthorizeView>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -77,21 +84,26 @@ else
                 LastName = u.LastName,
                 RepCode = u.RepCode,
                 EditedRepCode = u.RepCode,
+                Region = u.Region,                   // <-- Load Region
+                EditedRegion = u.Region,              // <-- Editable Region
                 IsActive = u.IsActive
             }).ToList();
     }
 
-    private async Task SaveRepCode(UserWithEdit user)
+    private async Task SaveRepAndRegion(UserWithEdit user)
     {
         var targetUser = await UserManager.FindByIdAsync(user.Id);
         if (targetUser != null)
         {
             targetUser.RepCode = user.EditedRepCode;
+            targetUser.Region = user.EditedRegion;
+
             var result = await UserManager.UpdateAsync(targetUser);
 
             if (result.Succeeded)
             {
                 user.RepCode = user.EditedRepCode;
+                user.Region = user.EditedRegion;
                 await UserManager.UpdateSecurityStampAsync(targetUser);
             }
         }
@@ -111,34 +123,32 @@ else
             }
         }
     }
+
     private async Task DeleteUser(UserWithEdit user)
     {
-	    bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete {user.Email}?");
-	    if (!confirmed)
-		    return;
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete {user.Email}?");
+        if (!confirmed)
+            return;
 
-	    var targetUser = await UserManager.FindByIdAsync(user.Id);
-	    if (targetUser != null)
-	    {
-		    var result = await UserManager.DeleteAsync(targetUser);
-		    if (result.Succeeded)
-		    {
-			    users.Remove(user);
-			    StateHasChanged();
-		    }
-		    else
-		    {
-			    // Optional: log or display errors
-			    Console.WriteLine("Failed to delete user:");
-			    foreach (var error in result.Errors)
-			    {
-				    Console.WriteLine($" - {error.Description}");
-			    }
-		    }
-	    }
+        var targetUser = await UserManager.FindByIdAsync(user.Id);
+        if (targetUser != null)
+        {
+            var result = await UserManager.DeleteAsync(targetUser);
+            if (result.Succeeded)
+            {
+                users.Remove(user);
+                StateHasChanged();
+            }
+            else
+            {
+                Console.WriteLine("Failed to delete user:");
+                foreach (var error in result.Errors)
+                {
+                    Console.WriteLine($" - {error.Description}");
+                }
+            }
+        }
     }
-
-
 
     private class UserWithEdit
     {
@@ -148,6 +158,8 @@ else
         public string LastName { get; set; }
         public string RepCode { get; set; }
         public string EditedRepCode { get; set; }
+        public string Region { get; set; }          // Current Region
+        public string EditedRegion { get; set; }    // Editable Region
         public bool IsActive { get; set; }
     }
 }
