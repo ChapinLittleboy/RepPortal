@@ -1,0 +1,246 @@
+﻿@page "/order-lookup"
+@using Dapper
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Grids
+@inject DbConnectionFactory DbConnectionFactory
+
+<h3>Order Lookup</h3>
+
+<div class="mb-4 row gx-2">
+    <div class="col-md-4">
+        <SfTextBox @bind-Value="CustomerNumber"
+                   Placeholder="Customer Number"
+                   FloatLabelType="FloatLabelType.Auto" />
+    </div>
+    <div class="col-md-4">
+        <SfTextBox @bind-Value="CustomerPo"
+                   Placeholder="Customer PO"
+                   FloatLabelType="FloatLabelType.Auto" />
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+        <SfButton CssClass="e-primary"
+                  OnClick="@LoadOrderAsync">
+            Lookup
+        </SfButton>
+    </div>
+</div>
+
+@if (Header != null)
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <!-- Row 1 -->
+            <div class="row gx-3 mb-3">
+                <div class="col-sm-3">
+                    <strong>Cust Num</strong>
+                    <div>@Header.CustNum</div>
+                </div>
+                <div class="col-sm-3">
+                    <strong>Customer Name</strong>
+                    <div>@Header.CustomerName</div>
+                </div>
+                <div class="col-sm-3">
+                    <strong>Order Number</strong>
+                    <div>@Header.CoNum</div>
+                </div>
+                <div class="col-sm-3">
+                    <strong>PO Number</strong>
+                    <div>@Header.CustPo</div>
+                </div>
+            </div>
+            <!-- Row 2 -->
+            <div class="row gx-3 mb-3">
+                <div class="col-sm-3">
+                    <strong>Ship To</strong>
+                    <div>@Header.CustSeq</div>
+                </div>
+                <div class="col-sm-3">
+                    <strong>Ship To State</strong>
+                    <div>@Header.ShipToState</div>
+                </div>
+                <div class="col-sm-3">
+                    <strong>Credit Hold</strong>
+                    <div>@(Header.CreditHold ? "Yes" : "No")</div>
+                </div>
+                <div class="col-sm-3">
+                    <strong>Invoice Date</strong>
+                    <div>@(Header.InvoiceDate?.ToString("d") ?? "")</div>
+                </div>
+            </div>
+            <!-- Row 3 -->
+            <div class="row gx-3">
+                <div class="col-sm-3">
+                    <strong>Order Status</strong>
+                    <div>@GetOrderStatusDescription(Header.OrderStatus)</div>
+                </div>
+                <div class="col-sm-3">
+                    <strong>Order Date</strong>
+                    <div>@Header.OrderDate.ToString("d")</div>
+                </div>
+                <div class="col-sm-3">
+                    <strong>Expected Ship Date</strong>
+                    <div>@(Header.ExpectedShipDate?.ToString("d") ?? "")</div>
+                </div>
+                <div class="col-sm-3">
+                    <strong>Last Ship Date</strong>
+                    <div>@(Header.LastShipDate?.ToString("d") ?? "")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <SfGrid DataSource="@LineItems"
+            AllowSorting="false"
+            AllowFiltering="false">
+        <GridColumns>
+            <GridColumn Field="CoLine" HeaderText="Line" Width="70" TextAlign="TextAlign.Center" />
+            <GridColumn Field="Item" HeaderText="Item" Width="120" />
+            <GridColumn Field="Description" HeaderText="Description" Width="200" />
+            <GridColumn Field="QtyOrdered" HeaderText="Qty Ordered" Width="100" TextAlign="TextAlign.Right" />
+            <GridColumn Field="QtyShipped" HeaderText="Qty Shipped" Width="100" TextAlign="TextAlign.Right" />
+            <GridColumn Field="ShipDate" HeaderText="Ship Date" Format="d" Width="120" TextAlign="TextAlign.Center" />
+            <GridColumn Field="DueDate" HeaderText="Expected Ship" Format="d" Width="120" TextAlign="TextAlign.Center" />
+
+
+            <GridColumn HeaderText="Line Status" Width="120" TextAlign="TextAlign.Center">
+                <Template>
+                    @{
+                        var data = context as OrderLine;
+                        <text>@GetLineStatusDescription(data.LineStatus)</text>
+                    }
+                </Template>
+            </GridColumn>
+           
+        </GridColumns>
+    </SfGrid>
+}
+
+@code {
+    private string CustomerNumber { get; set; }
+    private string CustomerPo { get; set; }
+
+    private OrderHeader Header { get; set; }
+    private List<OrderLine> LineItems { get; set; } = new();
+
+    private async Task LoadOrderAsync()
+    {
+        Header = null;
+        LineItems.Clear();
+
+        if (string.IsNullOrWhiteSpace(CustomerNumber) || string.IsNullOrWhiteSpace(CustomerPo))
+            return;
+
+        using var conn = DbConnectionFactory.CreateBatConnection();
+
+        // 1) fetch header
+        var headerSql = @"
+    SELECT
+        co.cust_num         AS CustNum,
+        ca0.name            AS CustomerName,
+        co.co_num           AS CoNum,
+        co.cust_po          AS CustPo,
+        co.cust_seq         AS CustSeq,
+        ca.state            AS ShipToState,
+        co.credit_hold      AS CreditHold,
+        inv.inv_date        AS InvoiceDate,      -- from inv_hdr_table
+        co.order_date       AS OrderDate,
+        co.stat             AS OrderStatus
+    FROM co_mst co
+    JOIN custaddr_mst ca
+      ON co.cust_num = ca.cust_num
+     AND co.cust_seq = ca.cust_seq
+    LEFT JOIN custaddr_mst ca0
+      ON co.cust_num = ca0.cust_num
+     AND ca0.cust_seq = 0
+    LEFT JOIN inv_hdr_mst inv
+      ON co.cust_num = inv.cust_num
+     AND co.cust_po  = inv.cust_po
+            WHERE co.cust_po = @CustPo
+              AND co.cust_num = dbo.ExpandKyByType('CustNumType', @CustNum);
+        ";
+        Header = await conn.QueryFirstOrDefaultAsync<OrderHeader>(headerSql, new { CustPo = CustomerPo, CustNum = CustomerNumber });
+        if (Header == null) return;
+
+        // 2) fetch line items
+        var lineSql = @"
+            SELECT
+                ci.co_line      AS CoLine,
+                ci.item         AS Item,
+                ci.[description]AS Description,
+                ci.qty_ordered  AS QtyOrdered,
+                ci.qty_shipped  AS QtyShipped,
+                ci.qty_invoiced AS QtyInvoiced,
+                ci.due_date     AS DueDate,
+                ci.stat         AS LineStatus,
+                cm.ship_date    AS ShipDate
+            FROM coitem_mst ci
+            LEFT JOIN co_ship_mst cm
+              ON ci.co_num = cm.co_num
+             AND cm.co_line = ci.co_line
+            WHERE ci.co_num = @CoNum;
+        ";
+        var rows = (await conn.QueryAsync<OrderLine>(lineSql, new { CoNum = Header.CoNum })).ToList();
+        LineItems = rows;
+
+        // compute “expected” (earliest) ship‐by and last ship dates
+        Header.ExpectedShipDate = rows
+            .Where(r => r.DueDate.HasValue)
+            .Select(r => r.DueDate.Value)
+            .DefaultIfEmpty()
+            .Min();
+
+        Header.LastShipDate = rows
+            .Where(r => r.ShipDate.HasValue)
+            .Select(r => r.ShipDate.Value)
+            .DefaultIfEmpty()
+            .Max();
+    }
+
+    private string GetOrderStatusDescription(string code) =>
+        code switch
+        {
+            "O" => "Open",
+            "C" => "Completed",
+            "H" => "Hold",
+            _ => code
+        };
+
+    private string GetLineStatusDescription(string code) =>
+        code switch
+        {
+            "F" => "Shipped",
+            "O" => "Ordered",
+            "C" => "Cancelled",
+            _ => code
+        };
+
+    public class OrderHeader
+    {
+        public string CustNum { get; set; }
+        public string CustomerName { get; set; }
+        public string CoNum { get; set; }
+        public string CustPo { get; set; }
+        public int CustSeq { get; set; }
+        public string ShipToState { get; set; }
+        public bool CreditHold { get; set; }
+        public DateTime? InvoiceDate { get; set; }
+        public DateTime OrderDate { get; set; }
+        public string OrderStatus { get; set; }
+        public DateTime? ExpectedShipDate { get; set; }
+        public DateTime? LastShipDate { get; set; }
+    }
+
+    public class OrderLine
+    {
+        public int CoLine { get; set; }
+        public string Item { get; set; }
+        public string Description { get; set; }
+        public int QtyOrdered { get; set; }
+        public int QtyShipped { get; set; }
+        public int QtyInvoiced { get; set; }
+        public DateTime? DueDate { get; set; }
+        public string LineStatus { get; set; }
+        public DateTime? ShipDate { get; set; }
+    }
+}
