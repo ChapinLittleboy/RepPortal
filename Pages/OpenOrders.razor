@@ -22,7 +22,7 @@
 
 @if (openOrderDetails == null && isLoading)
 {
-    <SfSpinner Visible="true" Label="Loading summaries..." Size="40"></SfSpinner>
+	<SfSpinner Visible="true" Label="Loading summaries..." Size="40"></SfSpinner>
 }
 
 else
@@ -36,8 +36,8 @@ else
 	<div style="margin-top: 5px; color: red; font-size: small">
 		Tip: Set Items per page to 'ALL' before grouping records
 	</div>
-	<SfGrid ID="DetailsGrid" @ref="DetailsGrid" DataSource="@openOrderDetails" AllowPaging="true" AllowSorting="true"  AllowReordering="true" AllowResizing="true" ShowColumnChooser="true" EnablePersistence="true"
-	        AllowExcelExport="true" Toolbar="@(new List<string>() { "ExcelExport", "Search" , "ColumnChooser"})" AllowGrouping="true" AllowTextWrap="true" AllowFiltering="true" >
+	<SfGrid ID="DetailsGrid" @ref="DetailsGrid" DataSource="@openOrderDetails" AllowPaging="@( !isLawlessRep )" AllowSorting="true" AllowReordering="true" AllowResizing="true" ShowColumnChooser="true" EnablePersistence="true"
+	AllowExcelExport="true" Toolbar="@(new List<string>() { "ExcelExport", "Search" , "ColumnChooser"})" AllowGrouping="true" AllowTextWrap="true" AllowFiltering="true" >
 		<GridEvents  OnToolbarClick="ToolbarClickHandler" TValue="OrderDetail"></GridEvents>
 		<GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
 		<GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
@@ -48,7 +48,7 @@ else
 				<GridSortColumn Field=@nameof(OrderDetail.DueDate) Direction="SortDirection.Ascending"></GridSortColumn>
 			</GridSortColumns>
 		</GridSortSettings>
-		
+
 		<GridAggregates>
 			<GridAggregate>
 				<GridAggregateColumns>
@@ -73,7 +73,7 @@ else
 				</GridAggregateColumns>
 			</GridAggregate>
 		</GridAggregates>
-		
+
 		<GridColumns>
 			<GridColumn Field=@nameof(OrderDetail.Cust) HeaderText="Customer #" Width="120" TextAlign="TextAlign.Left"></GridColumn>
 			<GridColumn Field=@nameof(OrderDetail.CustName) HeaderText="Customer Name" Width="250"></GridColumn>
@@ -89,7 +89,7 @@ else
 			<GridColumn Field=@nameof(OrderDetail.CustPO) HeaderText="Customer PO" Width="150"></GridColumn>
 			<GridColumn Field=@nameof(OrderDetail.CoNum) HeaderText="Order #" Width="100"></GridColumn>
 
-		
+
 
 
 		</GridColumns>
@@ -102,6 +102,7 @@ else
 	private SfGrid<OrderDetail>? DetailsGrid; // Reference to the main grid
 	private bool isLoading = true;
 	private List<OrderDetail>? openOrderDetails; // Data source for the grid
+	private bool isLawlessRep = false;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -122,6 +123,7 @@ else
 		}
 		finally
 		{
+			isLawlessRep = RepCodeContext.CurrentRepCode == "LAW";
 			isLoading = false;
 		}
 	}

@@ -96,11 +96,11 @@
         </EditForm>
 
         <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@ShipmentsData" AllowTextWrap="true" AllowSorting="true" AllowGrouping="true"
-                AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "ColumnChooser","Export to Excel"})" 
-                AllowResizing="true" ShowColumnChooser="true" AllowReordering="true"> 
+					AllowFiltering="true" AllowPaging="@( !isLawlessRep )" AllowExcelExport="true" Toolbar="@(new List<string>() { "ColumnChooser","Export to Excel"})"
+					AllowResizing="true" ShowColumnChooser="true" AllowReordering="true"> 
 	        <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
 	        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="CustomerShipment"></GridEvents>
-	        <GridPageSettings PageSizes="@(new string[] {"10", "20", "50", "100",  "All" })"  PageSize="20" ></GridPageSettings>
+	        <GridPageSettings PageSizes="@(new string[] { "20", "50", "100",  "All" })"  PageSize="20" ></GridPageSettings>
 	        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
 
 	        <GridColumns >
