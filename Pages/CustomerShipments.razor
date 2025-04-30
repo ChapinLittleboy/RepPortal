@@ -138,7 +138,32 @@
 
 		        <GridColumn Field="Whse" HeaderText="Whse" Width="100"></GridColumn>
 		        <GridColumn Field="ShipmentID" HeaderText="Shipment ID" Width="100"></GridColumn>
+
 	        </GridColumns>
+	        <GridAggregates>
+		        <GridAggregate>
+			        <GridAggregateColumns>
+							<GridAggregateColumn Field=@nameof(CustomerShipment.ExtLinePrice) Type="AggregateType.Sum" Format="C2">
+					        <GroupFooterTemplate>
+						        @{
+							        var aggregate = (context as AggregateTemplateContext);
+							        <div>
+								        <p>Sum: @aggregate.Sum</p>
+							        </div>
+						        }
+					        </GroupFooterTemplate>
+					        <FooterTemplate>
+						        @{
+							        var aggregate = (context as AggregateTemplateContext);
+						        }
+						        <div>
+							        <p>Total: @aggregate.Sum</p>
+						        </div>
+					        </FooterTemplate>
+				        </GridAggregateColumn>
+			        </GridAggregateColumns>
+		        </GridAggregate>
+	        </GridAggregates>
         </SfGrid>
         }
 

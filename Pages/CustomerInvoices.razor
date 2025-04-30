@@ -117,7 +117,7 @@
 			    <GridColumns >
 				    <GridColumn Field="Cust" HeaderText="Cust Num" Width="100"></GridColumn>
 				    <GridColumn Field="B2Name" HeaderText="Customer Name" Width="150"></GridColumn>
-					<GridColumn Field="CustPO" HeaderText="PO Num" Width="100"></GridColumn>
+				    <GridColumn Field="CustPO" HeaderText="PO Num" Width="100"></GridColumn>
 				    <GridColumn Field="CoNum" HeaderText="Order Num" Width="100"></GridColumn>
 					
 				    <GridColumn Field="InvQty" HeaderText="InvQty" Width="100" Format="N0" TextAlign="TextAlign.Right">
@@ -127,7 +127,7 @@
 							    if (data != null)
 							    {
 								    <div style="text-align: right; padding-right: 10px;">
-										@data.InvQty.ToString("N0", CultureInfo.InvariantCulture)
+									    @data.InvQty.ToString("N0", CultureInfo.InvariantCulture)
 								    </div>
 							    }
 						    }
@@ -138,12 +138,36 @@
 				    
 				    <GridColumn Field="ExtPrice" HeaderText="Ext Price" Format="C2" Width="120" TextAlign="TextAlign.Right"></GridColumn>
 				    <GridColumn Field="Ship_Date" HeaderText="Ship Date" Format="d" Width="100"></GridColumn>
-					<GridColumn Field="InvDate" HeaderText="Invoice Date" Format="d" Width="100"></GridColumn>
-					<GridColumn Field="DueDate" HeaderText="Estimated Ship Date" Format="d" Width="140"></GridColumn>
+				    <GridColumn Field="InvDate" HeaderText="Invoice Date" Format="d" Width="100"></GridColumn>
+				    <GridColumn Field="DueDate" HeaderText="Estimated Ship Date" Format="d" Width="140"></GridColumn>
 				    <GridColumn Field="InvNum" HeaderText="Invoice Num" Width="100"></GridColumn>
 				    				    
 
 			    </GridColumns>
+			    <GridAggregates>
+				    <GridAggregate>
+					    <GridAggregateColumns>
+						    <GridAggregateColumn Field=@nameof(InvoiceRptDetail.ExtPrice) Type="AggregateType.Sum" Format="C2">
+							    <GroupFooterTemplate>
+								    @{
+									    var aggregate = (context as AggregateTemplateContext);
+									    <div>
+										    <p>Sum: @aggregate.Sum</p>
+									    </div>
+								    }
+							    </GroupFooterTemplate>
+							    <FooterTemplate>
+								    @{
+									    var aggregate = (context as AggregateTemplateContext);
+								    }
+								    <div>
+									    <p>Total: @aggregate.Sum</p>
+								    </div>
+							    </FooterTemplate>
+						    </GridAggregateColumn>
+					    </GridAggregateColumns>
+				    </GridAggregate>
+			    </GridAggregates>
 		    </SfGrid>
 	    }
     }
