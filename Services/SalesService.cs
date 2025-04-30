@@ -413,7 +413,7 @@ FROM (
             WHEN ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyPriorEnd:yyyy-MM-dd}' THEN 'FY{fiscalYear - 1}'
             ELSE FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR)
         END AS Period,
-        ISNULL(SUM(ii.qty_invoiced * ii.price),0) AS ExtPrice
+        ISNULL(SUM(iiqty_invoiced * (ii.price * ((100 - isnull(ih.disc, 0.0))/100))),0) AS ExtPrice
     FROM inv_item_mst ii 
     JOIN inv_hdr_mst ih ON ii.inv_num = ih.inv_num
     JOIN custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
@@ -606,7 +606,7 @@ WITH InvoiceData AS (
                 THEN 'FY{fiscalYear}'
         END AS FiscalYear,
         -- Pre-calculate the monetary values
-        ii.qty_invoiced * ii.price AS RevAmount,
+        ii.qty_invoiced * (ii.price * ((100 - isnull(ih.disc, 0.0))/100)) AS RevAmount,
         ii.qty_invoiced AS QtyInvoiced
     FROM inv_item_mst ii 
     -- Add HINT to enforce join order if needed
@@ -651,7 +651,7 @@ UNION ALL
                THEN 'FY{fiscalYear}'
        END AS FiscalYear,
        -- Pre-calculate the monetary values
-       ii.qty_invoiced * ii.price AS RevAmount,
+       ii.qty_invoiced * (ii.price * ((100 - isnull(ih.disc, 0.0))/100)) AS RevAmount,
        ii.qty_invoiced AS QtyInvoiced
    FROM Kent_App.dbo.inv_item_mst ii 
    -- Add HINT to enforce join order if needed
