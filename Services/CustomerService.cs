@@ -45,7 +45,7 @@ AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
         // NOTE: Using the repCode from the RepCodeContext!!
     }
 
-    public async Task<IEnumerable<Customer>> GetCustomersDetailsByRepCodeAsync()
+    public async Task<IEnumerable<Customer>> GetCustomersDetailsByRepCodeAsync()  // Cannot do Region as region is ship-to specific
     {
         // NOTE:  Always uses the repCode from the RepCodeContext
         const string sql = @"
@@ -56,7 +56,7 @@ AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
        ca.credit_hold as CreditHold, ca.credit_hold_date as CreditHoldDate, ca.credit_hold_reason as CreditHoldReason,
        cu.terms_code as PaymentTermsCode, cu.Uf_PROG_BASIS as PricingCode, cu.stat as Status,
         cu.uf_c_slsmgr as SalesManager, isnull(sm.SalesManagerName,'To Be Assigned') as SalesManagerName
-         ,isnull(r.Description,'') as CreditHoldReasonDescription
+         ,isnull(r.Description,'') as CreditHoldReasonDescription 
 ,cu.uf_FrtTerms as FreightTerms
 FROM   customer_mst cu 
 JOIN custaddr_mst ca ON cu.cust_num = ca.cust_num AND cu.cust_seq = ca.cust_seq AND cu.cust_seq = 0

@@ -8,6 +8,7 @@ public class Customer
     public string? Cust_Num { get; set; }
     public string? Cust_Name { get; set; }
     public string? RepCode { get; set; }
+    // No Region because region is ship-to specific
 
     public string? BuyingGroup { get; set; }
     public string? BillToName { get; set; }

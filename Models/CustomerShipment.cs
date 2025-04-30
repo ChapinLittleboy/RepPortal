@@ -19,6 +19,9 @@ public class CustomerShipment
     public string ServiceType { get; set; }
     public int ShipQty { get; set; }
     public string? FreightTerms { get; set; }
+    public string? BillToState { get; set; }
+    public string? ShipToState { get; set; }
+    public string? ShipToRegion { get; set; }
 
 
 

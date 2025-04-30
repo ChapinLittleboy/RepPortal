@@ -8,6 +8,7 @@ public interface IRepCodeContext
     void ResetRepCode();
     string CurrentLastName { get; }
     string CurrentFirstName { get; }
+    string RepRegion { get; }
 
 }
 
@@ -48,6 +49,14 @@ public class RepCodeContext : IRepCodeContext
         {
             var user = _httpContextAccessor.HttpContext?.User;
             return user?.FindFirst("FirstName")?.Value ?? string.Empty;
+        }
+    }
+    public string RepRegion
+    {
+        get
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            return user?.FindFirst("Region")?.Value ?? string.Empty;
         }
     }
     public event Action OnRepCodeChanged;

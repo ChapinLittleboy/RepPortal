@@ -46,6 +46,11 @@ public class CustomUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<Appli
             identity.AddClaim(new Claim("LastName", user.LastName));
         }
 
+        if (!string.IsNullOrEmpty(user.Region))
+        {
+            identity.AddClaim(new Claim("Region", user.Region));
+        }
+
         return identity;
     }
 }

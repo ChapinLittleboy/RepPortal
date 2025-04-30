@@ -108,6 +108,10 @@
 		        <GridColumn Field="CustName" HeaderText="Customer Name" Width="150"></GridColumn>
 		        <GridColumn Field="PoNumber" HeaderText="PO Num" Width="100"></GridColumn>
 		        <GridColumn Field="OrderNumber" HeaderText="Order Num" Width="100"></GridColumn>
+		        <GridColumn Field="BillToState" HeaderText="Bill To State" Width="100"></GridColumn>
+		        <GridColumn Field="ShipToState" HeaderText="Ship To State" Width="100"></GridColumn>
+		        <GridColumn Field="ShipToRegion" HeaderText="Region" Width="100" Visible="isLawlessRep"></GridColumn>
+
 
 		        <GridColumn Field="CoLine" HeaderText="CO Line" Width="100"></GridColumn>
 		        <GridColumn Field="ItemNum" HeaderText="Item" Width="100"></GridColumn>
@@ -155,6 +159,7 @@
 	private List<Customer> CustomerList = new List<Customer>();
 	private string WantedCustNum = string.Empty;
 	public SfComboBox<string, Customer> WantedCust { get; set; }
+	private bool isLawlessRep = false;
 
 	private AuthenticationState authState;
 	private ApplicationUser currentUser;
@@ -170,6 +175,8 @@
 			currentUser = await UserManager.GetUserAsync(user);
 			// parameters.RepCode = currentUser.RepCode;
 			parameters.RepCode = RepCodeContext.CurrentRepCode;
+            isLawlessRep = RepCodeContext.CurrentRepCode == "LAW";
+          
 
 		}
 
@@ -195,6 +202,7 @@
 		showTip = true;
 		isLoading = true;
 		parameters.CustNum = WantedCust.Value;
+		parameters.ShipToRegion = RepCodeContext.RepRegion;
 		ShipmentsData = await SalesService.GetShipmentsData(parameters);
 
 		isLoading = false;
