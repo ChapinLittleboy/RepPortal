@@ -50,7 +50,20 @@ public class CustomUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<Appli
         {
             identity.AddClaim(new Claim("Region", user.Region));
         }
+        // --- new: mirror LER ↔ LNE whenever exactly one is present ---
+        var regions = identity.FindAll("Region")
+            .Select(c => c.Value)
+            .Distinct()
+            .ToList();
 
+        if (regions.Count == 1)
+        {
+            var single = regions[0];
+            if (single == "LER")
+                identity.AddClaim(new Claim("Region", "LNE"));
+            else if (single == "LNE")
+                identity.AddClaim(new Claim("Region", "LER"));
+        }
         return identity;
     }
 }

@@ -5,6 +5,9 @@ using RepPortal.Models;
 using System.Data;
 using RepPortal.Data;
 using System.Text;
+using SQLitePCL;
+using Syncfusion.XlsIO;
+using System.Reflection.Emit;
 
 
 namespace RepPortal.Services;
@@ -50,6 +53,18 @@ public class SalesService
         var user = authState.User;
         //var repCode = user?.FindFirst("RepCode")?.Value;
         var repCode = _repCodeContext.CurrentRepCode;
+        // only if this is the "LAW" rep do we extract SalesRegion claims:
+        IEnumerable<string> allowedRegions = null;
+        if (repCode == "LAW")
+        {
+            allowedRegions = user.Claims
+                .Where(c => c.Type == "Region")
+                .Select(c => c.Value)
+                .Distinct()
+                .ToList();
+        }
+
+
 
         using (var connection = new SqlConnection(_connectionString))
         {
@@ -57,8 +72,8 @@ public class SalesService
 
             await connection.OpenAsync();
             //var query = GetDynamicQuery();
-            var (query, fy) = GetDynamicQuery();
-            var parameters = new { RepCode = repCode };
+            var (query, fy) = GetDynamicQuery(allowedRegions);
+            var parameters = new { RepCode = repCode, AllowedRegions = allowedRegions };
             var results = await connection.QueryAsync(query, parameters, commandType: CommandType.Text);
 
             Console.WriteLine($"Fiscal year used: {fy}");
@@ -73,15 +88,13 @@ public class SalesService
                 }
                 data.Add(dict);
             }
-
             return data;
         }
-
     }
 
 
 
-    (string query, int fiscalYear) GetDynamicQuery()
+    (string query, int fiscalYear) GetDynamicQuery(IEnumerable<string> allowedRegions = null)
     {
         var today = DateTime.Today;
         var fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
@@ -100,6 +113,14 @@ public class SalesService
 
         var cols = string.Join(",", monthNames.Select(m => $"ISNULL([{m}], 0) AS [{m}]"));
         var colsPivot = string.Join(",", monthNames.Select(m => $"[{m}]"));
+
+        // if we have any allowedRegions, add the IN-clause; otherwise no extra filter
+        var regionFilter = "";
+        if (allowedRegions != null && allowedRegions.Any())
+        {
+            regionFilter = " AND cu.Uf_SalesRegion IN @AllowedRegions";
+        }
+
 
         string baseSelect(string db)
         {
@@ -128,7 +149,7 @@ public class SalesService
         JOIN Bat_App.dbo.customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
         LEFT JOIN Bat_App.dbo.Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
         WHERE ih.inv_date >= '{fyPriorStart:yyyy-MM-dd}'
-          AND cu.slsman = @RepCode
+          AND cu.slsman = @RepCode{regionFilter}
         GROUP BY 
             ih.cust_num, ca0.Name, ih.cust_seq, ca.City, ca.State,
             ca0.name, ca0.state, cu.Uf_SalesRegion, rn.RegionName,
@@ -168,30 +189,6 @@ public class SalesService
 
         return (query, fiscalYear);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -328,18 +325,26 @@ ORDER BY FY{fiscalYear - 1} DESC;";
         var user = authState.User;
         //var repCode = user?.FindFirst("RepCode")?.Value;
         var repCode = _repCodeContext.CurrentRepCode;
-
+        IEnumerable<string> allowedRegions = null;
+        if (repCode == "LAW")
+        {
+            allowedRegions = user.Claims
+                .Where(c => c.Type == "Region")
+                .Select(c => c.Value)
+                .Distinct()
+                .ToList();
+        }
         using (var connection = new SqlConnection(_connectionString))
         {
             int fiscalYear; // it's being set by the GetDynamicQuery method
 
             await connection.OpenAsync();
-            var query = GetDynamicQueryForItemsMonthly(out fiscalYear);
+            var query = GetDynamicQueryForItemsMonthly(allowedRegions);
             var parameters = new { RepCode = repCode };
             _logger.LogInformation($"{query}");
             var results = await connection.QueryAsync(query, parameters, commandType: CommandType.Text);
 
-            Console.WriteLine($"Fiscal year used: {fiscalYear}");
+            //Console.WriteLine($"Fiscal year used: {fiscalYear}");
             // Convert the results to a list of dictionaries
             var data = new List<Dictionary<string, object>>();
             foreach (var row in results)
@@ -358,10 +363,10 @@ ORDER BY FY{fiscalYear - 1} DESC;";
 
 
 
-        string GetDynamicQueryForItemsMonthly(out int fiscalYear)
+        string GetDynamicQueryForItemsMonthly(IEnumerable<string> allowedRegions = null)
         {
             var today = DateTime.Today;
-            fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+            int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
 
             var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
             var fyCurrentEnd = new DateTime(fiscalYear, 8, 31);
@@ -374,6 +379,14 @@ ORDER BY FY{fiscalYear - 1} DESC;";
                 .Select(i => fyCurrentStart.AddMonths(i - 1))
                 .Select(d => d.ToString("MMM") + d.Year)
                 .ToList();
+
+            // if we have any allowedRegions, add the IN-clause; otherwise no extra filter
+            var regionFilter = "";
+            if (allowedRegions != null && allowedRegions.Any())
+            {
+                regionFilter = " AND cu.Uf_SalesRegion IN @AllowedRegions";
+            }
+
 
             var cols = string.Join(",", monthNames.Select(m => $"ISNULL([{m}], 0) AS [{m}]"));
             var colsPivot = string.Join(",", monthNames.Select(m => $"[{m}]"));
@@ -422,7 +435,7 @@ FROM (
     LEFT JOIN Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
     LEFT JOIN Bat_App.dbo.Item_mst im ON ii.item = im.item
     WHERE ih.inv_date >= '{fyPriorStart:yyyy-MM-dd}' 
-        AND cu.slsman = @RepCode
+        AND cu.slsman = @RepCode{regionFilter}
     GROUP BY 
         ih.cust_num, 
         ca0.Name, 
@@ -503,18 +516,26 @@ ORDER BY FY{fiscalYear - 1} DESC;";
         var user = authState.User;
         //var repCode = user?.FindFirst("RepCode")?.Value;
         var repCode = _repCodeContext.CurrentRepCode;
-
+        IEnumerable<string> allowedRegions = null;
+        if (repCode == "LAW")
+        {
+            allowedRegions = user.Claims
+                .Where(c => c.Type == "Region")
+                .Select(c => c.Value)
+                .Distinct()
+                .ToList();
+        }
         using (var connection = new SqlConnection(_connectionString))
         {
             int fiscalYear; // it's being set by the GetDynamicQuery method
 
             await connection.OpenAsync();
-            var query = GetDynamicQueryForItemsMonthlyWithQty(out fiscalYear);
-            var parameters = new { RepCode = repCode };
+            var query = GetDynamicQueryForItemsMonthlyWithQty(allowedRegions);
+            var parameters = new { RepCode = repCode, AllowedRegions = allowedRegions};
             _logger.LogInformation($"The query is: {query}");
             var results = await connection.QueryAsync(query, parameters, commandType: CommandType.Text);
 
-            Console.WriteLine($"Fiscal year used: {fiscalYear}");
+           // Console.WriteLine($"Fiscal year used: {fiscalYear}");
             // Convert the results to a list of dictionaries
             var data = new List<Dictionary<string, object>>();
             foreach (var row in results)
@@ -535,10 +556,10 @@ ORDER BY FY{fiscalYear - 1} DESC;";
 
 
 
-    public string GetDynamicQueryForItemsMonthlyWithQty(out int fiscalYear)
+    public string GetDynamicQueryForItemsMonthlyWithQty(IEnumerable<string> allowedRegions = null)
     {
         var today = DateTime.Today;
-        fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+        int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
 
         var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
         var fyCurrentEnd = new DateTime(fiscalYear, 8, 31);
@@ -574,8 +595,16 @@ ORDER BY FY{fiscalYear - 1} DESC;";
             }
         }
 
+        // if we have any allowedRegions, add the IN-clause; otherwise no extra filter
+        var regionFilter = "";
+        if (allowedRegions != null && allowedRegions.Any())
+        {
+            regionFilter = " AND cu.Uf_SalesRegion IN @AllowedRegions";
+        }
+
+
         // Build optimized query with CTE and fewer CASE expressions
-            var query = $@"
+        var query = $@"
 -- Use WITH statement for improved readability and performance
 WITH InvoiceData AS (
     SELECT
@@ -619,7 +648,7 @@ WITH InvoiceData AS (
     WHERE 
         -- Use a simplified date range that covers both fiscal years
         ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}'
-        AND cu.slsman = @RepCode
+        AND cu.slsman = @RepCode{regionFilter}
 
 
 UNION ALL
@@ -664,7 +693,7 @@ UNION ALL
    WHERE 
        -- Use a simplified date range that covers both fiscal years
        ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}'
-       AND cu.slsman = @RepCode
+       AND cu.slsman = @RepCode{regionFilter}
 ),
 -- Create a separate CTE for aggregated values
 AggregatedData AS (

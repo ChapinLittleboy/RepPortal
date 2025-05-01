@@ -3,24 +3,27 @@
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.Grids
+@using System.Text.RegularExpressions;
 @inject DbConnectionFactory DbConnectionFactory
+@inject IRepCodeContext RepCodeContext
+@inject CustomerService CustomerService
+
 
 <h3>Order Lookup</h3>
 
 <div class="mb-4 row gx-2">
-    <div class="col-md-4">
-        <SfTextBox @bind-Value="CustomerNumber"
-                   Placeholder="Customer Number"
-                   FloatLabelType="FloatLabelType.Auto" />
-    </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
+        <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" DataSource="@Customers" @ref="WantedCust">
+            <ComboBoxFieldSettings Text="CustNameWithNum" Value="Cust_Num"/>
+        </SfComboBox>
+
         <SfTextBox @bind-Value="CustomerPo"
-                   Placeholder="Customer PO"
-                   FloatLabelType="FloatLabelType.Auto" />
+        Placeholder="Customer Purchase Order or Sales Order Number"
+        FloatLabelType="FloatLabelType.Auto" />
     </div>
-    <div class="col-md-4 d-flex align-items-end">
+    <div class="col-md-3 d-flex align-items-end">
         <SfButton CssClass="e-primary"
-                  OnClick="@LoadOrderAsync">
+        OnClick="@LoadOrderAsync">
             Lookup
         </SfButton>
     </div>
@@ -84,15 +87,15 @@
                 </div>
                 <div class="col-sm-3">
                     <strong>Last Ship Date</strong>
-                    <div>@(Header.LastShipDate?.ToString("d") ?? "")</div>
+                    <div>@(Header.LastShipDate)</div>
                 </div>
             </div>
         </div>
     </div>
 
     <SfGrid DataSource="@LineItems"
-            AllowSorting="false"
-            AllowFiltering="false">
+    AllowSorting="false"
+    AllowFiltering="false">
         <GridColumns>
             <GridColumn Field="CoLine" HeaderText="Line" Width="70" TextAlign="TextAlign.Center" />
             <GridColumn Field="Item" HeaderText="Item" Width="120" />
@@ -111,7 +114,7 @@
                     }
                 </Template>
             </GridColumn>
-           
+
         </GridColumns>
     </SfGrid>
 }
@@ -119,17 +122,39 @@
 @code {
     private string CustomerNumber { get; set; }
     private string CustomerPo { get; set; }
+    private string normalizedPo { get; set; }
 
     private OrderHeader Header { get; set; }
     private List<OrderLine> LineItems { get; set; } = new();
+    private List<Customer> Customers { get; set; } = new();
+    private int NumericValue = 50;
+    public SfComboBox<string, Customer> WantedCust { get; set; }
 
-    private async Task LoadOrderAsync()
+    protected override async Task OnInitializedAsync()
+    {
+	    Customers = await CustomerService.GetCustomersDetailsByRepCodeAsync();
+    }
+
+    /// <summary>
+    /// Remove all non-alphanumeric chars from the PO string.
+    /// </summary>
+    private string NormalizePo(string po)
+    {
+	    if (string.IsNullOrEmpty(po))
+		    return string.Empty;
+	    // [^A-Za-z0-9] means “anything that’s NOT A–Z, a–z or 0–9”
+	    return Regex.Replace(po, "[^A-Za-z0-9]", "");
+    }
+
+	private async Task LoadOrderAsync()
     {
         Header = null;
         LineItems.Clear();
 
-        if (string.IsNullOrWhiteSpace(CustomerNumber) || string.IsNullOrWhiteSpace(CustomerPo))
+        if (string.IsNullOrWhiteSpace(WantedCust.Value) || string.IsNullOrWhiteSpace(CustomerPo))
             return;
+
+		normalizedPo = NormalizePo(CustomerPo);
 
         using var conn = DbConnectionFactory.CreateBatConnection();
 
@@ -150,16 +175,21 @@
     JOIN custaddr_mst ca
       ON co.cust_num = ca.cust_num
      AND co.cust_seq = ca.cust_seq
+    JOIN customer_mst cu
+      ON co.cust_num = cu.cust_num and  co.cust_seq = cu.cust_seq
     LEFT JOIN custaddr_mst ca0
       ON co.cust_num = ca0.cust_num
      AND ca0.cust_seq = 0
     LEFT JOIN inv_hdr_mst inv
       ON co.cust_num = inv.cust_num
      AND co.cust_po  = inv.cust_po
-            WHERE co.cust_po = @CustPo
-              AND co.cust_num = dbo.ExpandKyByType('CustNumType', @CustNum);
+            WHERE (REPLACE(REPLACE(co.cust_po, '-', ''), '_', '') = @CustPo
+				OR co.co_num = dbo.ExpandKyByType('CoNumType',@CustPo))
+
+              AND co.cust_num = dbo.ExpandKyByType('CustNumType', @CustNum)
+			 AND cu.slsman = @RepCode;
         ";
-        Header = await conn.QueryFirstOrDefaultAsync<OrderHeader>(headerSql, new { CustPo = CustomerPo, CustNum = CustomerNumber });
+        Header = await conn.QueryFirstOrDefaultAsync<OrderHeader>(headerSql, new { CustPo = normalizedPo, CustNum = WantedCust.Value, RepCode = RepCodeContext.CurrentRepCode});
         if (Header == null) return;
 
         // 2) fetch line items
@@ -191,10 +221,11 @@
             .Min();
 
         Header.LastShipDate = rows
-            .Where(r => r.ShipDate.HasValue)
-            .Select(r => r.ShipDate.Value)
-            .DefaultIfEmpty()
-            .Max();
+	                              .Select(r => r.ShipDate)               // IEnumerable<DateTime?>
+	                              .Max()                                 // DateTime? (null if there were no values)
+	                              ?.ToString("d")                        // null or the formatted date
+                              ?? "";                                 // coalesce null → ""
+
     }
 
     private string GetOrderStatusDescription(string code) =>
@@ -228,7 +259,7 @@
         public DateTime OrderDate { get; set; }
         public string OrderStatus { get; set; }
         public DateTime? ExpectedShipDate { get; set; }
-        public DateTime? LastShipDate { get; set; }
+        public string? LastShipDate { get; set; }
     }
 
     public class OrderLine

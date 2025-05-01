@@ -54,7 +54,7 @@
                 <div class="column">
 	                <div class="form-group">
 		                <label>Customer Name (Optional):</label>
-		                <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" DataSource="@CustomerEList" @ref="WantedCust">
+		                <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" DataSource="@CustomerList" @ref="WantedCust">
 							  
 			                <ComboBoxFieldSettings Text="CustNameWithNum" Value="Cust_Num"/>
 		                </SfComboBox>
@@ -211,8 +211,8 @@
 
 		CustomerTypes = await CustomerService.GetCustomerTypesAsync();
 
-		CustomerEList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
-		CustomerList = CustomerEList.ToList();
+		//CustomerEList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
+		CustomerList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
 		isReady = true;
 
 	}

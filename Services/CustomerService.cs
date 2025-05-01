@@ -45,7 +45,7 @@ AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
         // NOTE: Using the repCode from the RepCodeContext!!
     }
 
-    public async Task<IEnumerable<Customer>> GetCustomersDetailsByRepCodeAsync()  // Cannot do Region as region is ship-to specific
+    public async Task<List<Customer>> GetCustomersDetailsByRepCodeAsync()  // Cannot do Region as region is ship-to specific
     {
         // NOTE:  Always uses the repCode from the RepCodeContext
         const string sql = @"
@@ -71,7 +71,7 @@ ORDER BY ca.[name]";
 
         using var connection = new SqlConnection(_batAppConnection);
         var Results =  await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode});
-        return Results;
+        return Results.ToList();
         // NOTE: Using the repCode from the RepCodeContext!!
     }
 
