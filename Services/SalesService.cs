@@ -8,6 +8,7 @@ using System.Text;
 using SQLitePCL;
 using Syncfusion.XlsIO;
 using System.Reflection.Emit;
+using Microsoft.IdentityModel.Tokens;
 
 
 namespace RepPortal.Services;
@@ -938,6 +939,27 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
     {
         using (var connection = new SqlConnection(_connectionString))
         {
+            var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var repCode = _repCodeContext.CurrentRepCode;
+            IEnumerable<string> allowedRegions = null;
+            if (repCode == "LAW")
+            {
+                allowedRegions = user.Claims
+                    .Where(c => c.Type == "Region")
+                    .Select(c => c.Value)
+                    .Distinct()
+                    .ToList();
+            }
+            if (!allowedRegions.IsNullOrEmpty() && allowedRegions.Any())
+            {
+                parameters.ShipToRegion = string.Join(",", allowedRegions);
+            }
+            else
+            {
+                parameters.ShipToRegion = null;
+            }
+
             // Note: This gets both BAT and KENT data
             await connection.OpenAsync();
             var results = await connection.QueryAsync<CustomerShipment>(@"
@@ -948,7 +970,8 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
                     @CustNum, 
                     @CorpNum, 
                     @CustType, 
-                    @EndUserType
+                    @EndUserType,
+                    @AllowedRegions
 ",
                 new
                 {
@@ -958,7 +981,8 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
                     parameters.CustNum,
                     parameters.CorpNum,
                     parameters.CustType,
-                    parameters.EndUserType
+                    parameters.EndUserType,
+                    AllowedRegions = parameters.ShipToRegion
                 });
 
             return results.ToList();

@@ -9,11 +9,12 @@
 @inject CustomerService CustomerService
 
 
-<h3>Order Lookup</h3>
+
 
 <div class="mb-4 row gx-2">
     <div class="col-md-3">
-        <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" DataSource="@Customers" @ref="WantedCust">
+	    <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" 
+	                DataSource="@Customers" @ref="WantedCust" FloatLabelType="FloatLabelType.Auto" Placeholder="Enter Customer Name">
             <ComboBoxFieldSettings Text="CustNameWithNum" Value="Cust_Num"/>
         </SfComboBox>
 
