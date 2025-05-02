@@ -76,6 +76,39 @@ ORDER BY ca.[name]";
     }
 
 
+    public async Task<List<Customer>> GetCustomerNamesByRepCodeAsync()  // customer name, number, rep_code, status, region from ship-to records
+    {
+        // NOTE:  Always uses the repCode from the RepCodeContext
+        const string sql = @"
+            SELECT distinct cu.cust_num as Cust_Num, ca0.[name] as Cust_Name,  cu.slsman as RepCode, cu.stat as Status
+,       ca0.corp_cust as Corp_Cust,
+       ca0.addr##1 as BillToAddress1, ca0.addr##2 as BillToAddress2, ca0.addr##3 as BillToAddress3,
+       ca0.addr##4 as BillToAddress4, ca0.city as BillToCity, ca0.state as BillToState,
+       ca0.zip as BillToZip, ca0.country as BillToCountry, cu.slsman as RepCode, 
+       ca0.credit_hold as CreditHold, ca0.credit_hold_date as CreditHoldDate, ca0.credit_hold_reason as CreditHoldReason,
+       cu0.terms_code as PaymentTermsCode, cu0.Uf_PROG_BASIS as PricingCode, cu.stat as Status,
+        cu0.uf_c_slsmgr as SalesManager, isnull(sm.SalesManagerName,'To Be Assigned') as SalesManagerName
+         ,isnull(r.Description,'') as CreditHoldReasonDescription 
+,cu0.uf_FrtTerms as FreightTerms
+            FROM   customer_mst cu 
+            JOIN customer_mst cu0 ON cu.cust_num = cu0.cust_num AND cu0.cust_seq = 0
+JOIN custaddr_mst ca0 ON cu.cust_num = ca0.cust_num AND ca0.cust_seq  = 0
+left JOIN reason_mst r ON ca0.credit_hold_reason = r.reason_code and r.reason_class = 'CRED HOLD'
+LEFT JOIN Chap_SalesManagers sm ON cu0.uf_c_slsmgr = sm.SalesManagerInitials
+            WHERE  1=1
+AND (ca0.credit_hold_reason IS NULL OR ca0.credit_hold_reason NOT IN (
+    SELECT Code FROM RepPortal.dbo.CreditHoldReasonCodeExclusions))
+AND (        @RepCode = 'Admin'    
+        OR cu.slsman = @RepCode) 
+ORDER BY ca0.[name]";
+
+        using var connection = new SqlConnection(_batAppConnection);
+        var Results = await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
+        return Results.ToList();
+        // NOTE: Using the repCode from the RepCodeContext!!
+    }
+
+
     public async Task<IEnumerable<string>> GetCustomerTypesAsync()
     {
         // NOTE:  Always uses the repCode from the RepCodeContext

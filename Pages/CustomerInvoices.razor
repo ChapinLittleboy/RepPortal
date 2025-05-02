@@ -11,6 +11,7 @@
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.DropDowns
 @using FilteringEventArgs = Syncfusion.Blazor.DropDowns.FilteringEventArgs
+@using FilterType = Syncfusion.Blazor.DropDowns.FilterType
 @inject SalesService SalesService
 @inject CustomerService CustomerService
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -60,7 +61,7 @@
 				    <div class="column">
 					    <div class="form-group">
 						    <label>Customer Name (Optional):</label>
-						    <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" DataSource="@CustomerList" @ref="WantedCust">
+						    <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" FilterType="FilterType.Contains" DataSource="@CustomerList" @ref="WantedCust">
 							  
 							    <ComboBoxFieldSettings Text="CustNameWithNum" Value="Cust_Num"/>
 						    </SfComboBox>

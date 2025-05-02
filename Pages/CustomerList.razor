@@ -57,8 +57,20 @@
                 <GridColumn Field=@nameof(Customer.BillToState) HeaderText="State" Width="100"></GridColumn>
                 <GridColumn Field=@nameof(Customer.BillToZip) HeaderText="Zip Code" Width="100"></GridColumn>
                 <GridColumn Field=@nameof(Customer.BillToCountry) HeaderText="Country" Width="150"></GridColumn>
-                <GridColumn Field=@nameof(Customer.SalesManagerName) HeaderText="Sales Manager" Width="150"></GridColumn>
-                <GridColumn Field=@nameof(Customer.CreditHoldDate) HeaderText="Inactive Date" Width="150">
+                <GridColumn Field=@nameof(Customer.SalesManagerName) HeaderText="Sales Manager" Width="150">
+	   
+	                <Template>
+		                @{
+			                var data = context as Customer;
+			                var displayName = data.Status == "A" ? data.SalesManagerName : "To be assigned";
+			                var tooltip = data.Status != "A" ? "Sales manager will be assigned when the account is activated" : string.Empty;
+		                }
+		                <span title="@tooltip">@displayName</span>
+	                </Template>
+
+
+                </GridColumn>
+                <GridColumn Field=@nameof(Customer.CreditHoldDate) HeaderText="Hold Date" Width="150">
                     <Template>
                         @{
                             var data = context as Customer;
@@ -117,7 +129,7 @@
             var currentUser = await UserManager.GetUserAsync(user);
             if (!string.IsNullOrEmpty(repCode))
             {
-               var allCustomers = await CustomerService.GetCustomersDetailsByRepCodeAsync();
+                var allCustomers = await CustomerService.GetCustomerNamesByRepCodeAsync();
                 customers = allCustomers.Where(c => c.Status != "R" );
 
                 isLoading = false;
