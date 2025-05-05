@@ -1,4 +1,4 @@
-﻿@page "/monthly-sales-report"
+﻿@page "/monthly-sales-report/{salesmanType}"
 @attribute [Authorize]
 @using System.Dynamic
 @using System.Globalization
@@ -95,6 +95,9 @@ else
 
 
 @code {
+	[Parameter]
+	public string salesmanType { get; set; }
+
     private SfGrid<ExpandoObject> Grid;
     private List<Dictionary<string, object>> SalesData = new List<Dictionary<string, object>>();
     private List<string> DynamicColumns = new List<string>();
@@ -107,7 +110,61 @@ else
     private ApplicationUser currentUser;
 
 
+    protected override async Task OnParametersSetAsync()
+    {
+        
+	    List<Dictionary<string, object>> rawData;
 
+    
+	    if (salesmanType == "cu")   // uses slsman on the customer record
+	    {
+		    rawData = await SalesService.GetSalesReportData();
+	    }
+	    else if (salesmanType == "ih") // uses slsman on the invoice header record
+	    {
+		    rawData = await SalesService.GetSalesReportDataUsingInvRep();
+	    }
+
+	    else
+	    {
+		    rawData = new List<Dictionary<string, object>>(); // fallback
+	    }
+
+
+	    // var rawData = await SalesService.GetSalesReportData();
+	    //ProcessDynamicColumns(rawData);
+	    ConvertToDictionaries(rawData);
+
+	    eSalesData = SalesData.Select(d => d.ToExpando()).ToList();
+        
+	    // get rid of future months
+	    var today = DateTime.Today;
+	    int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+	    var fyStart = new DateTime(fiscalYear - 1, 9, 1);
+	    int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
+
+	    var allowedMonths = Enumerable.Range(0, currentFiscalMonth)
+		    .Select(i => fyStart.AddMonths(i).ToString("MMM") + fyStart.AddMonths(i).Year)
+		    .ToHashSet();
+
+	    foreach (IDictionary<string, object> row in eSalesData)
+	    {
+		    var monthKeysToRemove = row.Keys
+			    .Where(k => Regex.IsMatch(k, @"^[A-Z][a-z]{2}\d{4}$") && !allowedMonths.Contains(k))
+			    .ToList();
+
+		    foreach (var key in monthKeysToRemove)
+			    row.Remove(key);
+	    }
+
+	    ProcessDynamicColumns(eSalesData);
+
+	    await base.OnInitializedAsync();
+	    // Hide the spinner
+	    isLoading = false;
+	    //spinner.HideAsync();
+	    isReady = true;
+    }
     protected override async Task OnInitializedAsync()
     {
         authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -116,40 +173,8 @@ else
         {
             currentUser = await UserManager.GetUserAsync(user);
         }
-      
-        var rawData = await SalesService.GetSalesReportData();
-        //ProcessDynamicColumns(rawData);
-        ConvertToDictionaries(rawData);
 
-        eSalesData = SalesData.Select(d => d.ToExpando()).ToList();
-        
-        // get rid of future months
-        var today = DateTime.Today;
-        int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
-        var fyStart = new DateTime(fiscalYear - 1, 9, 1);
-        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
 
-        var allowedMonths = Enumerable.Range(0, currentFiscalMonth)
-	        .Select(i => fyStart.AddMonths(i).ToString("MMM") + fyStart.AddMonths(i).Year)
-	        .ToHashSet();
-
-        foreach (IDictionary<string, object> row in eSalesData)
-        {
-	        var monthKeysToRemove = row.Keys
-		        .Where(k => Regex.IsMatch(k, @"^[A-Z][a-z]{2}\d{4}$") && !allowedMonths.Contains(k))
-		        .ToList();
-
-	        foreach (var key in monthKeysToRemove)
-		        row.Remove(key);
-        }
-
-        ProcessDynamicColumns(eSalesData);
-
-        await base.OnInitializedAsync();
-        // Hide the spinner
-        isLoading = false;
-        //spinner.HideAsync();
-        isReady = true;
     }
 
     private async Task ClearFilters()

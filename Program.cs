@@ -60,6 +60,8 @@ builder.Services.Configure<IdentityOptions>(options =>
 
 
 builder.Services.AddRazorPages();
+builder.Services.AddControllersWithViews();
+
 builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<CreditHoldExclusionService>();
 builder.Services.AddScoped<UserManager<ApplicationUser>>();
@@ -126,8 +128,14 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapRazorPages();
+    endpoints.MapControllers();
+});
 
-app.MapControllers();
+
+//app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 

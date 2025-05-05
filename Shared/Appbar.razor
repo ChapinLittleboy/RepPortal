@@ -29,11 +29,12 @@
                             <MenuItem Text="Customer List" />
                             <MenuItem Text="Quick Order Lookup"/>
                             <MenuItem Text="Monthly Sales Report"></MenuItem>
-						    <!--  <MenuItem Text="Monthly Sales By Item Report"></MenuItem> -->
+                            <MenuItem Text="Sales Rep Monthly Invoice Sales"></MenuItem>
 						    <MenuItem Text="Monthly Sales By Item Report"></MenuItem>
 						    <MenuItem Text="Shipments Report"></MenuItem>
 						    <MenuItem Text="Open Orders Report"></MenuItem>
-						    <MenuItem Text="Customer Invoices Report"></MenuItem>
+                            <MenuItem Text="Customer Invoices Report"></MenuItem>
+
 
 					    </MenuItems>
 				    </MenuItem>
@@ -228,10 +229,14 @@
 		        //Navigate to Customer List page
 		        Navigation.NavigateTo("/order-lookup");
 		        break;
-            case "Monthly Sales Report":
-                //Navigate to Monthly Sales Report page
-                Navigation.NavigateTo("/monthly-sales-report");
-                break;
+	        case "Monthly Sales Report":
+		        //Navigate to Monthly Sales Report page
+		        Navigation.NavigateTo("/monthly-sales-report/cu");
+		        break;
+            case "Sales Rep Monthly Invoice Sales":
+		        //Navigate to Monthly Sales Report page
+		        Navigation.NavigateTo("/monthly-sales-report/ih");
+		        break;
             case "Monthly Sales By Item Report old":
 	            //Navigate to Monthly Sales Report page
                 Navigation.NavigateTo("/monthly-item-sales-with-qty");

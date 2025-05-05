@@ -46,6 +46,55 @@ public class SalesService
         return _repCodeContext.CurrentRepCode;
     }
 
+    public async Task<List<Dictionary<string, object>>> GetSalesReportDataUsingInvRep()
+    {
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        //var repCode = user?.FindFirst("RepCode")?.Value;
+        var repCode = _repCodeContext.CurrentRepCode;
+        // only if this is the "LAW" rep do we extract SalesRegion claims:
+        IEnumerable<string> allowedRegions = null;
+        if (repCode == "LAW")
+        {
+            allowedRegions = user.Claims
+                .Where(c => c.Type == "Region")
+                .Select(c => c.Value)
+                .Distinct()
+                .ToList();
+        }
+
+
+
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            int fiscalYear;  // it's being set by the GetDynamicQuery method
+
+            await connection.OpenAsync();
+            //var query = GetDynamicQuery();
+            var (query, fy) = GetDynamicQuery(allowedRegions);
+
+            query = query.Replace("cu.slsman", "ih.slsman");   // Use the rep on the invoice, not on the customer record
+
+
+            var parameters = new { RepCode = repCode, AllowedRegions = allowedRegions };
+            var results = await connection.QueryAsync(query, parameters, commandType: CommandType.Text);
+
+            Console.WriteLine($"Fiscal year used: {fy}");
+            // Convert the results to a list of dictionaries
+            var data = new List<Dictionary<string, object>>();
+            foreach (var row in results)
+            {
+                var dict = new Dictionary<string, object>();
+                foreach (var prop in row)
+                {
+                    dict[prop.Key] = prop.Value;
+                }
+                data.Add(dict);
+            }
+            return data;
+        }
+    }
+
 
 
     public async Task<List<Dictionary<string, object>>> GetSalesReportData()
@@ -74,6 +123,7 @@ public class SalesService
             await connection.OpenAsync();
             //var query = GetDynamicQuery();
             var (query, fy) = GetDynamicQuery(allowedRegions);
+
             var parameters = new { RepCode = repCode, AllowedRegions = allowedRegions };
             var results = await connection.QueryAsync(query, parameters, commandType: CommandType.Text);
 
