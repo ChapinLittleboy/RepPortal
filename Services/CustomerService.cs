@@ -70,10 +70,12 @@ AND (        @RepCode = 'Admin'
 ORDER BY ca.[name]";
 
         using var connection = new SqlConnection(_batAppConnection);
-        var Results =  await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode});
+        var Results = await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
         return Results.ToList();
         // NOTE: Using the repCode from the RepCodeContext!!
     }
+
+ 
 
 
     public async Task<List<Customer>> GetCustomerNamesByRepCodeAsync()  // customer name, number, rep_code, status, region from ship-to records

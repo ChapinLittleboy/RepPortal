@@ -7,6 +7,7 @@
 @using RepPortal.Data
 @using RepPortal.Models
 @using Syncfusion.Blazor.Grids
+@using System.Text.RegularExpressions
 @inject SalesService SalesService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
@@ -117,10 +118,33 @@ else
         }
       
         var rawData = await SalesService.GetSalesReportData();
-        ProcessDynamicColumns(rawData);
+        //ProcessDynamicColumns(rawData);
         ConvertToDictionaries(rawData);
 
         eSalesData = SalesData.Select(d => d.ToExpando()).ToList();
+        
+        // get rid of future months
+        var today = DateTime.Today;
+        int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+        var fyStart = new DateTime(fiscalYear - 1, 9, 1);
+        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
+
+        var allowedMonths = Enumerable.Range(0, currentFiscalMonth)
+	        .Select(i => fyStart.AddMonths(i).ToString("MMM") + fyStart.AddMonths(i).Year)
+	        .ToHashSet();
+
+        foreach (IDictionary<string, object> row in eSalesData)
+        {
+	        var monthKeysToRemove = row.Keys
+		        .Where(k => Regex.IsMatch(k, @"^[A-Z][a-z]{2}\d{4}$") && !allowedMonths.Contains(k))
+		        .ToList();
+
+	        foreach (var key in monthKeysToRemove)
+		        row.Remove(key);
+        }
+
+        ProcessDynamicColumns(eSalesData);
+
         await base.OnInitializedAsync();
         // Hide the spinner
         isLoading = false;
@@ -152,8 +176,37 @@ else
         // No conversion needed since records is already List<Dictionary<string, object>>
         SalesData = records;
     }
+    private void ProcessDynamicColumns(List<ExpandoObject> records)
+    {
+	    var today = DateTime.Today;
+	    int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+	    var fyStart = new DateTime(fiscalYear - 1, 9, 1);
+	    int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
 
-    private void ProcessDynamicColumns(List<Dictionary<string, object>> records)
+	    // Build current FY month column names like "Sep2024", "Oct2024", etc.
+	    var currentFYMonths = Enumerable.Range(0, currentFiscalMonth)
+		    .Select(i => fyStart.AddMonths(i).ToString("MMM") + fyStart.AddMonths(i).Year)
+		    .ToHashSet();
+
+	    var allowedPrefixes = new[] { "FY" };
+
+	    // Extract column names from expando object keys
+	    var allColumns = records
+		    .SelectMany(r => ((IDictionary<string, object>)r).Keys)
+		    .Where(k =>
+			    !IsFixedColumn(k) &&
+			    (currentFYMonths.Contains(k) || allowedPrefixes.Any(p => k.StartsWith(p, StringComparison.OrdinalIgnoreCase))))
+		    .Distinct()
+		    .OrderBy(GetColumnOrder) // reverse month order
+		    .ToList();
+
+	    DynamicColumns = allColumns;
+
+	    Console.WriteLine("Dynamic Columns: " + string.Join(", ", DynamicColumns));
+    }
+
+
+    private void ProcessDynamicColumnsfromList(List<Dictionary<string, object>> records)
     {
         // Get all possible dynamic column names
         var allColumns = records

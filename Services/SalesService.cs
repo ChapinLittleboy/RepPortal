@@ -105,6 +105,106 @@ public class SalesService
         var fyPriorStart = fyCurrentStart.AddYears(-1);
         var fyPriorEnd = fyCurrentEnd.AddYears(-1);
 
+        // Build month labels for FY totals and current FY columns
+        var allMonths = Enumerable.Range(0, 24)
+            .Select(i => fyPriorStart.AddMonths(i))
+            .Select(d => d.ToString("MMM") + d.Year)
+            .ToList();
+
+        var priorFYMonths = allMonths.Take(12).ToList();
+        var currentFYMonths = allMonths.Skip(12).Take(12).ToList();
+
+        var colsPivot = string.Join(",", allMonths.Select(m => $"[{m}]"));
+
+        var currentFYColList = string.Join(",", currentFYMonths.Select(m => $"ISNULL([{m}], 0) AS [{m}]"));
+        var fyPriorSum = string.Join(" + ", priorFYMonths.Select(m => $"ISNULL([{m}],0)"));
+        var fyCurrentSum = string.Join(" + ", currentFYMonths.Select(m => $"ISNULL([{m}],0)"));
+
+        // if we have any allowedRegions, add the IN-clause; otherwise no extra filter
+        var regionFilter = "";
+        if (allowedRegions != null && allowedRegions.Any())
+        {
+            regionFilter = " AND cu.Uf_SalesRegion IN @AllowedRegions";
+        }
+
+
+        string baseSelect(string db)
+        {
+            return $@"
+        SELECT 
+            ih.cust_num AS Customer,
+            ca0.Name AS [Customer Name],
+            ih.cust_seq AS [Ship To Num],
+            ca.City AS [Ship To City],
+            ca.State AS [Ship To State],
+            cu.slsman,
+            ca0.name,
+            ca0.state AS [Bill To State],
+            cu.Uf_SalesRegion,
+            rn.RegionName,
+            FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR) AS Period,
+            ISNULL(SUM(ii.qty_invoiced * ii.price), 0) AS ExtPrice
+        FROM {db}.dbo.inv_item_mst ii 
+        JOIN {db}.dbo.inv_hdr_mst ih ON ii.inv_num = ih.inv_num AND ii.inv_seq = ih.inv_seq
+        JOIN Bat_App.dbo.custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0 
+        JOIN Bat_App.dbo.custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
+        JOIN Bat_App.dbo.customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
+        LEFT JOIN Bat_App.dbo.Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
+        WHERE ih.inv_date >= '{fyPriorStart:yyyy-MM-dd}'
+          AND cu.slsman = @RepCode{regionFilter}
+        GROUP BY 
+            ih.cust_num, ca0.Name, ih.cust_seq, ca.City, ca.State,
+            ca0.name, ca0.state, cu.Uf_SalesRegion, rn.RegionName,
+            cu.slsman,
+            FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR)";
+        }
+
+        var query = $@"
+SELECT 
+    Customer,
+    [Customer Name],
+    [Ship To Num],
+    [Ship To City],
+    [Ship To State],
+    slsman,
+    name,
+    [Bill To State],
+    Uf_SalesRegion,
+    RegionName,
+    {fyPriorSum} AS FY{fiscalYear - 1},
+    {fyCurrentSum} AS FY{fiscalYear},
+    {currentFYColList}
+FROM (
+    {baseSelect("Bat_App")}
+    UNION ALL
+    {baseSelect("Kent_App")}
+) AS src
+PIVOT (
+    SUM(ExtPrice)
+    FOR Period IN ({colsPivot})
+) AS pvt
+ORDER BY FY{fiscalYear - 1} DESC;";
+
+        return (query, fiscalYear);
+    }
+
+
+
+
+
+
+
+
+    (string query, int fiscalYear) GetDynamicQuery_nomonths(IEnumerable<string> allowedRegions = null)
+    {
+        var today = DateTime.Today;
+        var fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+
+        var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
+        var fyCurrentEnd = new DateTime(fiscalYear, 8, 31);
+        var fyPriorStart = fyCurrentStart.AddYears(-1);
+        var fyPriorEnd = fyCurrentEnd.AddYears(-1);
+
         int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
 
         var monthNames = Enumerable.Range(1, currentFiscalMonth)
@@ -364,7 +464,142 @@ ORDER BY FY{fiscalYear - 1} DESC;";
 
 
 
+
+
         string GetDynamicQueryForItemsMonthly(IEnumerable<string> allowedRegions = null)
+        {
+            var today = DateTime.Today;
+            int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+
+            var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
+            var fyPriorStart = fyCurrentStart.AddYears(-1);
+
+            int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
+
+            var allMonths = Enumerable.Range(0, 24)
+                .Select(i => fyPriorStart.AddMonths(i))
+                .Select(d => d.ToString("MMM") + d.Year)
+                .ToList();
+
+            var currentFYMonths = allMonths.Skip(12).Take(currentFiscalMonth).ToList();
+            var priorFYMonths = allMonths.Take(12).ToList();
+
+            var colsPivot = string.Join(",", allMonths.Select(m => $"[{m}]"));
+            var currentFYColList = string.Join(",", currentFYMonths.Select(m => $"ISNULL([{m}], 0) AS [{m}]"));
+            var fyPriorSum = string.Join(" + ", priorFYMonths.Select(m => $"ISNULL([{m}],0)"));
+            var fyCurrentSum = string.Join(" + ", currentFYMonths.Select(m => $"ISNULL([{m}],0)"));
+
+            var regionFilter = "";
+            if (allowedRegions != null && allowedRegions.Any())
+            {
+                regionFilter = " AND cu.Uf_SalesRegion IN @AllowedRegions";
+            }
+
+            string baseSelect(string db)
+            {
+                return $@"
+        SELECT 
+            ih.cust_num AS Customer,
+            ca0.Name AS [Customer Name],
+            ih.cust_seq AS [Ship To Num],
+            ca.City AS [Ship To City],
+            ca.State AS [Ship To State],
+            cu.slsman,
+            ca0.name,
+            ca0.state AS [Bill To State],
+            cu.Uf_SalesRegion,
+            rn.RegionName,
+            ii.item AS Item,
+            im.Description AS ItemDescription,
+            FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR) AS Period,
+            ISNULL(SUM(ii.qty_invoiced * (ii.price * ((100 - ISNULL(ih.disc, 0.0)) / 100))), 0) AS ExtPrice
+        FROM {db}.dbo.inv_item_mst ii 
+        JOIN {db}.dbo.inv_hdr_mst ih ON ii.inv_num = ih.inv_num AND ii.inv_seq = ih.inv_seq
+        JOIN Bat_App.dbo.custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0 
+        JOIN Bat_App.dbo.custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
+        JOIN Bat_App.dbo.customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
+        LEFT JOIN Bat_App.dbo.Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
+        LEFT JOIN Bat_App.dbo.Item_mst im ON ii.item = im.item
+        WHERE ih.inv_date >= '{fyPriorStart:yyyy-MM-dd}'
+          AND cu.slsman = @RepCode{regionFilter}
+        GROUP BY 
+            ih.cust_num, ca0.Name, ih.cust_seq, ca.City, ca.State,
+            ca0.name, ca0.state, cu.Uf_SalesRegion, rn.RegionName,
+            cu.slsman, ii.item, im.Description,
+            FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR)";
+            }
+
+            var query = $@"
+    SELECT 
+        Customer,
+        [Customer Name],
+        [Ship To Num],
+        [Ship To City],
+        [Ship To State],
+        slsman,
+        name,
+        [Bill To State],
+        Uf_SalesRegion,
+        RegionName,
+        Item,
+        ItemDescription,
+        {fyPriorSum} AS FY{fiscalYear - 1},
+        {fyCurrentSum} AS FY{fiscalYear},
+        {currentFYColList}
+    FROM (
+        {baseSelect("Bat_App")}
+        UNION ALL
+        {baseSelect("Kent_App")}
+    ) AS src
+    PIVOT (
+        SUM(ExtPrice)
+        FOR Period IN ({colsPivot})
+    ) AS pvt
+    ORDER BY FY{fiscalYear - 1} DESC;";
+
+            return query;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        string GetDynamicQueryForItemsMonthly_MissingMonthData(IEnumerable<string> allowedRegions = null)
         {
             var today = DateTime.Today;
             int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
@@ -558,6 +793,209 @@ ORDER BY FY{fiscalYear - 1} DESC;";
 
 
     public string GetDynamicQueryForItemsMonthlyWithQty(IEnumerable<string> allowedRegions = null)
+    {
+        var today = DateTime.Today;
+        int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+
+        var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
+        var fyCurrentEnd = new DateTime(fiscalYear, 8, 31);
+        var fyPriorStart = fyCurrentStart.AddYears(-1);
+        var fyPriorEnd = fyCurrentEnd.AddYears(-1);
+
+        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
+
+        var allMonths = Enumerable.Range(0, 24)
+            .Select(i => fyPriorStart.AddMonths(i))
+            .Select(d => d.ToString("MMM") + d.Year)
+            .ToList();
+
+        var currentFYMonths = allMonths.Skip(12).Take(currentFiscalMonth).ToList();
+
+        var monthColumns = new StringBuilder();
+        foreach (var monthName in currentFYMonths)
+        {
+            string safeMonthName = monthName.Replace("'", "''");
+            monthColumns.AppendLine($@"
+        MAX(CASE WHEN Period = '{safeMonthName}' THEN RevAmount ELSE 0 END) AS [{safeMonthName}_Rev],
+        MAX(CASE WHEN Period = '{safeMonthName}' THEN QtyInvoiced ELSE 0 END) AS [{safeMonthName}_Qty],");
+        }
+
+        if (monthColumns.Length > 0)
+        {
+            int lastCommaIndex = monthColumns.ToString().LastIndexOf(',');
+            if (lastCommaIndex != -1)
+            {
+                monthColumns.Remove(lastCommaIndex, 1);
+            }
+        }
+
+        var regionFilter = "";
+        if (allowedRegions != null && allowedRegions.Any())
+        {
+            regionFilter = " AND cu.Uf_SalesRegion IN @AllowedRegions";
+        }
+
+        string baseSelect(string db)
+        {
+            return $@"
+        SELECT
+            ih.cust_num AS Customer,
+            ca0.Name AS [Customer Name],
+            ih.cust_seq AS [Ship To Num],
+            ca.City AS [Ship To City],
+            ca.State AS [Ship To State],
+            cu.slsman,
+            ca0.name AS SalespersonName,
+            ca0.state AS [Bill To State],
+            cu.Uf_SalesRegion,
+            rn.RegionName,
+            ii.item AS Item,
+            im.Description AS ItemDescription,
+            FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR) AS Period,
+            CASE
+                WHEN ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyPriorEnd:yyyy-MM-dd}' THEN 'FY{fiscalYear - 1}'
+                WHEN ih.inv_date BETWEEN '{fyCurrentStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}' THEN 'FY{fiscalYear}'
+            END AS FiscalYear,
+            ii.qty_invoiced * (ii.price * ((100 - ISNULL(ih.disc, 0.0)) / 100)) AS RevAmount,
+            ii.qty_invoiced AS QtyInvoiced
+        FROM {db}.dbo.inv_item_mst ii 
+        JOIN {db}.dbo.inv_hdr_mst ih WITH (NOLOCK) ON ii.inv_num = ih.inv_num AND ii.inv_seq = ih.inv_seq
+        JOIN Bat_App.dbo.customer_mst cu WITH (NOLOCK) ON ih.cust_num = cu.cust_num AND ih.cust_seq = cu.cust_seq
+        JOIN Bat_App.dbo.custaddr_mst ca0 WITH (NOLOCK) ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
+        JOIN Bat_App.dbo.custaddr_mst ca WITH (NOLOCK) ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
+        LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
+        LEFT JOIN Bat_App.dbo.Item_mst im WITH (NOLOCK) ON ii.item = im.item
+        WHERE ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}'
+          AND cu.slsman = @RepCode{regionFilter}";
+        }
+
+        var query = $@"
+    WITH InvoiceData AS (
+        {baseSelect("Bat_App")}
+        UNION ALL
+        {baseSelect("Kent_App")}
+    ),
+    AggregatedData AS (
+        SELECT
+            Customer,
+            [Customer Name],
+            [Ship To Num],
+            [Ship To City],
+            [Ship To State],
+            slsman,
+            SalespersonName,
+            [Bill To State],
+            Uf_SalesRegion,
+            RegionName,
+            Item,
+            ItemDescription,
+            Period,
+            FiscalYear,
+            SUM(RevAmount) AS RevAmount,
+            SUM(QtyInvoiced) AS QtyInvoiced
+        FROM InvoiceData
+        GROUP BY
+            Customer,
+            [Customer Name],
+            [Ship To Num],
+            [Ship To City],
+            [Ship To State],
+            slsman,
+            SalespersonName,
+            [Bill To State],
+            Uf_SalesRegion,
+            RegionName,
+            Item,
+            ItemDescription,
+            Period,
+            FiscalYear
+    )
+    SELECT
+        Customer,
+        [Customer Name],
+        [Ship To Num],
+        [Ship To City],
+        [Ship To State],
+        slsman,
+        SalespersonName,
+        [Bill To State],
+        Uf_SalesRegion,
+        RegionName,
+        Item,
+        ItemDescription,
+        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear - 1}' THEN RevAmount ELSE 0 END) AS [FY{fiscalYear - 1}_Rev],
+        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear - 1}' THEN QtyInvoiced ELSE 0 END) AS [FY{fiscalYear - 1}_Qty],
+        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear}' THEN RevAmount ELSE 0 END) AS [FY{fiscalYear}_Rev],
+        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear}' THEN QtyInvoiced ELSE 0 END) AS [FY{fiscalYear}_Qty],
+        {monthColumns}
+    FROM AggregatedData
+    GROUP BY
+        Customer,
+        [Customer Name],
+        [Ship To Num],
+        [Ship To City],
+        [Ship To State],
+        slsman,
+        SalespersonName,
+        [Bill To State],
+        Uf_SalesRegion,
+        RegionName,
+        Item,
+        ItemDescription
+    OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);";
+
+        return query;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public string GetDynamicQueryForItemsMonthlyWithQtyNoMonthlyData(IEnumerable<string> allowedRegions = null)
     {
         var today = DateTime.Today;
         int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
@@ -1160,10 +1598,10 @@ LEFT JOIN CIISQL10.BAT_App.DBO.Item_mst Item ON Item.Item = ci.Item
 LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
   ON cu.cust_num = cc.cust_num
             WHERE ci.STAT = 'O' 
-            AND cu.slsman = @RepCode 
+            AND co.slsman = @RepCode 
             AND ci.qty_ordered - ci.qty_shipped > 0
             ORDER BY cc.Name, co.cust_seq;";
-
+        // NOTE: Using slsman from CO not customer record.
         using var connection = new SqlConnection(_connectionString);
         _logger.LogInformation($"Executing SQL: {allDetailSql}");
         var allDetails = await connection.QueryAsync<OrderDetail>(allDetailSql, new { RepCode = _repCodeContext.CurrentRepCode });

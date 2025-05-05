@@ -60,7 +60,7 @@
                     <div>@Header.CustSeq</div>
                 </div>
                 <div class="col-sm-3">
-                    <strong>Ship To State</strong>
+                    <strong>Ship To State/Province</strong>
                     <div>@Header.ShipToState</div>
                 </div>
                 <div class="col-sm-3">
@@ -188,9 +188,11 @@
 				OR co.co_num = dbo.ExpandKyByType('CoNumType',@CustPo))
 
               AND co.cust_num = dbo.ExpandKyByType('CustNumType', @CustNum)
-			 AND cu.slsman = @RepCode;
+			 AND co.slsman = @RepCode;  
         ";
+        //Note: uses slsman on the Customer Order, not customer
         Header = await conn.QueryFirstOrDefaultAsync<OrderHeader>(headerSql, new { CustPo = normalizedPo, CustNum = WantedCust.Value, RepCode = RepCodeContext.CurrentRepCode});
+
         if (Header == null) return;
 
         // 2) fetch line items
