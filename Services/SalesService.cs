@@ -54,13 +54,19 @@ public class SalesService
         var repCode = _repCodeContext.CurrentRepCode;
         // only if this is the "LAW" rep do we extract SalesRegion claims:
         IEnumerable<string> allowedRegions = null;
-        if (repCode == "LAW")
+        if (repCode == "LAWxxx")
         {
             allowedRegions = user.Claims
                 .Where(c => c.Type == "Region")
                 .Select(c => c.Value)
                 .Distinct()
                 .ToList();
+        }
+
+        if (repCode == "LAW")
+        {
+            allowedRegions = _repCodeContext.CurrentRegions;
+
         }
 
 
@@ -105,13 +111,18 @@ public class SalesService
         var repCode = _repCodeContext.CurrentRepCode;
         // only if this is the "LAW" rep do we extract SalesRegion claims:
         IEnumerable<string> allowedRegions = null;
-        if (repCode == "LAW")
+        if (repCode == "LAWxxx")
         {
             allowedRegions = user.Claims
                 .Where(c => c.Type == "Region")
                 .Select(c => c.Value)
                 .Distinct()
                 .ToList();
+        }
+        if (repCode == "LAW")
+        {
+            allowedRegions = _repCodeContext.CurrentRegions;
+
         }
 
 
@@ -477,7 +488,7 @@ ORDER BY FY{fiscalYear - 1} DESC;";
         //var repCode = user?.FindFirst("RepCode")?.Value;
         var repCode = _repCodeContext.CurrentRepCode;
         IEnumerable<string> allowedRegions = null;
-        if (repCode == "LAW")
+        if (repCode == "LAWxxx")
         {
             allowedRegions = user.Claims
                 .Where(c => c.Type == "Region")
@@ -485,6 +496,12 @@ ORDER BY FY{fiscalYear - 1} DESC;";
                 .Distinct()
                 .ToList();
         }
+        if (repCode == "LAW")
+        {
+            allowedRegions = _repCodeContext.CurrentRegions;
+
+        }
+
         using (var connection = new SqlConnection(_connectionString))
         {
             int fiscalYear; // it's being set by the GetDynamicQuery method
@@ -803,7 +820,7 @@ ORDER BY FY{fiscalYear - 1} DESC;";
         //var repCode = user?.FindFirst("RepCode")?.Value;
         var repCode = _repCodeContext.CurrentRepCode;
         IEnumerable<string> allowedRegions = null;
-        if (repCode == "LAW")
+        if (repCode == "LAWxxx")
         {
             allowedRegions = user.Claims
                 .Where(c => c.Type == "Region")
@@ -811,6 +828,13 @@ ORDER BY FY{fiscalYear - 1} DESC;";
                 .Distinct()
                 .ToList();
         }
+
+        if (repCode == "LAW")
+        {
+            allowedRegions = _repCodeContext.CurrentRegions;
+
+        }
+
         using (var connection = new SqlConnection(_connectionString))
         {
             int fiscalYear; // it's being set by the GetDynamicQuery method
@@ -1431,7 +1455,7 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
             var user = authState.User;
             var repCode = _repCodeContext.CurrentRepCode;
             IEnumerable<string> allowedRegions = null;
-            if (repCode == "LAW")
+            if (repCode == "LAWxxx")
             {
                 allowedRegions = user.Claims
                     .Where(c => c.Type == "Region")
@@ -1439,6 +1463,12 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
                     .Distinct()
                     .ToList();
             }
+            if (repCode == "LAW")
+            {
+                allowedRegions = _repCodeContext.CurrentRegions;
+
+            }
+
             if (!allowedRegions.IsNullOrEmpty() && allowedRegions.Any())
             {
                 parameters.ShipToRegion = string.Join(",", allowedRegions);
@@ -1509,6 +1539,17 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
             await connection.OpenAsync();
             var results = await connection.QueryAsync<string>("SELECT slsman FROM Chap_SlsmanNameV  where slsman " +
                                                               "in (Select distinct slsman from customer_mst where stat = 'A' and cust_seq = 0 and cust_num <> 'LILBOY') ORDER BY slsman");
+            return results.ToList();
+        }
+    } 
+    public async Task<List<string>> GetRegionsForRepCodeAsync(string RepCode)
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var results = await connection.QueryAsync<string>("Select distinct Trim(Uf_SalesRegion) as Uf_SalesRegion " +
+                                                              "from customer_mst where slsman = @RepCode and Uf_SalesRegion is not null and Uf_SalesRegion <> '' order by Uf_SalesRegion", new { RepCode = RepCode });
+            
             return results.ToList();
         }
     }

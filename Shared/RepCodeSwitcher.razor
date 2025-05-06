@@ -1,4 +1,5 @@
-﻿@inject IRepCodeContext RepCodeContext
+﻿@using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs
+@inject IRepCodeContext RepCodeContext
 @inject AuthenticationStateProvider AuthStateProvider
 @inject SalesService SalesService
 
@@ -8,12 +9,28 @@
     <div class="d-flex align-items-center gap-2">
         <label>View as Rep:</label>
         <select @bind="selectedCode" class="form-select form-select-sm" style="width: 150px;">
-            <!-- <option value="Admin">Admin</option>  -->
+	        <!-- <option value="Admin">Admin</option>  -->
 	        @foreach (var code in allRepCodes)
 	        {
 		        <option value="@(code)">@(code)</option>
 	        }
         </select>
+		
+		
+        @if (selectedCode == "LAW")
+        {
+            <select multiple class="form-select form-select-sm" style="width: 200px; height: 200px;" @onchange="HandleRegionChange">
+		        @foreach (var region in lawRegions)
+		        {
+                    <option value="@region" selected="@selectedRegions.Contains(region)">
+				        @region
+			        </option>
+		        }
+	        </select>
+        }
+		
+		
+
         <button class="btn btn-sm btn-primary" @onclick="ApplyOverride">Set</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="ResetOverride">Reset</button>
     </div>
@@ -22,27 +39,47 @@
 @code {
     private bool isAdmin = false;
     private string selectedCode;
+    private List<string> selectedRegions = new();
     private List<string> allRepCodes = new();
+    private List<string> lawRegions = new();
 
     protected override async Task OnInitializedAsync()
     {
         var user = (await AuthStateProvider.GetAuthenticationStateAsync()).User;
         isAdmin = user.IsInRole("Administrator");
 
-        // 🔧 Replace this with real source (DB or config)
-        //allRepCodes = new() { "PRL", "LAW", "GUL", "CHA" };
+        
         allRepCodes = await SalesService.GetAllRepCodesAsync();
 
 
         selectedCode = RepCodeContext.CurrentRepCode;
+
+        lawRegions = await SalesService.GetRegionsForRepCodeAsync("LAW");
+
+		selectedRegions = RepCodeContext.CurrentRegions;
     }
 
     private void ApplyOverride()
     {
-        RepCodeContext.OverrideRepCode(selectedCode);
-        StateHasChanged();
+	    var regions = selectedCode == "LAW" ? selectedRegions : new List<string>();
+	    RepCodeContext.OverrideRepCode(selectedCode, regions);
+	    StateHasChanged();
     }
+    private void HandleRegionChange(ChangeEventArgs e)
+    {
+	    var selected = e.Value as IEnumerable<string>;
 
+	    if (selected != null)
+	    {
+		    selectedRegions = selected.ToList();
+	    }
+	    else
+	    {
+		    // For .NET 8 and newer, e.Value is often a string (CSV of selected values)
+		    var raw = e.Value?.ToString() ?? "";
+		    selectedRegions = raw.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(r => r.Trim()).ToList();
+	    }
+    }
     private void ResetOverride()
     {
         RepCodeContext.ResetRepCode();

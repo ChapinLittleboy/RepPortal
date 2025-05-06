@@ -63,7 +63,13 @@ public class CustomUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<Appli
                 identity.AddClaim(new Claim("Region", "LNE"));
             else if (single == "LNE")
                 identity.AddClaim(new Claim("Region", "LER"));
+            else if (single == "LAW")
+                identity.AddClaim(new Claim("Region", "LMW"));
+            else if (single == "LMW")
+                identity.AddClaim(new Claim("Region", "LAW"));
         }
+
+
         return identity;
     }
 }

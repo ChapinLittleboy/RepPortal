@@ -104,6 +104,7 @@
 				    <div class="user-info">
 					    <a href="Identity/Account/Manage" class="nav-link" >Hello, @welcomemsg</a>
 					    <div class="rep-name">@GetRepFullName(context.User)</div>
+					    <div class="rep-name">@GetRegions()</div>
 				    </div>
 				    <form method="post" action="Identity/Account/Logout" class="logout-form">
 					    <button type="submit" class="nav-link btn btn-link">Log out</button>
@@ -202,10 +203,21 @@
         // var repCode = user.FindFirst("RepCode")?.Value ?? string.Empty;
         var repCode = RepCodeContext.CurrentRepCode;
        var agencyName = SalesService.GetRepAgency(repCode);// Assuming this is a synchronous call for simplicity
-       
+  
         return $"[{repCode}]  {agencyName}";
 
     }
+
+	private string GetRegions()
+	{
+		var regions = RepCodeContext.CurrentRegions;
+		if (regions != null && regions.Any())
+		{
+            var regionmsg = "Regions: " + string.Join(", ", regions);
+            return regionmsg;
+		}
+		return string.Empty;
+	}
     private void GoHome()
     {
         Navigation.NavigateTo("/");
