@@ -60,6 +60,13 @@ public class ItemDetail
         "S" => "Slow Moving",
         _ => "Unknown"
     };
+    public string ItemStatusExpandedDescription => ItemStatus switch
+    {
+        "A" => "Active — Available for purchase",
+        "O" => "Obsolete — No stock, unavailable for purchase",
+        "S" => "Slow Moving — Limited stock available",
+        _ => "Unknown"
+    };
 
     public string ItemStatus { get; set; }
 }

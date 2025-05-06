@@ -1,5 +1,7 @@
 ﻿@using Syncfusion.Blazor.Navigations
 @using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Popups
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using Microsoft.IdentityModel.Tokens
@@ -28,15 +30,25 @@
                 <MenuItems>
                     <MenuItem Text="Reports">
                         <MenuItems>
-                            <MenuItem Text="Customer List" />
-                            <MenuItem Text="Quick Order Lookup"/>
-                            <MenuItem Text="Monthly Sales Report"></MenuItem>
-                            <MenuItem Text="Sales Rep Monthly Invoice Sales"></MenuItem>
-                            <MenuItem Text="Monthly Sales By Item Report"></MenuItem>
-                            <MenuItem Text="Shipments Report"></MenuItem>
-                            <MenuItem Text="Open Orders Report"></MenuItem>
-                            <MenuItem Text="Customer Invoices Report"></MenuItem>
-
+	                        <MenuItem Id="customerlist" Text="Rep Customer List - Active & Inactive Accounts" title="Rep Agency on the Account" />
+                            <MenuItem Id="quickorderlookup" Text="Quick Order Lookup - Order/PO # Status" title="Rep Agency on the Order" />
+                            <MenuItem Id="salesrepmonthlyinvoicesales" Text="Sales Rep - Monthly Invoiced Sales Reports" title="Rep Agency Specific"></MenuItem>
+                            <MenuItem Id="openordersreport" Text="Open Orders Report" title="Rep Agency Specific"></MenuItem>
+                            <MenuItem Id="shipmentsreport" Text="Shipments Report" title="Rep Agency Specific"></MenuItem>
+                            <MenuItem Id="invoicesreport" Text="Invoiced Accounts Report" title="Rep Agency Specific"></MenuItem>
+                            <MenuItem Id="monthlysalesreport" Text="Monthly Sales Report - Historic Territory Based" title="Report not Rep Specific/Historic Territory Base"></MenuItem>
+                            <MenuItem Id="monthlysalesbyitemreport" Text="Monthly Sales by Item Report" title="Report not Rep Specific/Historic Territory Base"></MenuItem>
+                        </MenuItems>
+                    </MenuItem>
+                </MenuItems>
+            </SfMenu>
+            <SfMenu CssClass="e-inherit" TValue="MenuItem">
+                <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+                <MenuItems>
+                    <MenuItem Id="pricingpage" Text="Pricing">
+                        <MenuItems>
+                            <MenuItem Id="pcflogpage" Text="SPR/PCF Log" title="View Customer Contract Pricing"></MenuItem>
+                            <MenuItem Id="itempricingpage" Text="Item Pricing" title="Non-contract pricing lookup"></MenuItem>
 
                         </MenuItems>
                     </MenuItem>
@@ -45,33 +57,21 @@
             <SfMenu CssClass="e-inherit" TValue="MenuItem">
                 <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
                 <MenuItems>
-                    <MenuItem Text="Pricing">
+                    <MenuItem Id="formspage" Text="Forms"></MenuItem>
+                </MenuItems>
+            </SfMenu>
+            <SfMenu CssClass="e-inherit" TValue="MenuItem">
+                <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+                <MenuItems>
+                    <MenuItem Id="marketingpage" Text="Marketing"></MenuItem>
+                </MenuItems>
+            </SfMenu>
+            <SfMenu CssClass="e-inherit" TValue="MenuItem">
+                <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+                <MenuItems>
+                    <MenuItem Id="contactspage" Text="Chapin Contacts">
                         <MenuItems>
-                            <MenuItem Text="SPR/PCF Log" title="View Customer Contract Pricing"></MenuItem>
-                            <MenuItem Text="Item Pricing" title="Non-contract pricing lookup"></MenuItem>
-
-                        </MenuItems>
-                    </MenuItem>
-                </MenuItems>
-            </SfMenu>
-            <SfMenu CssClass="e-inherit" TValue="MenuItem">
-                <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
-                <MenuItems>
-                    <MenuItem Text="Forms"></MenuItem>
-                </MenuItems>
-            </SfMenu>
-            <SfMenu CssClass="e-inherit" TValue="MenuItem">
-                <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
-                <MenuItems>
-                    <MenuItem Text="Marketing"></MenuItem>
-                </MenuItems>
-            </SfMenu>
-            <SfMenu CssClass="e-inherit" TValue="MenuItem">
-                <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
-                <MenuItems>
-                    <MenuItem Text="Chapin Contacts">
-                        <MenuItems>
-                            <MenuItem Text="Download Contacts" title="Download Chapin Contacts List"></MenuItem>
+                            <MenuItem Id="downloadcontacts" Text="Download Contacts" title="Download Chapin Contacts List"></MenuItem>
 
                         </MenuItems>
                     </MenuItem>
@@ -85,15 +85,15 @@
                         <MenuItem Text="Admin">
                             <MenuItems>
                                 <AuthorizeView Roles="SuperUser">
-                                    <MenuItem Text="Manage User Roles" Url="/admin/user-roles"></MenuItem>
-                                    <MenuItem Text="Debug User Identity" Url="/admin/debug-identity"></MenuItem>
-                                    <MenuItem Text="Manage RepCodes" Url="/admin/manage-repcodes" />
-                                    <MenuItem Text="Manage Folders" Url="/admin/folders"/>
-                                    <MenuItem Text="Manage Marketing Files" Url="/admin/marketing-files" />
+                                    <MenuItem Id="manageuserroles" Text="Manage User Roles" Url="/admin/user-roles"></MenuItem>
+                                    <MenuItem Id="debuguseridentity" Text="Debug User Identity" Url="/admin/debug-identity"></MenuItem>
+                                    <MenuItem Id="managerepcodes" Text="Manage RepCodes" Url="/admin/manage-repcodes" />
+                                    <MenuItem Id="managefolders" Text="Manage Folders" Url="/admin/folders" />
+                                    <MenuItem Id="managemarketingfiles" Text="Manage Marketing Files" Url="/admin/marketing-files" />
 
                                 </AuthorizeView>
-                                <MenuItem Text="Connected Users" Url="/admin/connected"></MenuItem>
-                                <MenuItem Text="Manage Excluded Hold Code" Url="/admin/credit-hold-codes"></MenuItem>
+                                <MenuItem Id="connectedusers" Text="Connected Users" Url="/admin/connected"></MenuItem>
+                                <MenuItem Id="manageexcludedholdcodes" Text="Manage Excluded Hold Code" Url="/admin/credit-hold-codes"></MenuItem>
 
                             </MenuItems>
                         </MenuItem>
@@ -275,72 +275,80 @@
     {
         //Selected menu item
         var selectedItem = args.Item.Text;
+        var selectedId = args.Item.Id;
         this.eventName = "ItemSelected";
+        string rpttype = null;
 
-		TitleService.PageSubtitle = selectedItem;
-
-        switch (selectedItem)
+        if (args.Item.HtmlAttributes != null && 
+            args.Item.HtmlAttributes.TryGetValue("title", out var tooltipObj))
         {
-	        case "Customer List":
+	        rpttype = tooltipObj?.ToString();
+			TitleService.PageSubtitle = selectedItem + " [" + rpttype + "]"; 
+		}
+		else
+		{
+			TitleService.PageSubtitle = selectedItem;
+        }
+		
+
+        switch (selectedId)
+        {
+	        case "customerlist":
 		        //Navigate to Customer List page
 		        Navigation.NavigateTo("/customerlist");
 		        break;
-            case "Quick Order Lookup":
+            case "quickorderlookup":
 		        //Navigate to Customer List page
 		        Navigation.NavigateTo("/order-lookup");
 		        break;
-	        case "Monthly Sales Report":
+	        case "monthlysalesreport":
 		        //Navigate to Monthly Sales Report page
 		        Navigation.NavigateTo("/monthly-sales-report/cu");
 		        break;
-            case "Sales Rep Monthly Invoice Sales":
+            case "salesrepmonthlyinvoicesales":
 		        //Navigate to Monthly Sales Report page
 		        Navigation.NavigateTo("/monthly-sales-report/ih");
 		        break;
-            case "Monthly Sales By Item Report old":
+            case "monthlysalesbyitemreport":
 	            //Navigate to Monthly Sales Report page
                 Navigation.NavigateTo("/monthly-item-sales-with-qty");
 	            break;
-            case "Monthly Sales By Item Report":
-	            //Navigate to Monthly Sales Report page
-                Navigation.NavigateTo("/monthly-item-sales-with-qty");
-	            break;
-            case "Shipments Report":
+            case "shipmentsreport":
                 //Navigate to Monthly Sales Report page
                 Navigation.NavigateTo("/shipments-report");
                 break;
-            case "Open Orders Report":
+            case "openordersreport":
                 //Navigate to Monthly Sales Report page
                 Navigation.NavigateTo("/openorders-report");
                 break;
-            case "Customer Invoices Report":
+            case "invoicesreport":
 	            //Navigate to Monthly Sales Report page
 	            Navigation.NavigateTo("/invoices-report");
 	            break;
-            case "SPR/PCF Log":
+            case "pcflogpage":
                 //Navigate to PCF Listing page
                 Navigation.NavigateTo("/pcflist");
                 break;
-            case "Item Pricing":
+            case "itempricingpage":
                 //Navigate to PCF Listing page
                 Navigation.NavigateTo("/getitempricing");
                 break;
-            case "Special Pricing":
+            case "specialpricingpage":
 	            //Navigate to PCF Listing page
 	            Navigation.NavigateTo("/getspecialpricing");
 	            break;
-            case "Forms":
+            case "formspage":
 	            //Navigate to PCF Listing page
 	            Navigation.NavigateTo("/forms-download");
 	            break;
-            case "Marketing":
+            case "marketingpage":
                 //Navigate to PCF Listing page
                 Navigation.NavigateTo("/marketing-download");
                 break;
-            case "Download Contacts":
+            case "downloadcontacts":
 	            Navigation.NavigateTo("/RepDocs/Chapin International Internal Departmental Contacts.docx", forceLoad: true);
 	            break;
-            case "admin/folders":
+            case "adminfolders":
 	            Navigation.NavigateTo("/RepDocs/Chapin International Internal Departmental Contacts.docx", forceLoad: true);
 	            break;
         }
@@ -436,8 +444,23 @@
         margin-top: -5px;
         color: blue;
         
+    }  
+    .tooltip_style {
+	       position: absolute;
+	       left: calc( 50% - 60px);
+	       top: 45%;
+       }
+    .property-panel-table div {
+	    padding: 0px;
+    }
+    .tooltip-target {
+	    display: inline-block;
+	    cursor: help;
     }
 
+    .custom-tooltip .e-tip-content {
+	    white-space: normal;
+    }
 </style>
 
 		
