@@ -49,6 +49,7 @@ public class CustomUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<Appli
         if (!string.IsNullOrEmpty(user.Region))
         {
             identity.AddClaim(new Claim("Region", user.Region));
+            identity.AddClaim(new Claim("AssignedRegion", user.Region));
         }
         // --- new: mirror LER ↔ LNE whenever exactly one is present ---
         var regions = identity.FindAll("Region")

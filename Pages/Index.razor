@@ -31,6 +31,7 @@ else
     private string repFirstName;
     private bool isLoggedIn = false;
     private string repCode;
+
     protected override async Task OnInitializedAsync()
     {
 	    TitleService.PageSubtitle = "";
@@ -43,7 +44,7 @@ else
 
             repFirstName = user.FindFirst(c => c.Type == "FirstName")?.Value;
             repCode = user.FindFirst(c => c.Type == "RepCode")?.Value;
-
+            var assignedRegion = user.FindFirst("AssignedRegion")?.Value;
             if (!string.IsNullOrEmpty(repFirstName))
             {
                 //repAgency =  SalesService.GetRepAgency(repCode);

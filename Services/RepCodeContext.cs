@@ -13,7 +13,8 @@ public interface IRepCodeContext
     string CurrentFirstName { get; }
     string RepRegion { get; }
     public List<string> CurrentRegions { get; set; }
-
+    string AssignedRegion { get; }
+    bool IsAdministrator { get; } 
 }
 
 
@@ -59,6 +60,23 @@ public class RepCodeContext : IRepCodeContext
         {
             var user = _httpContextAccessor.HttpContext?.User;
             return user?.FindFirst("Region")?.Value ?? string.Empty;
+        }
+    }
+    public string AssignedRegion
+    {
+        get
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            return user?.FindFirst("AssignedRegion")?.Value ?? string.Empty;
+        }
+    }
+
+    public bool IsAdministrator
+    {
+        get
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            return user?.IsInRole("Administrator") ?? false;
         }
     }
 
