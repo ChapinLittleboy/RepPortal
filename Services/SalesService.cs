@@ -1541,15 +1541,31 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
                                                               "in (Select distinct slsman from customer_mst where stat = 'A' and cust_seq = 0 and cust_num <> 'LILBOY') ORDER BY slsman");
             return results.ToList();
         }
-    } 
+    }
     public async Task<List<string>> GetRegionsForRepCodeAsync(string RepCode)
     {
         using (var connection = new SqlConnection(_connectionString))
         {
             await connection.OpenAsync();
             var results = await connection.QueryAsync<string>("Select distinct Trim(Uf_SalesRegion) as Uf_SalesRegion " +
-                                                              "from customer_mst where slsman = @RepCode and Uf_SalesRegion is not null and Uf_SalesRegion <> '' order by Uf_SalesRegion", new { RepCode = RepCode });
-            
+                                                              "from customer_mst where slsman = @RepCode and Uf_SalesRegion is not null and Uf_SalesRegion <> '' order by Trim(Uf_SalesRegion)", new { RepCode = RepCode });
+
+            return results.ToList();
+        }
+    }
+    public async Task<List<RegionItem>> GetRegionInfoForRepCodeAsync(string RepCode)
+    {
+        using (var connection = new SqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+
+            var results = await connection.QueryAsync<RegionItem>(
+                @"SELECT * 
+              FROM Chap_RegionNames
+              where Region <> 'L'
+              ORDER BY Region",
+                new { RepCode });
+
             return results.ToList();
         }
     }
@@ -1761,8 +1777,6 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
         public string CustType { get; set; }
         public string EndUserType { get; set; }
     }
-
-
 
 
 

@@ -1,89 +1,94 @@
 ﻿@using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs
+@using Syncfusion.Blazor.DropDowns
 @inject IRepCodeContext RepCodeContext
 @inject AuthenticationStateProvider AuthStateProvider
 @inject SalesService SalesService
 
 
+
 @if (true)
 {
-    <div class="d-flex align-items-center gap-2">
-        <label>View as Rep:</label>
-        <select @bind="selectedCode" class="form-select form-select-sm" style="width: 150px;">
-	        <!-- <option value="Admin">Admin</option>  -->
-	        @foreach (var code in allRepCodes)
-	        {
-		        <option value="@(code)">@(code)</option>
-	        }
-        </select>
-		
-		
-        @if (selectedCode == "LAW")
-        {
-            <select multiple class="form-select form-select-sm" style="width: 200px; height: 200px;" @onchange="HandleRegionChange">
-		        @foreach (var region in lawRegions)
-		        {
-                    <option value="@region" selected="@selectedRegions.Contains(region)">
-				        @region
-			        </option>
-		        }
-	        </select>
-        }
-		
-		
+	<div class="d-flex align-items-center gap-2">
+		<label>View as Rep:</label>
+		<select @bind="selectedCode" class="form-select form-select-sm" style="width: 150px;">
+			@foreach (var repcode in allRepCodes)
+			{
+				<option value="@repcode">@repcode</option>
+			}
+		</select>
 
-        <button class="btn btn-sm btn-primary" @onclick="ApplyOverride">Set</button>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="ResetOverride">Reset</button>
-    </div>
+		@if (selectedCode == "LAW")
+		{
+			<SfMultiSelect TValue="string[]" TItem="RegionItem"
+			               DataSource="@RegionList"
+			               Placeholder="Select Regions"
+			               Mode="VisualMode.CheckBox"
+			               ShowSelectAll="true"
+			               @bind-Value="selectedRegions"
+			               CssClass="e-small"
+			               Width="200px"
+			               ValueChange="HandleRegionChange">
+				<MultiSelectFieldSettings Text="DisplayText" Value="Region"></MultiSelectFieldSettings>
+			</SfMultiSelect>
+		}
+
+		<button class="btn btn-sm btn-primary" @onclick="ApplyOverride">Set</button>
+		<button class="btn btn-sm btn-outline-secondary" @onclick="ResetOverride">Reset</button>
+	</div>
 }
 
 @code {
-    private bool isAdmin = false;
-    private string selectedCode;
-    private List<string> selectedRegions = new();
-    private List<string> allRepCodes = new();
-    private List<string> lawRegions = new();
+	private bool isAdmin = false;
+	private string selectedCode;
+	private string[] selectedRegions = Array.Empty<string>(); // Now matches SfMultiSelect binding
+	private List<string> allRepCodes = new();
+	private List<RegionItem> RegionList = new();
+
+
 
     protected override async Task OnInitializedAsync()
     {
-        var user = (await AuthStateProvider.GetAuthenticationStateAsync()).User;
-        isAdmin = user.IsInRole("Administrator");
+	    var user = (await AuthStateProvider.GetAuthenticationStateAsync()).User;
+	    isAdmin = user.IsInRole("Administrator");
 
-        
-        allRepCodes = await SalesService.GetAllRepCodesAsync();
+	    allRepCodes = await SalesService.GetAllRepCodesAsync();
+	    selectedCode = RepCodeContext.CurrentRepCode;
+	    selectedRegions = RepCodeContext.CurrentRegions.ToArray();
 
-
-        selectedCode = RepCodeContext.CurrentRepCode;
-
-        lawRegions = await SalesService.GetRegionsForRepCodeAsync("LAW");
-
-		selectedRegions = RepCodeContext.CurrentRegions;
+	    await LoadRegionsAsync(); // Load once for LAW display
     }
 
+    private async Task LoadRegionsAsync()
+    {
+	    var rawList = await SalesService.GetRegionInfoForRepCodeAsync("LAW");
+	    RegionList = rawList.Select(r => new RegionItem
+	    {
+		    Region = r.Region,
+		    RegionName = r.RegionName
+	    }).ToList();
+    }
     private void ApplyOverride()
     {
-	    var regions = selectedCode == "LAW" ? selectedRegions : new List<string>();
+	    var regions = selectedCode == "LAW" ? selectedRegions.ToList() : new List<string>();
 	    RepCodeContext.OverrideRepCode(selectedCode, regions);
 	    StateHasChanged();
-    }
-    private void HandleRegionChange(ChangeEventArgs e)
-    {
-	    var selected = e.Value as IEnumerable<string>;
-
-	    if (selected != null)
-	    {
-		    selectedRegions = selected.ToList();
-	    }
-	    else
-	    {
-		    // For .NET 8 and newer, e.Value is often a string (CSV of selected values)
-		    var raw = e.Value?.ToString() ?? "";
-		    selectedRegions = raw.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(r => r.Trim()).ToList();
-	    }
     }
     private void ResetOverride()
     {
         RepCodeContext.ResetRepCode();
         selectedCode = RepCodeContext.CurrentRepCode;
         StateHasChanged();
+    }
+
+    private void HandleRegionChange(string[] newSelection)
+    {
+	    selectedRegions = newSelection;
+
+	    // Optionally do something else:
+	    Console.WriteLine("Selected regions changed:");
+	    foreach (var region in selectedRegions)
+	    {
+		    Console.WriteLine($" - {region}");
+	    }
     }
 }
