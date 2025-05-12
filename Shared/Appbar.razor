@@ -36,8 +36,8 @@
                             <MenuItem Id="openordersreport" Text="Open Orders Report" title="Rep Agency Specific"></MenuItem>
                             <MenuItem Id="shipmentsreport" Text="Shipments Report" title="Rep Agency Specific"></MenuItem>
                             <MenuItem Id="invoicesreport" Text="Invoiced Accounts Report" title="Rep Agency Specific"></MenuItem>
-                            <MenuItem Id="monthlysalesreport" Text="Monthly Sales Report - Historic Territory Based" title="Report not Rep Specific/Historic Territory Base"></MenuItem>
-                            <MenuItem Id="monthlysalesbyitemreport" Text="Monthly Sales by Item Report" title="Report not Rep Specific/Historic Territory Base"></MenuItem>
+                            <MenuItem Id="monthlysalesreport" Text="Monthly Sales Report - Historic Territory Based Sales" title="Report not Rep Specific/Historic Territory Base"></MenuItem>
+                            <MenuItem Id="monthlysalesbyitemreport" Text="Monthly Sales by Item Report - Historic Territory Based Sales" title="Report not Rep Specific/Historic Territory Base"></MenuItem>
                         </MenuItems>
                     </MenuItem>
                 </MenuItems>
@@ -346,11 +346,9 @@
                 Navigation.NavigateTo("/marketing-download");
                 break;
             case "downloadcontacts":
-	            Navigation.NavigateTo("/RepDocs/Chapin International Internal Departmental Contacts.docx", forceLoad: true);
+                Navigation.NavigateTo("/RepDocs/Chapin International Internal Departmental Contacts.pdf", forceLoad: true);
 	            break;
-            case "adminfolders":
-	            Navigation.NavigateTo("/RepDocs/Chapin International Internal Departmental Contacts.docx", forceLoad: true);
-	            break;
+            
         }
     }
 }
