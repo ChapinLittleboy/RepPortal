@@ -118,6 +118,7 @@
 			    <GridColumns >
 				    <GridColumn Field="Cust" HeaderText="Cust Num" Width="100"></GridColumn>
 				    <GridColumn Field="B2Name" HeaderText="Customer Name" Width="150"></GridColumn>
+				    <GridColumn Field="ShipToRegion" HeaderText="Region" Width="100" Visible="@(RepCodeContext.CurrentRepCode == "LAW")"></GridColumn>
 				    <GridColumn Field="CustPO" HeaderText="PO Num" Width="100"></GridColumn>
 				    <GridColumn Field="CoNum" HeaderText="Order Num" Width="100"></GridColumn>
 					
@@ -222,6 +223,8 @@
         isLoading = true;
      
         parameters.CustNum = WantedCust.Value;
+		
+		;
 
        InvoiceData = await SalesService.GetInvoiceRptData(parameters);
 

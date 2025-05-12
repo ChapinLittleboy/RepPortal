@@ -1673,7 +1673,7 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
         return allDetails.ToList();
     }
 
-    public async Task<List<OrderDetail>> GetAllOpenOrderDetailsAsync()
+    public async Task<List<OrderDetail>> GetAllOpenOrderDetailsAsyncOld2()
     {
         // Similar to GetOpenOrderDetailsAsync, but gets order details from coitem.
         const string allDetailSql = @"
@@ -1715,6 +1715,59 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
         return allDetails.ToList();
     }
 
+    public async Task<List<OrderDetail>> GetAllOpenOrderDetailsAsync()
+    {
+        var repCode = _repCodeContext.CurrentRepCode;
+        var allowedRegions = _repCodeContext.CurrentRegions;
+
+        var baseSql = @"
+        SELECT
+              co.Cust_Num AS Cust
+            , cc.Name AS CustName
+            , co.cust_seq AS ShipToNum
+            , ca.name AS ShipToName
+            , ci.due_date AS DueDate
+            , co.order_date AS OrdDate
+            , co.Cust_PO AS CustPO
+            , co.co_num AS CoNum
+            , ci.ITEM AS Item
+            , ISNULL(Item.Description, ci.Item) AS ItemDesc
+            , ci.PRICE AS Price
+            , ci.qty_ordered AS OrdQty
+            , ci.qty_ordered - ci.qty_shipped AS OpenQty
+            , (ci.qty_ordered - ci.qty_shipped) * ci.price AS OpenDollars
+            ,cu.Uf_SalesRegion as ShipToRegion
+        FROM BAT_App.dbo.coitem_mst ci
+        JOIN BAT_App.dbo.co_mst co ON co.co_num = ci.co_num 
+        JOIN Bat_App.dbo.customer_mst cu ON co.cust_num = cu.cust_num AND co.cust_seq = cu.cust_seq
+        JOIN Bat_App.dbo.custaddr_mst ca ON co.cust_num = ca.cust_num AND ca.cust_seq = 0
+        LEFT JOIN CIISQL10.BAT_App.DBO.Item_mst Item ON Item.Item = ci.Item
+        LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc ON cu.cust_num = cc.cust_num
+        WHERE ci.STAT = 'O'
+          AND co.slsman = @RepCode
+          AND ci.qty_ordered - ci.qty_shipped > 0";
+
+        // Add region filter only if CurrentRegions is not null
+        if (allowedRegions != null && allowedRegions.Any())
+        {
+            baseSql += " AND cu.Uf_SalesRegion IN @AllowedRegions";
+        }
+
+        baseSql += " ORDER BY cc.Name, co.cust_seq;";
+
+        using var connection = new SqlConnection(_connectionString);
+        _logger.LogInformation("Executing SQL: {Sql}", baseSql);
+
+        var parameters = new
+        {
+            RepCode = repCode,
+            AllowedRegions = allowedRegions?.ToArray()
+        };
+
+        var allDetails = await connection.QueryAsync<OrderDetail>(baseSql, parameters);
+        return allDetails.ToList();
+    }
+
 
     public async Task LogReportUsageAsync(string repCode, string reportName)
     {
@@ -1741,6 +1794,17 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
     {
         using (var connection = new SqlConnection(_connectionString))
         {
+            parameters.RepCode = _repCodeContext.CurrentRepCode;
+
+            if (parameters.RepCode == "LAW")
+            {
+                parameters.AllowedRegions = _repCodeContext.CurrentRegions;
+            }
+
+            var allowedRegionsCsv = parameters.AllowedRegions == null
+                ? null
+                : string.Join(",", parameters.AllowedRegions);
+
             await connection.OpenAsync();
             var results = await connection.QueryAsync<InvoiceRptDetail>(@"
                 EXEC RepPortal.dbo.sp_GetInvoices 
@@ -1750,7 +1814,9 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
                     @CustNum, 
                     @CorpNum, 
                     @CustType, 
-                    @EndUserType",
+                    @EndUserType,
+                    @AllowedRegions",
+                
                 new
                 {
                     parameters.BeginInvoiceDate,
@@ -1759,7 +1825,8 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
                     parameters.CustNum,
                     parameters.CorpNum,
                     parameters.CustType,
-                    parameters.EndUserType
+                    parameters.EndUserType,
+                    AllowedRegions = allowedRegionsCsv
                 });
 
             return results.ToList();
@@ -1776,6 +1843,8 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
         public string CorpNum { get; set; }
         public string CustType { get; set; }
         public string EndUserType { get; set; }
+        public List<string> AllowedRegions { get; set; } = new List<string>();
+
     }
 
 

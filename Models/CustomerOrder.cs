@@ -35,6 +35,7 @@ public class OrderDetail
     public decimal OpenDollars { get; set; }
     public string? ShipToName { get; set; }
     public int ShipToNum { get; set; }
+    public string? ShipToRegion { get; set; }
 
 
     // Updated Status Category based on DueDate relative to today + 30 days
