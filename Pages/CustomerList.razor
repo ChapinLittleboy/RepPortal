@@ -25,7 +25,7 @@
         <div>
             <div class="active-filters">
                 <button @onclick="ClearFilters">Clear Filters</button>
-
+                <button OnClick="@(async() =>await Grid.ResetPersistDataAsync())">Reset All</button>
                 <!--
                 <span class="divider">|</span>
                 <strong class="small-text">Active Filters:</strong>
@@ -94,6 +94,21 @@
 
                 <GridColumn Field=@nameof(Customer.PricingCode) HeaderText="Pricing Code" Width="150"></GridColumn>
                 <GridColumn Field=@nameof(Customer.FreightTerms) HeaderText="Standard Freight Terms" Width="150"></GridColumn>
+               
+                <GridColumn Field="BuyingGroup" HeaderText="Buying Group" Width="100">
+	                <Template>
+		                @{
+			                var customer = context as Customer;
+			                if (customer != null)
+			                {
+				                <span title="@customer.BuyingGroupDescription">
+					                @customer.BuyingGroup
+				                </span>
+			                }
+		                }
+	                </Template>
+                </GridColumn>
+				<GridColumn Field=@nameof(Customer.BuyingGroupDescription) HeaderText="Buying Group Description" Width="200"></GridColumn>
             </GridColumns>
         </SfGrid>
     }

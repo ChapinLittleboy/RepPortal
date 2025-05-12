@@ -92,11 +92,13 @@ ORDER BY ca.[name]";
         cu0.uf_c_slsmgr as SalesManager, isnull(sm.SalesManagerName,'To Be Assigned') as SalesManagerName
          ,isnull(r.Description,'') as CreditHoldReasonDescription 
 ,cu0.uf_FrtTerms as FreightTerms
+,ct.cust_type as BuyingGroup, ct.Description as BuyingGroupDescription
             FROM   customer_mst cu 
             JOIN customer_mst cu0 ON cu.cust_num = cu0.cust_num AND cu0.cust_seq = 0
 JOIN custaddr_mst ca0 ON cu.cust_num = ca0.cust_num AND ca0.cust_seq  = 0
 left JOIN reason_mst r ON ca0.credit_hold_reason = r.reason_code and r.reason_class = 'CRED HOLD'
 LEFT JOIN Chap_SalesManagers sm ON cu0.uf_c_slsmgr = sm.SalesManagerInitials
+LEFT JOIN custtype_mst ct ON cu0.cust_type = ct.cust_type
             WHERE  1=1
 AND (ca0.credit_hold_reason IS NULL OR ca0.credit_hold_reason NOT IN (
     SELECT Code FROM RepPortal.dbo.CreditHoldReasonCodeExclusions))

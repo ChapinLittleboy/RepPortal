@@ -11,6 +11,8 @@ public class Customer
     // No Region because region is ship-to specific
 
     public string? BuyingGroup { get; set; }
+    public string? BuyingGroupDescription { get; set; }
+    public string BuyingGroupDisplay => $"{BuyingGroup} - {BuyingGroupDescription}";
     public string? BillToName { get; set; }
     public string? BillToAddress1 { get; set; }
     public string? BillToAddress2 { get; set; }
@@ -58,6 +60,7 @@ public class Customer
     public string? DisplayCustName => Cust_Name.Replace("&", "(and)");
 
     public string? CustNameWithNum => $"{Cust_Name} ({Cust_Num.Trim()})";
+
 
 
     public enum CustomerStatus
