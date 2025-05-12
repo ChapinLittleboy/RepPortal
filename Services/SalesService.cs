@@ -1800,10 +1800,14 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
             {
                 parameters.AllowedRegions = _repCodeContext.CurrentRegions;
             }
+            else
+            {
+                parameters.AllowedRegions = null;
+            }
 
-            var allowedRegionsCsv = parameters.AllowedRegions == null
-                ? null
-                : string.Join(",", parameters.AllowedRegions);
+                var allowedRegionsCsv = parameters.AllowedRegions == null
+                    ? null
+                    : string.Join(",", parameters.AllowedRegions);
 
             await connection.OpenAsync();
             var results = await connection.QueryAsync<InvoiceRptDetail>(@"
