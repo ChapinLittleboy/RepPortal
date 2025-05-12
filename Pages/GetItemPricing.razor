@@ -40,7 +40,12 @@
 					<div>
 						<p><strong>Part #:</strong> @detail.Item</p>
 						<p><strong>Description:</strong> @detail.Description</p>
-						<p><strong>Item Status:</strong> @detail.ItemStatusExpandedDescription</p>
+						<p>
+							<strong>Item Status:</strong>
+							<span class="@(detail.ItemStatusDescription == "Obsolete" ? "text-danger" : "")">
+								@detail.ItemStatusExpandedDescription
+							</span>
+						</p>
 						<p><strong>List:</strong> @detail.Price1.ToString("C2")</p>
 						<p><strong>4K Book:</strong> @detail.Price2.ToString("C2")</p>
 						<p><strong>12.5K Book:</strong> @detail.Price3.ToString("C2")</p>
@@ -177,6 +182,11 @@
 	}
 }
 
-
+<style>
+	.text-danger {
+		color: red;
+		font-weight: bold;
+	}
+</style>
 
 

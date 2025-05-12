@@ -4,6 +4,7 @@
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.Grids
 @using System.Text.RegularExpressions;
+@using FilterType = Syncfusion.Blazor.DropDowns.FilterType
 @inject DbConnectionFactory DbConnectionFactory
 @inject IRepCodeContext RepCodeContext
 @inject CustomerService CustomerService
@@ -13,7 +14,7 @@
 
 <div class="mb-4 row gx-2">
     <div class="col-md-3">
-	    <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" 
+        <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" FilterType="FilterType.Contains"
 	                DataSource="@Customers" @ref="WantedCust" FloatLabelType="FloatLabelType.Auto" Placeholder="Enter Customer Name">
             <ComboBoxFieldSettings Text="CustNameWithNum" Value="Cust_Num"/>
         </SfComboBox>
@@ -229,6 +230,41 @@
 	                              ?.ToString("d")                        // null or the formatted date
                               ?? "";                                 // coalesce null → ""
 
+
+        // If header is already on hold, skip processing
+        if (Header.OrderStatus != "H")
+        {
+	        var statuses = rows.Select(r => r.LineStatus).Distinct().ToList();
+
+	        if (statuses.All(s => s == "F"))
+	        {
+		        Header.OrderStatus = "S";
+	        }
+	        else if (statuses.All(s => s == "O"))
+	        {
+		        Header.OrderStatus = "O";
+	        }
+	        else if (statuses.All(s => s == "C"))
+	        {
+		        Header.OrderStatus = "X";
+	        }
+	        else if (statuses.Contains("F") && statuses.Contains("O") && statuses.Count == 2)
+	        {
+		        Header.OrderStatus = "B";
+	        }
+	        else if (statuses.Contains("F") && statuses.Contains("O") && statuses.Contains("C"))
+	        {
+		        Header.OrderStatus = "B";
+	        }
+	        else if (statuses.Contains("F") && statuses.Contains("C") && statuses.Count == 2)
+	        {
+		        Header.OrderStatus = "S";
+	        }
+	        else if (statuses.Contains("O") && statuses.Contains("C") && statuses.Count == 2)
+	        {
+		        Header.OrderStatus = "O";
+	        }
+        }
     }
 
     private string GetOrderStatusDescription(string code) =>
@@ -237,6 +273,9 @@
             "O" => "Open",
             "C" => "Completed",
             "H" => "Hold",
+			"S" => "Shipped",
+			"B" => "Shipped and Backordered",
+			"X" => "Cancelled",
             _ => code
         };
 
