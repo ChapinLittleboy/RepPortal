@@ -15,6 +15,7 @@ using DbUp;
 using System.Reflection;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using SixLabors.ImageSharp.Web.DependencyInjection;
 
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxcd3VVRGVYUkV3WUBWYEo=");
 // Set the global command timeout for Dapper
@@ -117,7 +118,10 @@ else
 
 app.UseHttpsRedirection();
 
+
+
 // This serves files from wwwroot (default behavior)
+
 app.UseStaticFiles();
 
 app.UseStaticFiles(new StaticFileOptions
@@ -127,16 +131,21 @@ app.UseStaticFiles(new StaticFileOptions
     ServeUnknownFileTypes = true
 });
 
+
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+
 
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapRazorPages();
     endpoints.MapControllers();
 });
+
+
 
 
 //app.MapControllers();
