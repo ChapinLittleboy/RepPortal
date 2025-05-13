@@ -1,7 +1,16 @@
-﻿namespace RepPortal.Services;
+﻿using RepPortal.Models;
+namespace RepPortal.Services;
 
-public class TitleService    // This is where the page title is set that will be displayed in the AppBar.
+
+public class TitleService
 {
+    private readonly HelpContentService _helpContentService;
+
+    public TitleService(HelpContentService helpContentService)
+    {
+        _helpContentService = helpContentService;
+    }
+
     public event Action OnTitleChanged;
 
     private string _pageSubtitle = string.Empty;
@@ -16,5 +25,17 @@ public class TitleService    // This is where the page title is set that will be
                 OnTitleChanged?.Invoke();
             }
         }
+    }
+
+    public string? PageHelpContent { get; private set; }
+
+    public async Task LoadPageHelpContentAsync(string pageKey)
+    {
+        var help = await _helpContentService.GetHelpContentAsync(pageKey);
+
+        PageHelpContent = help?.HtmlContent;
+
+        // Notify the UI to update if needed
+        OnTitleChanged?.Invoke();
     }
 }

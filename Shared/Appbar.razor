@@ -30,7 +30,7 @@
                 <MenuItems>
                     <MenuItem Text="Reports">
                         <MenuItems>
-	                        <MenuItem Id="customerlist" Text="Rep Customer List - Active & Inactive Accounts" title="Rep Agency on the Account" />
+                            <MenuItem Id="customerlist" Text="Rep Customer List - Active & Inactive Accounts" title="Rep Agency on the Account" />
                             <MenuItem Id="quickorderlookup" Text="Quick Order Lookup - Order/PO # Status" title="Rep Agency on the Order" />
                             <MenuItem Id="salesrepmonthlyinvoicesales" Text="Sales Rep - Monthly Invoiced Sales Reports" title="Rep Agency Specific"></MenuItem>
                             <MenuItem Id="openordersreport" Text="Open Orders Report" title="Rep Agency Specific"></MenuItem>
@@ -92,6 +92,7 @@
                                     <MenuItem Id="managemarketingfiles" Text="Manage Marketing Files" Url="/admin/marketing-files" />
 
                                 </AuthorizeView>
+                                <MenuItem Id="pagehelp" Text="Manage Page Help Text" Url="/admin/page-help"></MenuItem>
                                 <MenuItem Id="connectedusers" Text="Connected Users" Url="/admin/connected"></MenuItem>
                                 <MenuItem Id="manageexcludedholdcodes" Text="Manage Excluded Hold Code" Url="/admin/credit-hold-codes"></MenuItem>
 
@@ -120,12 +121,30 @@
         </div>
     </SfAppBar>
 </div>
-@if (!string.IsNullOrEmpty(TitleService.PageSubtitle))
-{
-    <div class="appbar-subtitle">
-        <medium class="text-muted">@TitleService.PageSubtitle</medium>
-    </div>
-}
+
+<div class="appbar-subtitle d-flex justify-content-between align-items-center">
+    <medium class="text-muted">@TitleService.PageSubtitle</medium>
+
+    @if (!string.IsNullOrWhiteSpace(TitleService.PageHelpContent))
+    {
+
+        <a href="#" @onclick="OpenHelpDialog" @onclick:preventDefault class="text-primary small">📘 About this form</a>
+
+    }
+</div>
+
+<SfDialog @ref="HelpDialog"
+Width="500px"
+IsModal="true"
+ShowCloseIcon="true"
+Visible="false"
+Header="About This Form">
+    <DialogTemplates>
+        <Content>
+	        @((MarkupString)TitleService.PageHelpContent)
+        </Content>
+    </DialogTemplates>
+</SfDialog>
 
 @code
 {
@@ -135,7 +154,7 @@
     private bool isAdmin;
     private bool isSuperUser;
     private IEnumerable<Claim> claims;
- 
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -150,14 +169,14 @@
             welcomemsg = $"{firstName} {lastName}!";
             isAdmin = user.IsInRole("Administrator") || user.IsInRole("SuperUser");
             isSuperUser = user.IsInRole("SuperUser");
-		
-   
+
+
         }
         else
         {
             welcomemsg = "Welcome, Guest!";
         }
-     
+
         // ✅ Subscribe to RepCode change notifications
         RepCodeContext.OnRepCodeChanged += OnRepCodeChanged;
 
@@ -166,10 +185,16 @@
 
     }
 
+    private SfDialog HelpDialog;
+
+    private async Task OpenHelpDialog()
+    {
+        await HelpDialog.ShowAsync();
+    }
 
     private void OnRepCodeChanged()
     {
-	    
+
         InvokeAsync(StateHasChanged); // re-render the component
     }
     public void Dispose()
@@ -206,71 +231,71 @@
         var lastName = user.FindFirst("LastName")?.Value ?? string.Empty;
         // var repCode = user.FindFirst("RepCode")?.Value ?? string.Empty;
         var repCode = RepCodeContext.CurrentRepCode;
-       var agencyName = SalesService.GetRepAgency(repCode);// Assuming this is a synchronous call for simplicity
-  
+        var agencyName = SalesService.GetRepAgency(repCode);// Assuming this is a synchronous call for simplicity
+
         return $"[{repCode}]  {agencyName}";
 
     }
 
     private async Task<string> GetRegionsAsync()
     {
-	    var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-	    var user = authState.User;
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
 
-	    bool isAdmin = user.IsInRole("Administrator");
-	    var allRegions = RepCodeContext.CurrentRegions;
+        bool isAdmin = user.IsInRole("Administrator");
+        var allRegions = RepCodeContext.CurrentRegions;
 
-	    // If not an admin, show only the user's single assigned region (from AspNetUsers)
-	    if (!isAdmin)
-	    {
-		    // Assuming only one Region claim per non-admin
-		    var singleRegion = allRegions.FirstOrDefault();
-		    if (!string.IsNullOrWhiteSpace(singleRegion))
-		    {
-			    return $"Region: {singleRegion}";
-		    }
+        // If not an admin, show only the user's single assigned region (from AspNetUsers)
+        if (!isAdmin)
+        {
+            // Assuming only one Region claim per non-admin
+            var singleRegion = allRegions.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(singleRegion))
+            {
+                return $"Region: {singleRegion}";
+            }
 
-		    return string.Empty;
-	    }
+            return string.Empty;
+        }
 
-	    // Admins see all regions from the RepCodeContext (claims or overrides)
-	    if (allRegions != null && allRegions.Any())
-	    {
-		    return "Regions: " + string.Join(", ", allRegions);
-	    }
+        // Admins see all regions from the RepCodeContext (claims or overrides)
+        if (allRegions != null && allRegions.Any())
+        {
+            return "Regions: " + string.Join(", ", allRegions);
+        }
 
-	    return string.Empty;
+        return string.Empty;
     }
-	private string GetRegions()
-	{
-		var regions = RepCodeContext.CurrentRegions;
+    private string GetRegions()
+    {
+        var regions = RepCodeContext.CurrentRegions;
 
-		if (RepCodeContext.IsAdministrator)
-		{
-			if (regions != null && regions.Any())
-			{
-				var regionmsg = "Region(s): " + string.Join(", ", regions);
-				return regionmsg;
-			}
+        if (RepCodeContext.IsAdministrator)
+        {
+            if (regions != null && regions.Any())
+            {
+                var regionmsg = "Region(s): " + string.Join(", ", regions);
+                return regionmsg;
+            }
 
-			return string.Empty;
-		}
-		else
-		{
-			if (!RepCodeContext.AssignedRegion.IsNullOrEmpty())
-			{
-				var regionmsg = "Region: " + RepCodeContext.AssignedRegion;
-				return regionmsg;
-			}
+            return string.Empty;
+        }
+        else
+        {
+            if (!RepCodeContext.AssignedRegion.IsNullOrEmpty())
+            {
+                var regionmsg = "Region: " + RepCodeContext.AssignedRegion;
+                return regionmsg;
+            }
 
-			return string.Empty;
-		}
-	}
+            return string.Empty;
+        }
+    }
     private void GoHome()
     {
         Navigation.NavigateTo("/");
     }
-   
+
     private void itemSelected(MenuEventArgs<MenuItem> args)
     {
         //Selected menu item
@@ -282,14 +307,15 @@
         if (args.Item.HtmlAttributes != null && 
             args.Item.HtmlAttributes.TryGetValue("title", out var tooltipObj))
         {
-	        rpttype = tooltipObj?.ToString();
-			TitleService.PageSubtitle = selectedItem + " [" + rpttype + "]"; 
-		}
-		else
-		{
-			TitleService.PageSubtitle = selectedItem;
+            rpttype = tooltipObj?.ToString();
+            TitleService.PageSubtitle = selectedItem + " [" + rpttype + "]"; 
         }
-		
+        else
+        {
+            TitleService.PageSubtitle = selectedItem;
+        }
+
+        TitleService.LoadPageHelpContentAsync(selectedId);
 
         switch (selectedId)
         {
@@ -383,11 +409,16 @@
         color: var(--bs-primary); /* Use Bootstrap primary color */
     }
     .appbar-subtitle {
+	    display: flex;
 	    font-size: 1.2rem; /* Adjust as needed */
 	    font-weight: normal;
 	    color: #667;
 	    margin-left: 100px;
+	    margin-right: 50px;
+	    justify-content: space-between;
+	    align-items: center;
     }
+
     .app-title-wrapper {
 	    display: flex;
 	    flex-direction: column;
@@ -459,6 +490,14 @@
     .custom-tooltip .e-tip-content {
 	    white-space: normal;
     }
+
+    .text-primary {
+	    color: #0d6efd !important;
+
+    }.small,
+     small {
+	     font-size: 0.875em;  /* 87.5% of the parent element */
+     }
 </style>
 
 		

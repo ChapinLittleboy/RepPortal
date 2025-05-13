@@ -1,11 +1,20 @@
 ﻿using Microsoft.Data.SqlClient;
 using System.Data;
+using RepPortal.Services;
 
 namespace RepPortal.Data;
 
 
+public interface IDbConnectionFactory
+{
+    IDbConnection CreateRepConnection();
+    IDbConnection CreateBatConnection();
+    IDbConnection CreatePcfConnection();
+  
 
-public class DbConnectionFactory 
+}
+
+public class DbConnectionFactory : IDbConnectionFactory
 
 {
     private readonly IConfiguration _configuration;

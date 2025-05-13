@@ -26,10 +26,7 @@ public interface IActivityLogService
 // --- Assume these services exist and are registered ---
 // In YourProject.Services namespace or similar
 
-public interface IDbConnectionFactory // Conceptual interface
-{
-    IDbConnection CreateRepConnection(); // Your method
-}
+
 
 
 public class ActivityLogService : IActivityLogService

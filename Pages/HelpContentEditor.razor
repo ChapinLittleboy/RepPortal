@@ -1,0 +1,86 @@
+﻿@page "/admin/page-help"
+@attribute [Authorize]
+@inject HelpContentService HelpContentService
+@inject IPageDefinitionService PageDefinitionService
+@inject AuthenticationStateProvider AuthProvider
+@using Syncfusion.Blazor.Lists
+@using Syncfusion.Blazor.RichTextEditor
+@using SelectionMode = Syncfusion.Blazor.DropDowns.SelectionMode
+
+<h3>Page Help Content Maintenance</h3>
+
+<div class="row">
+    <div class="col-md-4">
+
+	    <SfDropDownList TValue="string"
+	                    DataSource="@pageList"
+	                    TItem="PageDefinition"
+	                    @bind-Value="@selectedPageKey"
+	                    Height="400px">
+		    <DropDownListFieldSettings Text="PageDescription" Value="PageKey"></DropDownListFieldSettings>
+		    <DropDownListEvents TValue="string" ValueChange="OnPageSelected" TItem="PageDefinition"></DropDownListEvents>
+	    </SfDropDownList>
+
+    </div>
+
+    <div class="col-md-8">
+        @if (selectedPage != null)
+        {
+            <h5 class="mt-2">@selectedPage.PageDescription</h5>
+
+            <SfRichTextEditor @bind-Value="helpContent.HtmlContent" Height="400px" />
+
+            <SfButton CssClass="e-primary mt-3" OnClick="Save">Save Changes</SfButton>
+        }
+        else
+        {
+            <p>Select a page to edit its help content.</p>
+        }
+    </div>
+</div>
+
+@code {
+    private List<PageDefinition> pageList = new();
+    private string selectedPageKey;
+    private PageDefinition selectedPage;
+    private HelpContent helpContent = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        pageList = await PageDefinitionService.GetAllPagesAsync();
+    }
+
+    private async Task OnPageSelected(ChangeEventArgs<string, PageDefinition> args)
+    {
+        selectedPageKey = args.Value;
+        selectedPage = pageList.FirstOrDefault(p => p.PageKey == selectedPageKey);
+
+        var existing = await HelpContentService.GetHelpContentAsync(selectedPageKey);
+        helpContent = existing ?? new HelpContent
+        {
+            PageKey = selectedPageKey,
+            HtmlContent = DefaultHelpTemplate
+        };
+    }
+
+    private async Task Save()
+    {
+        var user = (await AuthProvider.GetAuthenticationStateAsync()).User.Identity?.Name ?? "unknown";
+        helpContent.LastUpdatedBy = user;
+        await HelpContentService.SaveHelpContentAsync(helpContent);
+    }
+
+    private const string DefaultHelpTemplate = @"
+<h4>Purpose</h4>
+<p>Briefly describe the purpose of this report or page.</p>
+
+<h4>Data Sources</h4>
+<ul><li>Describe any database tables/views used</li></ul>
+
+<h4>Tips for Interpretation</h4>
+<ul><li>Clarify any metrics or statuses</li></ul>
+
+<h4>Common Questions</h4>
+<p>Answer any known FAQs or edge cases here.</p>
+";
+}

@@ -11,7 +11,7 @@ namespace RepPortal.Services;
 
 public class PcfService
 {
-    private readonly DbConnectionFactory _dbConnectionFactory;
+    private readonly IDbConnectionFactory _dbConnectionFactory;
     private readonly AuthenticationStateProvider _authenticationStateProvider;
     private readonly IRepCodeContext _repCodeContext;
     private readonly IConfiguration _configuration;
@@ -21,7 +21,7 @@ public class PcfService
 
 
     public PcfService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider,
-        IRepCodeContext repCodeContext, DbConnectionFactory dbConnectionFactory, CustomerService customerService, ILogger<PcfService> logger)
+        IRepCodeContext repCodeContext, IDbConnectionFactory dbConnectionFactory, CustomerService customerService, ILogger<PcfService> logger)
     {
         _authenticationStateProvider = authenticationStateProvider;
         _repCodeContext = repCodeContext;

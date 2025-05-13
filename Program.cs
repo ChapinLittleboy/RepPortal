@@ -75,7 +75,7 @@ builder.Services.AddSingleton<UserConnectionTracker>();
 builder.Services.AddScoped<CircuitHandler, TrackingCircuitHandler>();
 builder.Services.AddScoped<SignInManager<ApplicationUser>, CustomSignInManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
-builder.Services.AddSingleton<DbConnectionFactory>();
+builder.Services.AddSingleton<IDbConnectionFactory,DbConnectionFactory>();
 builder.Services.AddScoped<PcfService>();
 builder.Services.AddScoped<TitleService>();
 builder.Services.AddScoped<ExportService>();
@@ -88,6 +88,10 @@ builder.Services.AddScoped<CreditHoldExclusionService>();
 builder.Services.AddScoped<StateContainer>();
 builder.Services.AddScoped<FolderAdminService>();
 builder.Services.AddScoped<MarketingFileService>();
+builder.Services.AddScoped<HelpContentService>();
+builder.Services.AddScoped<IPageDefinitionService, PageDefinitionService>();
+
+
 
 
 

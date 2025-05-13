@@ -12,9 +12,9 @@ namespace RepPortal.Services;
 public class CreditHoldExclusionService
 {
 
-    private readonly DbConnectionFactory _dbConnectionFactory;
+    private readonly IDbConnectionFactory _dbConnectionFactory;
 
-    public CreditHoldExclusionService(DbConnectionFactory DbConnectionFactory)
+    public CreditHoldExclusionService(IDbConnectionFactory DbConnectionFactory)
         => _dbConnectionFactory = DbConnectionFactory;
 
     public async Task<List<CreditHoldReasonCode>> GetAllAsync()

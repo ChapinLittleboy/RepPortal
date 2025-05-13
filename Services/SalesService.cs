@@ -18,13 +18,13 @@ public class SalesService
     private readonly string _connectionString;
     private readonly AuthenticationStateProvider _authenticationStateProvider;
     private readonly IRepCodeContext _repCodeContext;
-    private readonly DbConnectionFactory _dbConnectionFactory;
+    private readonly IDbConnectionFactory _dbConnectionFactory;
     private readonly ILogger<SalesService> _logger;
 
 
 
     public SalesService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider, 
-        IRepCodeContext repCodeContext, DbConnectionFactory dbConnectionFactory, ILogger<SalesService> logger)
+        IRepCodeContext repCodeContext, IDbConnectionFactory dbConnectionFactory, ILogger<SalesService> logger)
     {
         _connectionString = configuration.GetConnectionString("BatAppConnection");
         _authenticationStateProvider = authenticationStateProvider;
