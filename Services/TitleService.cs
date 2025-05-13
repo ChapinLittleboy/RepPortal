@@ -33,7 +33,7 @@ public class TitleService
     {
         var help = await _helpContentService.GetHelpContentAsync(pageKey);
 
-        PageHelpContent = help?.HtmlContent;
+        PageHelpContent = help?.HtmlContent ?? string.Empty;
 
         // Notify the UI to update if needed
         OnTitleChanged?.Invoke();

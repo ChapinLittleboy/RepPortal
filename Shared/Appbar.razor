@@ -80,26 +80,27 @@
 
             @if (isAdmin)
             {
-                <SfMenu CssClass="e-inherit" TValue="MenuItem">
-                    <MenuItems>
-                        <MenuItem Text="Admin">
-                            <MenuItems>
-                                <AuthorizeView Roles="SuperUser">
-                                    <MenuItem Id="manageuserroles" Text="Manage User Roles" Url="/admin/user-roles"></MenuItem>
-                                    <MenuItem Id="debuguseridentity" Text="Debug User Identity" Url="/admin/debug-identity"></MenuItem>
-                                    <MenuItem Id="managerepcodes" Text="Manage RepCodes" Url="/admin/manage-repcodes" />
-                                    <MenuItem Id="managefolders" Text="Manage Folders" Url="/admin/folders" />
-                                    <MenuItem Id="managemarketingfiles" Text="Manage Marketing Files" Url="/admin/marketing-files" />
+	            <SfMenu CssClass="e-inherit" TValue="MenuItem">
+		            <MenuEvents TValue="MenuItem" ItemSelected="itemSelected"></MenuEvents>
+		            <MenuItems>
+			            <MenuItem Text="Admin">
+				            <MenuItems>
+					            <AuthorizeView Roles="SuperUser">
+						            <MenuItem Id="manageuserroles" Text="Manage User Roles" ></MenuItem>
+						            <MenuItem Id="debuguseridentity" Text="Debug User Identity" ></MenuItem>
+						            <MenuItem Id="managerepcodes" Text="Manage RepCodes" ></MenuItem>
+                                        <MenuItem Id="managefolders" Text="Manage Folders" ></MenuItem>
+                                        <MenuItem Id="managemarketingfiles" Text="Manage Marketing Files" ></MenuItem>
 
-                                </AuthorizeView>
-                                <MenuItem Id="pagehelp" Text="Manage Page Help Text" Url="/admin/page-help"></MenuItem>
-                                <MenuItem Id="connectedusers" Text="Connected Users" Url="/admin/connected"></MenuItem>
-                                <MenuItem Id="manageexcludedholdcodes" Text="Manage Excluded Hold Code" Url="/admin/credit-hold-codes"></MenuItem>
+					            </AuthorizeView>
+					            <MenuItem Id="pagehelp" Text="Manage Page Help Text"></MenuItem>
+					            <MenuItem Id="connectedusers" Text="Connected Users"></MenuItem>
+					            <MenuItem Id="manageexcludedholdcodes" Text="Manage Excluded Hold Code" ></MenuItem>
 
-                            </MenuItems>
-                        </MenuItem>
-                    </MenuItems>
-                </SfMenu>
+				            </MenuItems>
+			            </MenuItem>
+		            </MenuItems>
+	            </SfMenu>
             }
             <AppBarSpacer></AppBarSpacer>
             <AuthorizeView>
@@ -315,6 +316,8 @@ Header="About This Form">
             TitleService.PageSubtitle = selectedItem;
         }
 
+		
+
         TitleService.LoadPageHelpContentAsync(selectedId);
 
         switch (selectedId)
@@ -371,10 +374,35 @@ Header="About This Form">
                 //Navigate to PCF Listing page
                 Navigation.NavigateTo("/marketing-download");
                 break;
-            case "downloadcontacts":
-                Navigation.NavigateTo("/RepDocs/Chapin International Internal Departmental Contacts.pdf", forceLoad: true);
-	            break;
-            
+	        case "downloadcontacts":
+		        Navigation.NavigateTo("/RepDocs/Chapin International Internal Departmental Contacts.pdf", forceLoad: true);
+		        break;
+	        case "pagehelp":
+		        Navigation.NavigateTo("/admin/page-help", forceLoad: true);
+		        break;
+	        case "manageuserroles":
+		        Navigation.NavigateTo("/admin/user-roles", forceLoad: true);
+		        break;
+	        case "debuguseridentity":
+		        Navigation.NavigateTo("/admin/debug-identity", forceLoad: true);
+		        break;
+	        case "managerepcodes":
+		        Navigation.NavigateTo("/admin/manage-repcodes", forceLoad: true);
+		        break;
+	        case "managefolders":
+		        Navigation.NavigateTo("/admin/folders", forceLoad: true);
+		        break;
+	        case "managemarketingfiles":
+		        Navigation.NavigateTo("/admin/marketingfiles", forceLoad: true);
+		        break;
+	        case "manageexcludedholdcodes":
+		        Navigation.NavigateTo("/admin/credit-hold-codes", forceLoad: true);
+		        break;
+	        case "connectedusers":
+		        Navigation.NavigateTo("/admin/connected", forceLoad: true);
+		        break;
+	      
+
         }
     }
 }
