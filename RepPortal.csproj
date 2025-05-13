@@ -17,6 +17,7 @@
   <ItemGroup>
     <Content Remove="Pages\OpenOrdersOriginal.razor" />
     <Content Remove="PCFEditor.razor" />
+    <Content Remove="wwwroot\product-images\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,6 +57,8 @@
     <Folder Include="Logs\" />
     <Folder Include="wwwroot\images\" />
   </ItemGroup>
+
+	
 
 	<Import Project="SetSqlFilesAsEmbedded.targets" />
 

@@ -35,8 +35,8 @@
 			@if (detail != null)
 			{
 				<div class="d-flex">
-					<img src="@GetImageUrl(detail.Item)" alt="Item" width="200" height="300"
-						 class="me-4" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image';" />
+					<img src="@GetImageUrl(detail.Item)" alt="Item" style="max-width: 200px; width: auto; margin-left: 20px; margin-right: 40px;" />
+						 
 					<div>
 						<p><strong>Part #:</strong> @detail.Item</p>
 						<p><strong>Description:</strong> @detail.Description</p>
@@ -173,6 +173,16 @@
 	}
 
 	private string GetImageUrl(string item)
+	{// mirror your old ASP logic
+	
+		var x = $"/product-images/{item}_Web_Main.png";
+			return $"/product-images/{item}_Web_Main.jpg";
+		
+		
+	}
+
+
+	private string GetImageUrlOld(string item)
 	{
 		// mirror your old ASP logic
 		if (item.Contains("-"))
