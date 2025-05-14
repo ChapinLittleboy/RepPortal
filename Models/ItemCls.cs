@@ -52,6 +52,8 @@ public class ItemDetail
     public decimal Price1 { get; set; }
     public decimal Price2 { get; set; }
     public decimal Price3 { get; set; }
+    public string? ReplacementItem { get; set; }
+    public string? ReplacementMessage { get; set; }
 
     public string ItemStatusDescription => ItemStatus switch
     {

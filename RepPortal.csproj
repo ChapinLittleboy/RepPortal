@@ -71,4 +71,8 @@
 	  <EmbeddedResource Remove="SqlScripts\005_CreateMarketingFolder table.sql" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Include="Shared\Appbar.razor" />
+	</ItemGroup>
+
 </Project>

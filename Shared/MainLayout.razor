@@ -7,7 +7,7 @@
 
 <PageTitle>RepPortal</PageTitle>
 
-<div class="page">
+<div class="page d-flex flex-column min-vw-100">
   
 
 	<main>
@@ -16,9 +16,15 @@
 			<Appbar />
 		</header>
 
-		<article class="content px-4">
-			@Body
-		</article>
+		<main class="flex-grow-1">
+			<div class="container-fluid px-3 py-3">
+				<div class="row">
+					<div class="col-12">
+						@Body
+					</div>
+				</div>
+			</div>
+		</main>
 	</main>
 	
 	<!-- Common footer -->

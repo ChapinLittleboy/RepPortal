@@ -18,39 +18,13 @@
 <div class="control-container">
 	<SfAppBar Mode="AppBarMode.Prominent" ColorMode="AppBarColor.Inherit" CssClass="e-appbar">
 		<div class="appbar-content">
-			<!-- Combined Row: Logo, Title, and Navigation Menu -->
+			<!-- Top Row: Logo and Title -->
 			<div class="d-flex justify-content-between align-items-center w-100">
 				<div class="d-flex align-items-center">
 					<img src="images/ChapinLogo.png" alt="Logo" class="appbar-logo" />
 					<div class="app-title-wrapper">
 						<span class="appbar-title">Rep Portal</span>
 					</div> <!-- .app-title-wrapper -->
-				</div>
-
-				<!-- Navigation Menu - Moved here from separate row -->
-				<div class="menu-control d-flex align-items-center">
-					<SfButton CssClass="e-inherit" OnClick="GoHome">Home</SfButton>
-					<SfDropDownButton Content="Reports" Items="@ReportItems" CssClass="e-inherit">
-						<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
-					</SfDropDownButton>
-					<SfDropDownButton Content="Pricing" Items="@PricingItems" CssClass="e-inherit">
-						<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
-					</SfDropDownButton>
-					<SfDropDownButton Content="Forms" Items="@FormsItems" CssClass="e-inherit">
-						<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
-					</SfDropDownButton>
-					<SfDropDownButton Content="Marketing" Items="@MarketingItems" CssClass="e-inherit">
-						<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
-					</SfDropDownButton>
-					<SfDropDownButton Content="Chapin Contacts" Items="@ContactItems" CssClass="e-inherit">
-						<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
-					</SfDropDownButton>
-					@if (isAdmin)
-					{
-						<SfDropDownButton Content="Admin" Items="@AdminItems" CssClass="e-inherit">
-							<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
-						</SfDropDownButton>
-					}
 				</div>
 
 				<!-- User Info & Auth -->
@@ -75,6 +49,32 @@
 					</AuthorizeView>
 				</div>
 			</div>
+
+			<!-- Navigation Menu Row -->
+			<div class="menu-control d-flex flex-wrap align-items-center w-100 mt-2">
+				<SfDropDownButton Content="Home" CssClass="e-inherit" OnClick="GoHome"></SfDropDownButton>
+				<SfDropDownButton Content="Reports" Items="@ReportItems" CssClass="e-inherit">
+					<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
+				</SfDropDownButton>
+				<SfDropDownButton Content="Pricing" Items="@PricingItems" CssClass="e-inherit">
+					<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
+				</SfDropDownButton>
+				<SfDropDownButton Content="Forms" Items="@FormsItems" CssClass="e-inherit">
+					<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
+				</SfDropDownButton>
+				<SfDropDownButton Content="Marketing" Items="@MarketingItems" CssClass="e-inherit">
+					<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
+				</SfDropDownButton>
+				<SfDropDownButton Content="Chapin Contacts" Items="@ContactItems" CssClass="e-inherit">
+					<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
+				</SfDropDownButton>
+				@if (isAdmin)
+				{
+					<SfDropDownButton Content="Admin" Items="@AdminItems" CssClass="e-inherit">
+						<DropDownButtonEvents ItemSelected="ItemSelected"></DropDownButtonEvents>
+					</SfDropDownButton>
+				}
+			</div> <!-- .menu-control -->
 		</div> <!-- .appbar-content -->
 	</SfAppBar>
 
@@ -421,7 +421,6 @@
 
 	.e-appbar {
 		padding: 8px 16px;
-		height: auto; /* Allow the AppBar to expand based on content */
 	}
 
 	.appbar-content {
@@ -465,9 +464,9 @@
 		margin-right: 10px;
 	}
 
-	.nav-link:hover {
-		text-decoration: underline;
-	}
+		.nav-link:hover {
+			text-decoration: underline;
+		}
 
 	.logout-form {
 		margin: 0;
@@ -482,7 +481,7 @@
 	}
 
 	.menu-control {
-		margin: 0 20px;
+		margin: 5px 0;
 	}
 
 	.user-auth-section {

@@ -98,3 +98,26 @@ main {
 .e-sort-number {
     display: none !important;
 }
+.appbar-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+@media (max-width: 991.98px) {
+    .appbar-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .user-info, .logout-form {
+        align-self: stretch;
+        text-align: right;
+    }
+
+    .sf-menu {
+        width: 100%;
+    }
+}
