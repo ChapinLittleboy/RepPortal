@@ -39,19 +39,20 @@
                 <span asp-validation-for="Input.LastName" class="text-danger"></span>
             </div>
             <div class="form-group">
-	            <label asp-for="Input.RepCode"></label>
-	            <select asp-for="Input.RepCode" class="form-control" asp-items="Model.RepCodeOptions" id="repCodeDropdown">
-		            <option value="">-- Select Rep Code --</option>
-	            </select>
-	            <span asp-validation-for="Input.RepCode" class="text-danger"></span>
+	            <label asp-for="Input.RegistrationCode">Registration Code</label>
+	            <input asp-for="Input.RegistrationCode" class="form-control" />
+	            <span asp-validation-for="Input.RegistrationCode" class="text-danger"></span>
+	            <small class="form-text text-muted">
+		            Enter the registration code provided by your sales rep agency.
+	            </small>
             </div>
 
-           
-            <div class="form-group" id="regionDropdownGroup">
+            <div class="form-group" id="regionDropdownGroup" style="display:none;">
 	            <label asp-for="Input.Region"></label>
-	            <select asp-for="Input.Region" asp-items="Model.RegionOptions" class="form-control" id="regionDropdown">
+	            <select asp-for="Input.Region" asp-items="Model.RegionOptions" class="form-control" id="Input_Region">
 		            <option value="">-- Select Region --</option>
 	            </select>
+	            <span asp-validation-for="Input.Region" class="text-danger"></span>
             </div>
             
 
@@ -92,27 +93,29 @@
 @section Scripts {
 	<partial name="_ValidationScriptsPartial" />
 
-	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- add if jQuery not already loaded -->
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- only if not already loaded -->
 
 	<script>
+        const activeRegistrationCodes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ActiveRegistrationCodes));
+
         $(document).ready(function () {
             function toggleRegionDropdown() {
-                var selectedRepCode = $('#repCodeDropdown').val();
-                if (selectedRepCode === 'LAW') {
+                const enteredCode = $('#Input_RegistrationCode').val().trim();
+                const matchedCode = activeRegistrationCodes.find(c => c.RegistrationCode === enteredCode);
+
+                if (matchedCode && matchedCode.RepCode === 'LAW') {
                     $('#regionDropdownGroup').show();
+                    $('#Input_Region').prop('disabled', false).prop('required', true);
                 } else {
                     $('#regionDropdownGroup').hide();
-                    $('#regionDropdown').val(''); // clear any previously selected region
+                    $('#Input_Region').prop('disabled', true).prop('required', false).val('');
                 }
             }
 
-            // Run it once on page load
-            toggleRegionDropdown();
+            toggleRegionDropdown(); // initial check on page load
 
-            // Attach event handler
-            $('#repCodeDropdown').on('change', function () {
-                toggleRegionDropdown();
-            });
+            $('#Input_RegistrationCode').on('input', toggleRegionDropdown);
         });
     </script>
 }
+

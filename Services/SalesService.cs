@@ -34,6 +34,33 @@ public class SalesService
 
     }
 
+
+    public async Task<string> GetRepCodeByRegistrationCodeAsync(string registrationCode)
+    {
+        if (string.IsNullOrWhiteSpace(registrationCode))
+            return null;
+
+        registrationCode = registrationCode.Trim();
+
+        const string sql = @"
+        SELECT TOP 1 RepCode
+        FROM AgencyRegistrationCodes
+        WHERE RegistrationCode = @RegistrationCode
+          AND IsActive = 1
+          AND (ExpirationDate IS NULL OR ExpirationDate > GETUTCDATE())
+        ORDER BY ExpirationDate DESC";
+
+        using var connection = _dbConnectionFactory.CreateRepConnection();
+        // Assuming the connection needs to be opened explicitly
+       
+        var repCode = await connection.QueryFirstOrDefaultAsync<string>(sql, new { RegistrationCode = registrationCode });
+
+        return repCode;
+    }
+
+
+
+
     public async Task<string> GetRepIDAsync()
     {
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
@@ -1835,6 +1862,9 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
 
             return results.ToList();
         }
+
+
+
     }
 
 
