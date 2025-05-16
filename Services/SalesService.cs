@@ -1565,7 +1565,9 @@ OPTION (RECOMPILE, OPTIMIZE FOR UNKNOWN);
         {
             await connection.OpenAsync();
             var results = await connection.QueryAsync<string>("SELECT slsman FROM Chap_SlsmanNameV  where slsman " +
-                                                              "in (Select distinct slsman from customer_mst where stat = 'A' and cust_seq = 0 and cust_num <> 'LILBOY') ORDER BY slsman");
+                                                              "in (Select distinct slsman from customer_mst where stat = 'A' and cust_seq = 0 " +
+                                                              "and cust_num <> 'LILBOY' ) " +
+                                                              "and slsman not in ('CHA', 'REP', 'KBM') ORDER BY slsman");
             return results.ToList();
         }
     }
