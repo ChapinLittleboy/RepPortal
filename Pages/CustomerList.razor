@@ -95,20 +95,44 @@
                 <GridColumn Field=@nameof(Customer.PricingCode) HeaderText="Pricing Code" Width="150"></GridColumn>
                 <GridColumn Field=@nameof(Customer.FreightTerms) HeaderText="Standard Freight Terms" Width="150"></GridColumn>
                
-                <GridColumn Field="BuyingGroup" HeaderText="Buying Group" Width="100">
+                <GridColumn Field="BuyingGroup" HeaderText="Customer Type" Width="100">
 	                <Template>
 		                @{
 			                var customer = context as Customer;
 			                if (customer != null)
 			                {
-				                <span title="@customer.BuyingGroupDescription">
-					                @customer.BuyingGroup
-				                </span>
+                                if (!string.Equals(customer.StatusDescription, "active", StringComparison.OrdinalIgnoreCase))
+				                {
+					                @string.Empty;
+				                }
+                                else {
+	                                <span title="@customer.BuyingGroupDescription">
+		                                @customer.BuyingGroup
+	                                </span>
+                                }
 			                }
 		                }
 	                </Template>
                 </GridColumn>
-				<GridColumn Field=@nameof(Customer.BuyingGroupDescription) HeaderText="Buying Group Description" Width="200"></GridColumn>
+                <GridColumn Field="BuyingGroupDescription" HeaderText="CustType Description" Width="200">
+	                <Template>
+		                @{
+			                var customer = context as Customer;
+			                if (customer != null)
+			                {
+				                if (!string.Equals(customer.StatusDescription, "active", StringComparison.OrdinalIgnoreCase))
+				                {
+					                @string.Empty;
+				                }
+				                else {
+					                <span title="@customer.BuyingGroupDescription">
+						                @customer.BuyingGroupDescription
+					                </span>
+				                }
+			                }
+		                }
+	                </Template>
+                </GridColumn>
             </GridColumns>
         </SfGrid>
     }
