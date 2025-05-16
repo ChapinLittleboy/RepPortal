@@ -60,17 +60,17 @@
 			                <ComboBoxFieldSettings Text="CustNameWithNum" Value="Cust_Num"/>
 		                </SfComboBox>
 	                </div>
-                    <div class="form-group">
-                        <label>Customer Type (Optional):</label>
-                        <InputSelect @bind-Value="parameters.CustType" class="form-control">
-                            <!-- Placeholder/blank option -->
-                            <option value="">-- Select a customer type --</option>   // This is for all types
-                            @foreach (var type in CustomerTypes)
-                            {
-                                <option value="@type">@type</option>
-                            }
-                        </InputSelect>
-                    </div>
+	                <div class="form-group">
+		                <label>Customer Type (Optional):</label>
+		                <InputSelect @bind-Value="parameters.CustType" class="form-control">
+			                <option value="">-- Select a customer type --</option>
+			                @foreach (var type in CustomerTypesList)
+			                {
+				                <option value="@type.CustomerType">@type.DisplayText</option>
+			                }
+		                </InputSelect>
+	                </div>
+	
                 </div>
 
                 <!-- Empty 3rd column -->
@@ -186,6 +186,8 @@
 	private string WantedCustNum = string.Empty;
 	public SfComboBox<string, Customer> WantedCust { get; set; }
 	private bool isLawlessRep = false;
+	private IEnumerable<CustType> CustomerTypesList;
+
 
 	private AuthenticationState authState;
 	private ApplicationUser currentUser;
@@ -213,6 +215,7 @@
 		parameters.EndShipDate = DateTime.Now; // Default to today
 
 		CustomerTypes = await CustomerService.GetCustomerTypesAsync();
+		CustomerTypesList = await CustomerService.GetCustomerTypesListAsync();
 
 		//CustomerEList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
 		CustomerList = await CustomerService.GetCustomersDetailsByRepCodeAsync();

@@ -71,11 +71,10 @@
 					    <div class="form-group">
 						    <label>Customer Type (Optional):</label>
 						    <InputSelect @bind-Value="parameters.CustType" class="form-control">
-							    <!-- Placeholder/blank option -->
-							    <option value="">-- Select a customer type --</option> // This is for all types
-							    @foreach (var type in CustomerTypes)
+							    <option value="">-- Select a customer type --</option>
+							    @foreach (var type in CustomerTypesList)
 							    {
-								    <option value="@type">@type</option>
+								    <option value="@type.CustomerType">@type.DisplayText</option>
 							    }
 						    </InputSelect>
 					    </div>
@@ -189,6 +188,7 @@
     private bool isLoading = false;
     private bool showTip = false;
 	private bool isReady = false;
+	private IEnumerable<CustType> CustomerTypesList;
 
     private AuthenticationState authState;
     private ApplicationUser currentUser;
@@ -211,6 +211,7 @@
         parameters.EndInvoiceDate = DateTime.Now; // Default to today
 
         CustomerTypes = await CustomerService.GetCustomerTypesAsync();
+        CustomerTypesList = await CustomerService.GetCustomerTypesListAsync();
 		CustomerList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
 		//CustomerList = CustomerEList.ToList();
         isReady = true;

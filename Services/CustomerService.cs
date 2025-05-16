@@ -117,14 +117,31 @@ ORDER BY ca0.[name]";
     {
         // NOTE:  Always uses the repCode from the RepCodeContext
         const string sql = @"
-            SELECT Distinct cust_type as CustomerType
+            SELECT Distinct cu.cust_type as CustomerType
 FROM   customer_mst cu 
+join RepPortal.dbo.CustTypes rct on cu.cust_type= rct.Cust_Type
 WHERE   (
         @RepCode = 'Admin'    
-        OR cu.slsman = @RepCode) ORDER BY cust_type";
+        OR cu.slsman = @RepCode) ORDER BY cu.cust_type";
 
         using var connection = new SqlConnection(_batAppConnection);
         return await connection.QueryAsync<string>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
+        // NOTE: Using the repCode from the RepCodeContext!!
+    }
+
+    public async Task<IEnumerable<CustType>> GetCustomerTypesListAsync()
+    {
+        // NOTE:  Always uses the repCode from the RepCodeContext
+        const string sql = @"
+            SELECT Distinct cu.cust_type as CustomerType, rct.Description as CustTypeName
+FROM   customer_mst cu 
+join RepPortal.dbo.CustTypes rct on cu.cust_type= rct.Cust_Type
+WHERE   (
+        @RepCode = 'Admin'    
+        OR cu.slsman = @RepCode) ORDER BY cu.cust_type";
+
+        using var connection = new SqlConnection(_batAppConnection);
+        return await connection.QueryAsync<CustType>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
         // NOTE: Using the repCode from the RepCodeContext!!
     }
 
