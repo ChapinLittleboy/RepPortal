@@ -147,6 +147,7 @@
     public string _state;
     private List<CreditHoldReasonCode> _creditHoldReasons = new();
     private Dictionary<string, string> _reasonLookup = new();
+    private IEnumerable<CustType> CustomerTypesList;
 
     protected override async Task OnInitializedAsync()
     {
@@ -160,6 +161,8 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         repCode = user.FindFirst("RepCode")?.Value;
+        CustomerTypesList = await CustomerService.GetCustomerTypesListAsync();
+
 
         repCode = RepCodeContext.CurrentRepCode;
         if (user.Identity.IsAuthenticated)
@@ -168,8 +171,23 @@
             var currentUser = await UserManager.GetUserAsync(user);
             if (!string.IsNullOrEmpty(repCode))
             {
+
+	            var allowedTypes = new HashSet<string>(
+		            CustomerTypesList.Select(ct => ct.CustomerType),
+		            StringComparer.OrdinalIgnoreCase // Case-insensitive comparison
+	            );
+
                 var allCustomers = await CustomerService.GetCustomerNamesByRepCodeAsync();
+                foreach (var cust in allCustomers)
+                {
+	                if (!allowedTypes.Contains(cust.BuyingGroup))
+	                {
+                        cust.BuyingGroup = null; // or string.Empty if you prefer
+                        cust.BuyingGroupDescription = null; // or string.Empty if you prefer
+                    }
+                }
                 customers = allCustomers.Where(c => c.Status != "R" );
+
 
                 isLoading = false;
             }
