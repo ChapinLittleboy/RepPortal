@@ -29,6 +29,8 @@ public class TitleService
 
     public string? PageHelpContent { get; private set; }
 
+    public string? PageHelpLinkText { get; set; }
+
     public async Task LoadPageHelpContentAsync(string pageKey)
     {
         var help = await _helpContentService.GetHelpContentAsync(pageKey);

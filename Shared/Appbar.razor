@@ -78,14 +78,15 @@
 		</div> <!-- .appbar-content -->
 	</SfAppBar>
 
-	<div class="appbar-subtitle d-flex justify-content-between align-items-center">
-		<medium class="text-muted">@TitleService.PageSubtitle</medium>
-		@if (!string.IsNullOrWhiteSpace(TitleService.PageHelpContent))
-		{
-			<a href="#" @onclick="OpenHelpDialog" @onclick:preventDefault class="text-primary small">📘 About this form</a>
-		}
-	</div> <!-- .appbar-subtitle -->
-
+    <div class="appbar-subtitle d-flex align-items-center">
+        <medium class="text-muted me-2">@TitleService.PageSubtitle</medium>
+        @if (!string.IsNullOrWhiteSpace(TitleService.PageHelpContent))
+        {
+            <a href="#" @onclick="OpenHelpDialog" @onclick:preventDefault class="text-primary small">
+				@(string.IsNullOrWhiteSpace(TitleService.PageHelpLinkText) ? "Report Description/Explanation" : TitleService.PageHelpLinkText)
+            </a>
+        }
+    </div>
 
 	<SfDialog @ref="HelpDialog"
 			  Width="500px"
@@ -326,17 +327,22 @@
 			TitleService.PageSubtitle = selectedItem;
 		}
 
+       
+
 
 		TitleService.LoadPageHelpContentAsync(selectedId);
+        TitleService.PageHelpLinkText = "Report Description/Explanation";  // The default
 
 		switch (selectedId)
 		{
 			case "customerlist":
 				//Navigate to Customer List page
+                TitleService.PageHelpLinkText = string.Empty;
 				Navigation.NavigateTo("/customerlist");
 				break;
 			case "quickorderlookup":
 				//Navigate to Customer List page
+                TitleService.PageHelpLinkText = "How to do a lookup";
 				Navigation.NavigateTo("/order-lookup");
 				break;
 			case "monthlysalesreport":
@@ -369,6 +375,7 @@
 				break;
 			case "itempricingpage":
 				//Navigate to PCF Listing page
+                TitleService.PageHelpLinkText = "How to do a lookup";
 				Navigation.NavigateTo("/getitempricing");
 				break;
 			case "specialpricingpage":
@@ -376,14 +383,17 @@
 				Navigation.NavigateTo("/getspecialpricing");
 				break;
 			case "formspage":
+                TitleService.PageHelpLinkText = "About these forms";
 				//Navigate to PCF Listing page
 				Navigation.NavigateTo("/forms-download");
 				break;
 			case "marketingpage":
 				//Navigate to PCF Listing page
+                TitleService.PageHelpLinkText = "About these forms";
 				Navigation.NavigateTo("/marketing-download");
 				break;
 			case "downloadcontacts":
+                TitleService.PageHelpLinkText = string.Empty;
 				Navigation.NavigateTo("/RepDocs/Chapin International Internal Departmental Contacts.pdf", forceLoad: true);
 				break;
 			case "pagehelp":
@@ -450,7 +460,7 @@
 		margin-left: 16px;
 		margin-right: 16px;
 		padding: 5px 0;
-		justify-content: space-between;
+		
 		align-items: center;
 	}
 
