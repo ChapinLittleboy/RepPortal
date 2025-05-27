@@ -1817,6 +1817,23 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
         });
     }
 
+    public async Task<List<Dictionary<string, object>>> RunDynamicQueryAsync(string sql)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var results = await connection.QueryAsync(sql);
+
+        var data = new List<Dictionary<string, object>>();
+        foreach (var row in results)
+        {
+            var dict = new Dictionary<string, object>();
+            foreach (var prop in row)
+                dict[prop.Key] = prop.Value;
+            data.Add(dict);
+        }
+
+        return data;
+    }
 
 
     public async Task<List<InvoiceRptDetail>> GetInvoiceRptData(InvoiceRptParameters parameters)
@@ -1864,6 +1881,8 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
 
             return results.ToList();
         }
+
+
 
 
 

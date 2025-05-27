@@ -1,0 +1,143 @@
+﻿
+@page "/admin/ai-assistant"
+@attribute [Authorize(Roles = "Administrator")]
+@inject IRepCodeContext RepCodeContext
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject AIService AIService
+@inject SalesService SalesService
+@using System.Text
+@using System.Text.Json
+@using RepPortal.Models
+
+<h3>AI Assistant</h3>
+
+<p>Hello <b>@CurrentRepCode</b> (<i>@CurrentUserRole</i>)</p>
+
+<textarea @bind="UserInput" rows="4" cols="80" placeholder="Ask the assistant..."></textarea>
+<br />
+<button class="btn btn-primary" @onclick="AskAI">Ask</button>
+
+@if (!string.IsNullOrWhiteSpace(Response))
+{
+    <div class="mt-3 p-2 border bg-light">
+        <strong>AI says:</strong>
+        <div>@(new MarkupString(Response))</div>
+    </div>
+}
+
+@code {
+    private string UserInput = string.Empty;
+    private string Response = string.Empty;
+    private string CurrentRepCode => RepCodeContext.CurrentRepCode ?? "Unknown";
+    private string CurrentUserRole = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        CurrentUserRole = user.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "Unknown";
+    }
+
+    private async Task AskAI()
+    {
+        var context = new ModelContext
+        {
+            User = CurrentRepCode,
+            Role = CurrentUserRole,
+            Page = "AI Assistant",
+            DataFilters = new Dictionary<string, string> { { "Year", DateTime.Now.Year.ToString() } },
+            Summary = "This user is an administrator working on rep-related tasks."
+        };
+
+        var initialResponse = await AIService.GetResponseFromAIAsync(UserInput, context);
+
+        if (initialResponse.StartsWith("CALL:", StringComparison.OrdinalIgnoreCase))
+        {
+            var json = initialResponse[5..].Trim();
+
+            try
+            {
+                var call = JsonSerializer.Deserialize<CallRequest>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (call?.Method == "GetInvoiceRptData" && call.Parameters.ContainsKey("RepCode"))
+                {
+                    var repCode = call.Parameters["RepCode"].GetString();
+                    string? custNum = null;
+                    string? beginDate = null;
+                    string? endDate = null;
+
+                    if (call.Parameters.ContainsKey("CustNum") && call.Parameters["CustNum"].ValueKind != JsonValueKind.Null)
+                        custNum = call.Parameters["CustNum"].GetString();
+
+                    if (call.Parameters.ContainsKey("BeginInvoiceDate") && call.Parameters["BeginInvoiceDate"].ValueKind != JsonValueKind.Null)
+                        beginDate = call.Parameters["BeginInvoiceDate"].GetString();
+
+                    if (call.Parameters.ContainsKey("EndInvoiceDate") && call.Parameters["EndInvoiceDate"].ValueKind != JsonValueKind.Null)
+                        endDate = call.Parameters["EndInvoiceDate"].GetString();
+
+                    if (string.IsNullOrWhiteSpace(beginDate) || string.IsNullOrWhiteSpace(endDate))
+                    {
+                        Response = "❌ Missing required BeginInvoiceDate or EndInvoiceDate.";
+                        return;
+                    }
+
+                    var param = new SalesService.InvoiceRptParameters()
+                    {
+                        RepCode = repCode,
+                        CustNum = string.IsNullOrWhiteSpace(custNum) ? null : custNum,
+                        BeginInvoiceDate = DateTime.Parse(beginDate),
+                        EndInvoiceDate = DateTime.Parse(endDate)
+                    };
+
+                    var result = await SalesService.GetInvoiceRptData(param);
+
+                    decimal total = result.Sum(r => r.ExtPrice);
+
+                    string header = $"<h4>Invoice Summary for Rep {repCode}" +
+                                    (!string.IsNullOrWhiteSpace(custNum) ? $" / Customer {custNum}" : "") +
+                                    $" ({beginDate} to {endDate})</h4>" +
+                                    $"<p><strong>Total invoiced amount: {total:C}</strong></p>";
+
+                    string table = GenerateInvoiceHtmlTable(result);
+
+                    Response = header + table;
+                }
+                else
+                {
+                    Response = "⚠️ Invalid method or missing RepCode.";
+                }
+            }
+            catch (Exception ex)
+            {
+                Response = $"❌ Error parsing or executing method: {ex.Message}";
+            }
+        }
+        else
+        {
+            Response = initialResponse;
+        }
+    }
+
+    private string GenerateInvoiceHtmlTable(IEnumerable<InvoiceRptDetail> records)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("<table class='table table-striped'>");
+        sb.AppendLine("<thead><tr><th>Invoice Number</th><th>Invoice Date</th><th>Invoice Amount</th></tr></thead>");
+        sb.AppendLine("<tbody>");
+        foreach (var r in records)
+        {
+            sb.AppendLine($"<tr><td>{r.InvNum}</td><td>{r.InvDate:yyyy-MM-dd}</td><td>{r.ExtPrice:C}</td></tr>");
+        }
+        sb.AppendLine("</tbody></table>");
+        return sb.ToString();
+    }
+
+    public class CallRequest
+    {
+        public string Method { get; set; } = "";
+        public Dictionary<string, JsonElement> Parameters { get; set; } = new();
+    }
+}

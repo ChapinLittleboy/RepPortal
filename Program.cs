@@ -91,6 +91,8 @@ builder.Services.AddScoped<FolderAdminService>();
 builder.Services.AddScoped<MarketingFileService>();
 builder.Services.AddScoped<HelpContentService>();
 builder.Services.AddScoped<IPageDefinitionService, PageDefinitionService>();
+builder.Services.AddHttpClient<AIService>();
+builder.Services.AddScoped<AIService>();
 
 
 
