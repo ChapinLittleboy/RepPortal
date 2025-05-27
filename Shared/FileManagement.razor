@@ -1,0 +1,79 @@
+﻿@using RepPortal.Models
+@inject PortalFileService PortalFileService
+@inject IWebHostEnvironment Environment
+
+
+@if (IsVisible)
+{
+    <SfDialog Width="700px" IsModal="true" Header="Manage Files" ShowCloseIcon="true" @bind-Visible="@IsVisible">
+        <div>
+            <h5>Files in "@CurrentFolder.DisplayName"</h5>
+            <SfGrid DataSource="@Files" AllowSorting="true">
+                <GridColumns>
+                    <GridColumn Field="DisplayOrder" HeaderText="Order" Width="80" />
+                    <GridColumn Field="DisplayName" HeaderText="File Display Name" Width="200" />
+                    <GridColumn Field="FileName" HeaderText="File Name" Width="200" />
+                    <GridColumn HeaderText="Actions" Width="120">
+                        <Template>
+                            @{
+                                var file = context as PortalFile;
+                            }
+                            <button class="btn btn-danger btn-sm" @onclick="() => DeleteFile(file!)">Delete</button>
+                            <a class="btn btn-secondary btn-sm" href="@($"{Environment.WebRootPath}/{CurrentFolder.FolderRelativePath}/{file!.FileName}")" target="_blank">Download</a>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+            <hr />
+            <InputFile OnChange="@UploadFiles" multiple />
+        </div>
+    </SfDialog>
+}
+
+@code {
+    [Parameter] public PortalFolder CurrentFolder { get; set; } = new();
+    private List<PortalFile> Files = new();
+    public bool IsVisible { get; set; }
+
+
+    public async Task Show(PortalFolder folder)
+    {
+        CurrentFolder = folder;
+        Files = await PortalFileService.GetFilesByFolderIdAsync(folder.Id);
+        IsVisible = true;
+        StateHasChanged();
+    }
+
+    async Task DeleteFile(PortalFile file)
+    {
+        await PortalFileService.DeleteFileAsync(file.Id);
+        Files.Remove(file);
+    }
+
+    async Task UploadFiles(InputFileChangeEventArgs e)
+    {
+        var rootPath = @"\\ciiws01\Inetpub\chapinportal\ChapinRep\RepDocs\";
+        var folderPath = Path.Combine(rootPath, CurrentFolder.FolderRelativePath);
+        if (!Directory.Exists(folderPath))
+            Directory.CreateDirectory(folderPath);
+
+        foreach (var file in e.GetMultipleFiles())
+        {
+            
+            var filePath = Path.Combine(folderPath, file.Name);
+            await using var stream = new FileStream(filePath, FileMode.Create);
+            await file.OpenReadStream().CopyToAsync(stream);
+
+            var newFile = new PortalFile
+            {
+                FolderId = CurrentFolder.Id,
+                DisplayName = file.Name,
+                FileName = file.Name,
+                DisplayOrder = Files.Count + 1
+            };
+
+            await PortalFileService.AddFileAsync(newFile);
+            Files.Add(newFile);
+        }
+    }
+}

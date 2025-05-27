@@ -1,0 +1,60 @@
+﻿@page "/admin/manage-content"  
+@inject PortalFileService PortalFileService  
+
+<h3>Manage Portal Content</h3>  
+
+<FileManagement @ref="fileManagementDialog" />
+
+
+<SfTab>  
+    <TabItems>  
+        @foreach (var pageType in pageTypes)  
+        {  
+            <TabItem>  
+                <HeaderTemplate>  
+                    @pageType  
+                </HeaderTemplate>  
+                <ContentTemplate>  
+                    <SfGrid DataSource="@folderData[pageType]" AllowPaging="true" AllowSorting="true">  
+                        <GridColumns>  
+                            <GridColumn Field="DisplayOrder" HeaderText="Order" Width="90" />  
+                            <GridColumn Field="DisplayName" HeaderText="Folder Name" Width="200" />  
+                            <GridColumn Field="FolderRelativePath" HeaderText="Path" Width="200" />  
+                            <GridColumn HeaderText="Manage Files" Width="150">  
+                                <Template>  
+                                    @{
+                                        var folder = (context as PortalFolder)!;
+                                    }
+                                    <button class="btn btn-primary" @onclick="@(() => fileManagementDialog.Show(folder!))">Manage Files</button>
+                                </Template>  
+                            </GridColumn>  
+                        </GridColumns>  
+                    </SfGrid>  
+                    <button class="btn btn-success mt-3" @onclick="@(() => AddFolder(pageType))">Add Folder</button>  
+                </ContentTemplate>  
+            </TabItem>  
+        }  
+    </TabItems>  
+</SfTab>  
+
+@code {
+    string[] pageTypes = ["test"];                             //["Pricing", "Forms", "Marketing"];  
+    Dictionary<string, List<PortalFolder>> folderData = new();  
+    private FileManagement fileManagementDialog = default!;
+
+    protected override async Task OnInitializedAsync()  
+    {  
+        foreach (var pageType in pageTypes)  
+            folderData[pageType] = await PortalFileService.GetFoldersWithFilesAsync(pageType);  
+    }  
+
+    void AddFolder(string pageType)  
+    {  
+        // Implement folder addition UI  
+    }  
+
+    void SelectFolder(PortalFolder folder)  
+    {  
+        // Implement file management UI  
+    }  
+}
