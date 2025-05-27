@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="Pages\ManagePortalContent.razor" />
     <Content Remove="Pages\OpenOrdersOriginal.razor" />
     <Content Remove="PCFEditor.razor" />
     <Content Remove="wwwroot\product-images\**" />

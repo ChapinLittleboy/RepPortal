@@ -99,9 +99,13 @@ builder.Services.AddScoped<AIService>();
 
 
 var app = builder.Build();
-var cfg = app.Configuration.GetSection("PriceBooks");
-var rootPath = cfg["RootPath"]!;      // should be \\ciiws01\ChapinRepDocs
-var requestPath = cfg["RequestPath"]!;   // should be /RepDocs
+
+
+
+
+
+
+ 
 
 var scope = app.Services.CreateScope();
 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -125,6 +129,10 @@ app.UseHttpsRedirection();
 // This serves files from wwwroot (default behavior)
 
 app.UseStaticFiles();
+
+var cfg = app.Configuration.GetSection("PriceBooks");
+var rootPath = cfg["RootPath"]!;      // should be \\ciiws01\ChapinRepDocs
+var requestPath = cfg["RequestPath"]!;   //
 
 app.UseStaticFiles(new StaticFileOptions
 {
