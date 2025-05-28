@@ -1,6 +1,4 @@
-﻿
-
-@page "/shipments-report"
+﻿@page "/shipments-report"
 @attribute [Authorize]
 @using System.Dynamic
 @using System.Globalization
@@ -14,7 +12,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
-
+@inject RepPortal.Services.IActivityLogService ActivityLogService
 
 <div class="container-fluid">
     <SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
@@ -234,8 +232,12 @@
 		isLoading = true;
 		parameters.CustNum = WantedCust.Value;
 		parameters.ShipToRegion = RepCodeContext.RepRegion;
-		ShipmentsData = await SalesService.GetShipmentsData(parameters);
 
+		// Serialize parameters for logging
+		var paramJson = System.Text.Json.JsonSerializer.Serialize(parameters);
+		await ActivityLogService.LogReportUsageActivityAsync("Customer Shipments Report", paramJson);
+
+		ShipmentsData = await SalesService.GetShipmentsData(parameters);
 		isLoading = false;
 	}
 

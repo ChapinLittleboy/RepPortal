@@ -4,6 +4,7 @@
 @inject TitleService TitleService
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
+@inject RepPortal.Services.IActivityLogService ActivityLogService
 
 
 <PageTitle>Chapin Rep Portal</PageTitle>
@@ -35,28 +36,54 @@ else
     private string repFirstName;
     private bool isLoggedIn = false;
     private string repCode;
+    private bool _hasLogged = false;
 
     protected override async Task OnInitializedAsync()
     {
-	    TitleService.PageSubtitle = "";
+        TitleService.PageSubtitle = "";
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
-        if (user.Identity.IsAuthenticated)
+        if (user.Identity.IsAuthenticated && !isLoggedIn)
         {
             isLoggedIn = true;
 
             repFirstName = user.FindFirst(c => c.Type == "FirstName")?.Value;
             repCode = user.FindFirst(c => c.Type == "RepCode")?.Value;
+            string repEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+
             var assignedRegion = user.FindFirst("AssignedRegion")?.Value;
             if (!string.IsNullOrEmpty(repFirstName))
             {
                 //repAgency =  SalesService.GetRepAgency(repCode);
             }
+           // string LoginMessage = $"User {repFirstName} {repEmail} with RepCode {repCode} has opened the Index page.";
+
+            //await ActivityLogService.LogLoginAsync(repCode,"",LoginMessage);
+
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_hasLogged)
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity.IsAuthenticated)
+            {
+                _hasLogged = true;
 
+                repFirstName = user.FindFirst(c => c.Type == "FirstName")?.Value;
+                repCode = user.FindFirst(c => c.Type == "RepCode")?.Value;
+                string repEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+
+                string LoginMessage = $"User {repFirstName} {repEmail} with RepCode {repCode} has opened the Index page.";
+
+                await ActivityLogService.LogLoginAsync(repCode, "", LoginMessage);
+            }
+        }
+    }
 
 
 }

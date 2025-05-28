@@ -1,6 +1,4 @@
-﻿
-
-@page "/invoices-report"
+﻿@page "/invoices-report"
 @attribute [Authorize]
 @using System.Dynamic
 @using System.Globalization
@@ -17,9 +15,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
-
-
-
+@inject RepPortal.Services.IActivityLogService ActivityLogService
 
 <div class="container-fluid">
     <SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
@@ -174,9 +170,6 @@
     }
 </div>
 
-
-
-
 @code {
     private SfGrid<InvoiceRptDetail> Grid;
     private List<InvoiceRptDetail> InvoiceData = new List<InvoiceRptDetail>();
@@ -193,8 +186,6 @@
     private AuthenticationState authState;
     private ApplicationUser currentUser;
     public SfComboBox<string, Customer> WantedCust { get; set; }
-
-  
 
     private SalesService.InvoiceRptParameters parameters = new SalesService.InvoiceRptParameters();
 
@@ -222,14 +213,13 @@
     {
         showTip = true;
         isLoading = true;
-     
         parameters.CustNum = WantedCust.Value;
-		
-		;
 
-       InvoiceData = await SalesService.GetInvoiceRptData(parameters);
+        // Serialize parameters for logging
+        var paramJson = System.Text.Json.JsonSerializer.Serialize(parameters);
+        await ActivityLogService.LogReportUsageActivityAsync("Customer Invoices Report", paramJson);
 
-
+        InvoiceData = await SalesService.GetInvoiceRptData(parameters);
         isLoading = false;
     }
 
@@ -259,7 +249,6 @@
     }
 
 }
-
 
 <style>
 	.e-grid .e-gridheader .e-headercell {

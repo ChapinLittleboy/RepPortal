@@ -5,6 +5,7 @@
 @inject CustomerService CustomerService
 @inject IRepCodeContext RepCodeContext
 @inject TitleService TitleService
+@inject RepPortal.Services.IActivityLogService ActivityLogService
 
 @using RepPortal.Models
 @using Syncfusion.Blazor.Grids
@@ -151,6 +152,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Activity Logging: Log report usage to ReportUsageActivity
+        await ActivityLogService.LogReportUsageActivityAsync("Customer List Report", "");
 
         //reasonCodeList = await CustomerService.GetAllReasonCodesAsync();
        // _creditHoldReasons = await CustomerService.GetAllReasonCodesAsync();

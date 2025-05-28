@@ -8,6 +8,7 @@
 @inject IDbConnectionFactory DbConnectionFactory
 @inject IRepCodeContext RepCodeContext
 @inject CustomerService CustomerService
+@inject RepPortal.Services.IActivityLogService ActivityLogService
 
 
 
@@ -157,6 +158,11 @@
             return;
 
 		normalizedPo = NormalizePo(CustomerPo);
+
+        // Log report usage with parameters
+        var logParams = new { CustNum = WantedCust.Value, CustomerPo = normalizedPo, RepCode = RepCodeContext.CurrentRepCode };
+        var paramJson = System.Text.Json.JsonSerializer.Serialize(logParams);
+        await ActivityLogService.LogReportUsageActivityAsync("Customer Order Lookup", paramJson);
 
         using var conn = DbConnectionFactory.CreateBatConnection();
 

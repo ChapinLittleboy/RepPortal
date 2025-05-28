@@ -21,27 +21,25 @@ public interface IActivityLogService
     Task LogLoginAsync(string repCode, string? ipAddress, string? userAgent);
     Task LogReportUsageAsync(string reportName, string parameters);
     Task LogFileDownloadAsync(string fileName);
+    Task LogReportUsageActivityAsync(string reportName, string parameters);
 }
 
 // --- Assume these services exist and are registered ---
 // In YourProject.Services namespace or similar
 
-
-
-
 public class ActivityLogService : IActivityLogService
 {
     private readonly ILogger<ActivityLogService> _logger;
     private readonly AuthenticationStateProvider _authenticationStateProvider;
-    private readonly RepCodeContext _repCodeContext; // User's service
-    private readonly DbConnectionFactory _dbConnectionFactory; // User's factory
+    private readonly IRepCodeContext _repCodeContext; // User's service
+    private readonly IDbConnectionFactory _dbConnectionFactory; // User's factory
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public ActivityLogService(
         ILogger<ActivityLogService> logger,
         AuthenticationStateProvider authenticationStateProvider,
-        RepCodeContext repCodeContext,
-        DbConnectionFactory dbConnectionFactory, // Inject the factory
+        IRepCodeContext repCodeContext,
+        IDbConnectionFactory dbConnectionFactory, // Inject the factory
         IHttpContextAccessor httpContextAccessor)
     {
         _logger = logger;
@@ -77,7 +75,8 @@ public class ActivityLogService : IActivityLogService
         {
             // Case 1: Not impersonating (or context isn't set)
             // Logged-in user is the effective user, no admin involved.
-            return (loggedInUserRepCode, null);
+            string? adminUser = _repCodeContext.CurrentLastName;
+            return (loggedInUserRepCode, adminUser);
         }
         else
         {
@@ -104,7 +103,7 @@ public class ActivityLogService : IActivityLogService
             await connection.ExecuteAsync(sql, new
             {
                 RepCode = repCode, // Use the RepCode of the user who just logged in
-                LoginTime = DateTime.UtcNow, // Use UTC
+                LoginTime = DateTime.Now, // Use Local
                 IPAddress = ipAddress ?? "Unknown",
                 UserAgent = userAgent ?? "Unknown"
             });
@@ -135,7 +134,7 @@ public class ActivityLogService : IActivityLogService
             {
                 RepCode = effectiveRepCode, // The rep being acted upon/impersonated
                 ReportName = reportName,
-                RunTime = DateTime.UtcNow,
+                RunTime = DateTime.Now,
                 Parameters = parameters, // Ensure column allows length or handle truncation
                 AdminUser = adminRepCode // The logged-in admin (null if not impersonating)
             });
@@ -166,7 +165,7 @@ public class ActivityLogService : IActivityLogService
             await connection.ExecuteAsync(sql, new
             {
                 RepCode = effectiveRepCode,
-                DownloadTime = DateTime.UtcNow,
+                DownloadTime = DateTime.Now,
                 FileName = fileName,
                 AdminUser = adminRepCode
             });
@@ -174,6 +173,37 @@ public class ActivityLogService : IActivityLogService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Dapper: Failed to log file download history for EffectiveRepCode {RepCode}, File {FileName}", effectiveRepCode, fileName);
+        }
+    }
+
+    public async Task LogReportUsageActivityAsync(string reportName, string parameters)
+    {
+        var (effectiveRepCode, adminRepCode) = await GetCurrentRepAndAdminAsync();
+
+        if (string.IsNullOrEmpty(effectiveRepCode))
+        {
+            _logger.LogWarning("Dapper: Cannot log report usage activity. Effective RepCode could not be determined.");
+            return;
+        }
+
+        const string sql = @"
+            INSERT INTO ReportUsageHistory (RepCode, ReportName, RunTime, Parameters, AdminUser)
+            VALUES (@RepCode, @ReportName, @RunTime, @Parameters, @AdminUser);";
+        try
+        {
+            using var connection = _dbConnectionFactory.CreateRepConnection();
+            await connection.ExecuteAsync(sql, new
+            {
+                RepCode = effectiveRepCode,
+                ReportName = reportName,
+                RunTime = DateTime.Now,
+                Parameters = parameters,
+                AdminUser = adminRepCode
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Dapper: Failed to log report usage activity for EffectiveRepCode {RepCode}, Report {ReportName}", effectiveRepCode, reportName);
         }
     }
 }

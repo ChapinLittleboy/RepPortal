@@ -6,6 +6,7 @@
 @inject IMarketingService MarketingService
 @inject ILogger<FormsDownloadFile> Logger
 @using Syncfusion.Blazor.Navigations
+@inject RepPortal.Services.IActivityLogService ActivityLogService
 
 <h3>Forms and Templates</h3>
 
@@ -57,7 +58,8 @@
 	{
 		string StaticRequestPath = "/RepDocs";
 
-
+        // Log report usage (no parameters for listing page)
+        await ActivityLogService.LogReportUsageActivityAsync("Marketing Folders", "");
 		// Retrieve the folders
 		MarketingFolders = await MarketingService.GetMarketingFoldersAsync();
 

@@ -123,8 +123,10 @@ public class PcfService
                 WHERE (1 = 1 AND  ProgControl.CustNum is not null AND ProgControl.ProgSDate is not null)
                 AND ProgControl.ProgSDate > '2019-12-31'
                 AND ProgControl.CustNum in @CustNumList
-                AND PCFNum >0
+                AND PCFNum >0 and SRNum = @RepCode 
                ORDER BY ProgControl.PCFStatus, CustName DESC";
+
+
         _logger.LogInformation($"GetPCFHeadersForRepBySlsman: {query}");
 
         using var connection = _dbConnectionFactory.CreatePcfConnection();

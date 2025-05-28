@@ -9,6 +9,7 @@
 @inject ILogger<GetItemPricing> Logger
 @inject IPriceBookService PriceBookService
 @using Syncfusion.Blazor.Navigations
+@inject RepPortal.Services.IActivityLogService ActivityLogService
 
 
 @* at top of your Razor component *@
@@ -139,6 +140,8 @@
 	{
 		string StaticRequestPath = "/RepDocs";
 
+        // Log report usage (no parameters for listing page)
+        await ActivityLogService.LogReportUsageActivityAsync("Pricing Form", "");
 
 		// Retrieve the folders
 		PriceBookFolders = await PriceBookService.GetPriceBookFoldersAsync();
@@ -169,7 +172,8 @@
 
 		if (string.IsNullOrWhiteSpace(selectedItem))
 			return;
-
+        // Log report usage (no parameters for listing page)
+        await ActivityLogService.LogReportUsageActivityAsync("Item Price Lookup", selectedItem);
 		isLoading = true;
 		detail = await ItemService.GetItemDetailAsync(selectedItem);
 		isLoading = false;

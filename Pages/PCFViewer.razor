@@ -4,6 +4,7 @@
 @inject IRepCodeContext RepCodeContext
 @inject ExportService ExportService
 @inject IJSRuntime JSRuntime
+@inject RepPortal.Services.IActivityLogService ActivityLogService
 
 
 
@@ -169,6 +170,8 @@ else if (isReady)
 
 			if (pcfHeader != null)
 			{
+                
+                await ActivityLogService.LogReportUsageActivityAsync("PCF Viewer", pcfNumber.ToString());
 				// Displaylogging();
 				isLoading = false;
 				isReady = true;

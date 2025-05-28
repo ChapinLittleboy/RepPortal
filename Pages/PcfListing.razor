@@ -2,6 +2,7 @@
 @inject IJSRuntime JSRuntime
 @inject ILogger<PcfListing> Logger
 @inject NavigationManager NavigationManager
+@inject RepPortal.Services.IActivityLogService ActivityLogService
 @using RepPortal.Models
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.Buttons
@@ -106,6 +107,8 @@ else
 
 	protected override async Task OnInitializedAsync()
 	{
+		// Log report usage (no parameters for listing page)
+		await ActivityLogService.LogReportUsageActivityAsync("PCF Listing Report", "");
 		try
 		{
 			pcfHeaders = await PcfService.GetPCFHeadersForRepBySlsman();
@@ -361,5 +364,6 @@ else
     }
 
 </style>
+
 
 
