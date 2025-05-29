@@ -9,9 +9,13 @@
 
   <ItemGroup>
     <Compile Remove="NewFolder1\**" />
+    <Compile Remove="RepPortal.Tests\**" />
     <Content Remove="NewFolder1\**" />
+    <Content Remove="RepPortal.Tests\**" />
     <EmbeddedResource Remove="NewFolder1\**" />
+    <EmbeddedResource Remove="RepPortal.Tests\**" />
     <None Remove="NewFolder1\**" />
+    <None Remove="RepPortal.Tests\**" />
   </ItemGroup>
 
   <ItemGroup>

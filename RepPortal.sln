@@ -5,6 +5,8 @@ VisualStudioVersion = 17.13.35818.85
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RepPortal", "RepPortal.csproj", "{7C73994C-6A74-403D-A5E2-EFC34A4BE986}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RepPortal.Tests", "..\RepPortal.Tests\RepPortal.Tests.csproj", "{A39BC9EC-80E9-4C14-97E0-CE60DE6076EF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{7C73994C-6A74-403D-A5E2-EFC34A4BE986}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C73994C-6A74-403D-A5E2-EFC34A4BE986}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C73994C-6A74-403D-A5E2-EFC34A4BE986}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A39BC9EC-80E9-4C14-97E0-CE60DE6076EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A39BC9EC-80E9-4C14-97E0-CE60DE6076EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A39BC9EC-80E9-4C14-97E0-CE60DE6076EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A39BC9EC-80E9-4C14-97E0-CE60DE6076EF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

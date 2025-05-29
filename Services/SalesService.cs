@@ -23,7 +23,7 @@ public class SalesService
 
 
 
-    public SalesService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider, 
+    public SalesService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider,
         IRepCodeContext repCodeContext, IDbConnectionFactory dbConnectionFactory, ILogger<SalesService> logger)
     {
         _connectionString = configuration.GetConnectionString("BatAppConnection");
@@ -31,6 +31,12 @@ public class SalesService
         _repCodeContext = repCodeContext;
         _dbConnectionFactory = dbConnectionFactory;
         _logger = logger;
+
+    }
+    public SalesService(string connectionString)
+    {
+        _connectionString = connectionString;
+
 
     }
 
