@@ -1,7 +1,7 @@
-﻿using RepPortal.Models;
-using System.Data;
+﻿using System.Data;
 using Dapper;
 using RepPortal.Data;
+using RepPortal.Models;
 
 
 namespace RepPortal.Services;

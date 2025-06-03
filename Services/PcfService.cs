@@ -1,10 +1,6 @@
 ﻿using Dapper;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.Data.SqlClient;
 using RepPortal.Data;
 using RepPortal.Models;
-using Syncfusion.XlsIO.Implementation.XmlSerialization;
-using System.Data;
 
 
 namespace RepPortal.Services;
@@ -17,7 +13,7 @@ public class PcfService
     private readonly IConfiguration _configuration;
     private readonly CustomerService _customerService;
     private readonly ILogger<PcfService> _logger;
-    
+
 
 
     public PcfService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider,
@@ -35,25 +31,25 @@ public class PcfService
 
     }
 
-/*    public async Task<List<PCFHeader>> GetPCFHeadersAsync() // Uses RepCode on PCF
-    {
-        string query =
-            @"SELECT distinct Upper(SRNum) as RepID, ProgControl.CustNum as CustomerNumber, CustName as CustomerName,
-               ProgSDate as StartDate, ProgEDate as EndDate, PCFNum as PcfNumber, PCFStatus as ApprovalStatus
-                ,PcfType as PcfType, cc.Eut as MarketType, BuyingGroup as BuyingGroup, SubmittedBy as SubmittedBy
-                    ,cc.Salesman as Salesman, cc.SalesManager as SalesManager
-               FROM ProgControl 
-                left join ConsolidatedCustomers cc on ProgControl.CustNum = cc.CustNum and cc.custseq = 0
-                WHERE (1 = 1 AND  progcontrol.CustNum is not null AND progcontrol.ProgSDate is not null)
-                AND progcontrol.ProgSDate > '2019-12-31'
+    /*    public async Task<List<PCFHeader>> GetPCFHeadersAsync() // Uses RepCode on PCF
+        {
+            string query =
+                @"SELECT distinct Upper(SRNum) as RepID, ProgControl.CustNum as CustomerNumber, CustName as CustomerName,
+                   ProgSDate as StartDate, ProgEDate as EndDate, PCFNum as PcfNumber, PCFStatus as ApprovalStatus
+                    ,PcfType as PcfType, cc.Eut as MarketType, BuyingGroup as BuyingGroup, SubmittedBy as SubmittedBy
+                        ,cc.Salesman as Salesman, cc.SalesManager as SalesManager
+                   FROM ProgControl 
+                    left join ConsolidatedCustomers cc on ProgControl.CustNum = cc.CustNum and cc.custseq = 0
+                    WHERE (1 = 1 AND  progcontrol.CustNum is not null AND progcontrol.ProgSDate is not null)
+                    AND progcontrol.ProgSDate > '2019-12-31'
 
-               ORDER BY PCFNum DESC";
+                   ORDER BY PCFNum DESC";
 
-        using var connection = _dbConnectionFactory.CreatePcfConnection();
-        var result = await connection.QueryAsync<PCFHeader>(query, new { RepCode = _repCodeContext.CurrentRepCode });
-        return result.ToList();
-    }
-*/
+            using var connection = _dbConnectionFactory.CreatePcfConnection();
+            var result = await connection.QueryAsync<PCFHeader>(query, new { RepCode = _repCodeContext.CurrentRepCode });
+            return result.ToList();
+        }
+    */
 
 
     public async Task<List<PCFHeader>> GetPCFHeadersByRepCodeAsync() // Uses RepCode assigned to Customers
@@ -95,7 +91,7 @@ public class PcfService
         (
         @RepCode = 'Admin'    
         OR slsman = @RepCode) ",
-            new { RepCode = _repCodeContext.CurrentRepCode, ExcludedCustomerList = excludedCustomerList});
+            new { RepCode = _repCodeContext.CurrentRepCode, ExcludedCustomerList = excludedCustomerList });
 
         _logger.LogInformation("Selected customers");
         var custlist = customerNumbers.ToList();
@@ -200,15 +196,15 @@ public class PcfService
                 }
                 return currentHeader;
             },
-            new { PcfNum = pcfNum, RepCode = _repCodeContext.CurrentRepCode},
+            new { PcfNum = pcfNum, RepCode = _repCodeContext.CurrentRepCode },
             splitOn: "PCFNumber"  // Dapper will treat PCFNumber as the start of the PCFItem mapping.
         );
 
         // Return the unique header (or null if not found)
         var headerResult = headerDict.Values.FirstOrDefault();
-        if (headerResult != null )
+        if (headerResult != null)
         {
-           
+
             var agency = await connection.QueryFirstOrDefaultAsync<string>(
                 "Select name from CIISQL10.BAT_App.dbo.Chap_SlsmanNameV where slsman = @RepCode",
                 new { RepCode = _repCodeContext.CurrentRepCode });

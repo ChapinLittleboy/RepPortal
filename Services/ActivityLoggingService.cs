@@ -1,19 +1,13 @@
 ﻿namespace RepPortal.Services;
 
+using System;
+// using System.Data.SqlClient; // No longer needed if factory provides IDbConnection
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Dapper;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.Extensions.Logging;
-using System.Data;
-// using System.Data.SqlClient; // No longer needed if factory provides IDbConnection
-using Microsoft.Data.SqlClient;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using System;
 using Microsoft.AspNetCore.Http; // For IHttpContextAccessor
-
-using RepPortal.Services;
-using RepPortal.Models;
+using Microsoft.Extensions.Logging;
 using RepPortal.Data;
 
 public interface IActivityLogService

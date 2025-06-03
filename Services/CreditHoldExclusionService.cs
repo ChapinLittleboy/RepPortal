@@ -1,10 +1,6 @@
-﻿using RepPortal.Models;
-using Dapper;
-using System.Data;
-using System.Threading.Tasks;
+﻿using Dapper;
 using RepPortal.Data;
-using Microsoft.Data.SqlClient;
-using System.Reflection.Emit;
+using RepPortal.Models;
 
 
 
@@ -43,7 +39,7 @@ public class CreditHoldExclusionService
         var sql = "SELECT distinct Cust_Num  FROM CustAddr_mst where credit_hold_reason in @ExcludedHoldCodes ORDER BY Cust_Num";
         var parameters = new
         {
-            
+
             ExcludedHoldCodes = excludedHoldCodes
         };
 

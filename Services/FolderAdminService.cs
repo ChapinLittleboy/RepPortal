@@ -1,6 +1,6 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Dapper;
+using Microsoft.Data.SqlClient;
 using RepPortal.Models;
-using Dapper;
 
 
 namespace RepPortal.Services;

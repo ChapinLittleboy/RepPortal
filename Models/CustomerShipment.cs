@@ -1,6 +1,6 @@
-﻿using Dapper;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
+using Dapper;
 
 namespace RepPortal.Models;
 

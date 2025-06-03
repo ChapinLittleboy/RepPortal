@@ -1,21 +1,19 @@
+using System.Reflection;
+using Blazored.LocalStorage;
 using Dapper;
-using Microsoft.AspNetCore.Components.Authorization;
+using DbUp;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Logging;
 using RepPortal.Areas.Identity;
 using RepPortal.Data;
 using RepPortal.Services;
 using Serilog;
 using Serilog.Events;
-using Syncfusion.Blazor;
-using DbUp;
-using System.Reflection;
-using Blazored.LocalStorage;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using SixLabors.ImageSharp.Web.DependencyInjection;
+using Syncfusion.Blazor;
 
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxcd3VVRGVYUkV3WUBWYEo=");
 // Set the global command timeout for Dapper
@@ -76,7 +74,7 @@ builder.Services.AddSingleton<UserConnectionTracker>();
 builder.Services.AddScoped<CircuitHandler, TrackingCircuitHandler>();
 builder.Services.AddScoped<SignInManager<ApplicationUser>, CustomSignInManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
-builder.Services.AddSingleton<IDbConnectionFactory,DbConnectionFactory>();
+builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 builder.Services.AddScoped<PcfService>();
 builder.Services.AddScoped<TitleService>();
 builder.Services.AddScoped<ExportService>();
@@ -104,7 +102,7 @@ var app = builder.Build();
 
 
 
- 
+
 
 var scope = app.Services.CreateScope();
 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -194,12 +192,12 @@ void RunDbUp(string connectionString)
     Console.ResetColor();
 }
 
- async Task RunConfigureRoles()
+async Task RunConfigureRoles()
 {
     var scope = app.Services.CreateScope();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-    string[] roles = new[] { "Administrator", "SalesManager", "SalesRep", "User", "SuperUser"};
+    string[] roles = new[] { "Administrator", "SalesManager", "SalesRep", "User", "SuperUser" };
     foreach (var role in roles)
     {
         if (!await roleManager.RoleExistsAsync(role))

@@ -1,7 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using DbUp;
 using RepPortal.Models;
 
 public class AIService
@@ -122,7 +121,7 @@ When displaying a table, use proper markdown table syntax with:
 };
 
 
-var body = new
+        var body = new
         {
             model = model,
             messages = messages

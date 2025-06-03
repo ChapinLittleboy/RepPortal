@@ -1,6 +1,4 @@
-﻿using MimeKit.Cryptography;
-
-namespace RepPortal.Services;
+﻿namespace RepPortal.Services;
 
 public interface IRepCodeContext
 {
@@ -14,7 +12,7 @@ public interface IRepCodeContext
     string RepRegion { get; }
     public List<string> CurrentRegions { get; set; }
     string AssignedRegion { get; }
-    bool IsAdministrator { get; } 
+    bool IsAdministrator { get; }
 }
 
 

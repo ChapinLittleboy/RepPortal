@@ -1,14 +1,10 @@
-﻿using Dapper;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.Data.SqlClient;
-using RepPortal.Models;
-using System.Data;
-using RepPortal.Data;
+﻿using System.Data;
 using System.Text;
-using SQLitePCL;
-using Syncfusion.XlsIO;
-using System.Reflection.Emit;
+using Dapper;
+using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
+using RepPortal.Data;
+using RepPortal.Models;
 
 
 namespace RepPortal.Services;
@@ -58,7 +54,7 @@ public class SalesService
 
         using var connection = _dbConnectionFactory.CreateRepConnection();
         // Assuming the connection needs to be opened explicitly
-       
+
         var repCode = await connection.QueryFirstOrDefaultAsync<string>(sql, new { RegistrationCode = registrationCode });
 
         return repCode;
@@ -874,11 +870,11 @@ ORDER BY FY{fiscalYear - 1} DESC;";
 
             await connection.OpenAsync();
             var query = GetDynamicQueryForItemsMonthlyWithQty(allowedRegions);
-            var parameters = new { RepCode = repCode, AllowedRegions = allowedRegions};
+            var parameters = new { RepCode = repCode, AllowedRegions = allowedRegions };
             _logger.LogInformation($"The query is: {query}");
             var results = await connection.QueryAsync(query, parameters, commandType: CommandType.Text);
 
-           // Console.WriteLine($"Fiscal year used: {fiscalYear}");
+            // Console.WriteLine($"Fiscal year used: {fiscalYear}");
             // Convert the results to a list of dictionaries
             var data = new List<Dictionary<string, object>>();
             foreach (var row in results)
@@ -1857,9 +1853,9 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
                 parameters.AllowedRegions = null;
             }
 
-                var allowedRegionsCsv = parameters.AllowedRegions == null
-                    ? null
-                    : string.Join(",", parameters.AllowedRegions);
+            var allowedRegionsCsv = parameters.AllowedRegions == null
+                ? null
+                : string.Join(",", parameters.AllowedRegions);
 
             await connection.OpenAsync();
             var results = await connection.QueryAsync<InvoiceRptDetail>(@"
@@ -1872,7 +1868,7 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
                     @CustType, 
                     @EndUserType,
                     @AllowedRegions",
-                
+
                 new
                 {
                     parameters.BeginInvoiceDate,

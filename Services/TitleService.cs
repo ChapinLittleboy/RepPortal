@@ -1,5 +1,4 @@
-﻿using RepPortal.Models;
-namespace RepPortal.Services;
+﻿namespace RepPortal.Services;
 
 
 public class TitleService

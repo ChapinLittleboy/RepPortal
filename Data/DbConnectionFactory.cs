@@ -1,6 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
-using System.Data;
-using RepPortal.Services;
+﻿using System.Data;
+using Microsoft.Data.SqlClient;
 
 namespace RepPortal.Data;
 
@@ -10,7 +9,7 @@ public interface IDbConnectionFactory
     IDbConnection CreateRepConnection();
     IDbConnection CreateBatConnection();
     IDbConnection CreatePcfConnection();
-  
+
 
 }
 

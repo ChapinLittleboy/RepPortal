@@ -35,7 +35,7 @@ public class Customer
     public string? PaymentTermsDescription { get; set; }
     public string? Corp_Cust { get; set; }
     public int CreditHold { get; set; }
-     public string? CreditHoldReasonDescription { get; set; }
+    public string? CreditHoldReasonDescription { get; set; }
 
     public DateTime? CreditHoldDate { get; set; }
 

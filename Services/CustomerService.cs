@@ -1,10 +1,10 @@
 ﻿namespace RepPortal.Services;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using RepPortal.Models;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 
 public class CustomerService
@@ -38,7 +38,7 @@ AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
     AND (
         @RepCode = 'Admin'    
         OR cu.slsman = @RepCode)";  // if Admin, include all customers otherwise only their own
-   
+
 
         using var connection = new SqlConnection(_batAppConnection);
         return await connection.QueryAsync<Customer>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
@@ -75,7 +75,7 @@ ORDER BY ca.[name]";
         // NOTE: Using the repCode from the RepCodeContext!!
     }
 
- 
+
 
 
     public async Task<List<Customer>> GetCustomerNamesByRepCodeAsync()  // customer name, number, rep_code, status, region from ship-to records

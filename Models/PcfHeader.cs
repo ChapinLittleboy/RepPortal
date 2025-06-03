@@ -1,6 +1,4 @@
-﻿using RepPortal.Services;
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
 using Microsoft.IdentityModel.Tokens;
 
 namespace RepPortal.Models;
@@ -69,12 +67,13 @@ public class PCFHeader : INotifyPropertyChanged
     {
         get
         {
-            if (!PcfType.IsNullOrEmpty()) {
-            // If the dictionary contains your code, return the matching description
-            if (PcfTypeDescriptions.TryGetValue(PcfType, out string description))
+            if (!PcfType.IsNullOrEmpty())
             {
-                return description;
-            }
+                // If the dictionary contains your code, return the matching description
+                if (PcfTypeDescriptions.TryGetValue(PcfType, out string description))
+                {
+                    return description;
+                }
             }
             // Otherwise, return something default or empty
             return "Unknown";
@@ -186,8 +185,8 @@ public class PCFHeader : INotifyPropertyChanged
 
 public class PaymentTerm
 {
-    public  string? Terms_Code { get; set; }
-    public  string? Description { get; set; }
+    public string? Terms_Code { get; set; }
+    public string? Description { get; set; }
     public int? Uf_BillingTermActive { get; set; }
 }
 
@@ -198,7 +197,7 @@ public class PCFItem
     public string? CustNum { get; set; }
     public string? ItemDesc { get; set; }
     public double ApprovedPrice { get; set; }
-    
+
     public string? Family_Code { get; set; }
     public string? Family_Code_Description { get; set; }
     public string? UserName { get; set; }  // set and used only in the update query

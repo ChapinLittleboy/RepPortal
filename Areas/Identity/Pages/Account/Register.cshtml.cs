@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
+using System.ComponentModel.DataAnnotations;
+using System.Text;
+using System.Text.Encodings.Web;
 using Dapper;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
@@ -12,9 +15,6 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.WebUtilities;
 using RepPortal.Data;
 using RepPortal.Services;
-using System.ComponentModel.DataAnnotations;
-using System.Text;
-using System.Text.Encodings.Web;
 
 namespace RepPortal.Areas.Identity.Pages.Account
 {
@@ -64,7 +64,7 @@ namespace RepPortal.Areas.Identity.Pages.Account
           AND (ExpirationDate IS NULL OR ExpirationDate > GETUTCDATE())";
 
             using var connection = _dbConnectionFactory.CreateRepConnection();
-           
+
 
             ActiveRegistrationCodes = (await connection.QueryAsync<RegistrationCodeInfo>(sql)).ToList();
         }

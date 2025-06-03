@@ -1,22 +1,16 @@
-﻿using Syncfusion.XlsIO;
-using RepPortal.Models;
-using RepPortal.Data;
-using Syncfusion.Pdf;
-using Syncfusion.Pdf.Graphics;
-using Syncfusion.Pdf.Grid;
+﻿using System.Data;
 using System.Net;
 using System.Net.Mail;
 using Microsoft.IdentityModel.Tokens;
-using Syncfusion.Blazor.RichTextEditor.Internal;
-using Syncfusion.Pdf.ColorSpace;
-using Syncfusion.Drawing;
+using RepPortal.Models;
+using Syncfusion.Pdf;
+using Syncfusion.Pdf.Graphics;
+using Syncfusion.Pdf.Grid;
+using Syncfusion.XlsIO;
+using Color = Syncfusion.Drawing.Color;
 using PointF = Syncfusion.Drawing.PointF;
 using RectangleF = Syncfusion.Drawing.RectangleF;
 using SizeF = Syncfusion.Drawing.SizeF;
-using Color = Syncfusion.Drawing.Color;
-using Syncfusion.Pdf.Tables;
-using System.Data;
-using Syncfusion.Blazor.Kanban.Internal;
 
 
 namespace RepPortal.Services;
@@ -765,37 +759,38 @@ Prices and product availability are also subject to change at any time due to ma
 
             // --- Use PdfGrid for Table ---
             if (pcfHeader.PCFLines != null && pcfHeader.PCFLines.Any())
-            { PdfGrid grid = new PdfGrid();
-            grid.Columns.Add(3);
-            grid.Headers.Add(1);
-
-            PdfGridRow headerRow = grid.Headers[0];
-            headerRow.Cells[0].Value = "Item Number";
-            headerRow.Cells[1].Value = "Description";
-            headerRow.Cells[2].Value = "Price";
-
-
-
-
-
-            foreach (var item in pcfHeader.PCFLines)
             {
-                PdfGridRow row = grid.Rows.Add();
+                PdfGrid grid = new PdfGrid();
+                grid.Columns.Add(3);
+                grid.Headers.Add(1);
 
-                row.Cells[0].Value = item.ItemNum;
-                row.Cells[1].Value = item.ItemDesc;
-                row.Cells[2].Value = item.ApprovedPrice.ToString("C2");
+                PdfGridRow headerRow = grid.Headers[0];
+                headerRow.Cells[0].Value = "Item Number";
+                headerRow.Cells[1].Value = "Description";
+                headerRow.Cells[2].Value = "Price";
+
+
+
+
+
+                foreach (var item in pcfHeader.PCFLines)
+                {
+                    PdfGridRow row = grid.Rows.Add();
+
+                    row.Cells[0].Value = item.ItemNum;
+                    row.Cells[1].Value = item.ItemDesc;
+                    row.Cells[2].Value = item.ApprovedPrice.ToString("C2");
+                }
+
+                int yPosition = 320;
+                // grid.ApplyBuiltinStyle(PdfGridBuiltinStyle.GridTable4Accent1);
+                grid.ApplyBuiltinStyle(PdfGridBuiltinStyle.PlainTable3);
+
+                grid.RepeatHeader = true;
+                grid.Draw(page, new PointF(0, yPosition + 20));
+
+
             }
-
-            int yPosition = 320;
-            // grid.ApplyBuiltinStyle(PdfGridBuiltinStyle.GridTable4Accent1);
-            grid.ApplyBuiltinStyle(PdfGridBuiltinStyle.PlainTable3);
-
-            grid.RepeatHeader = true;
-            grid.Draw(page, new PointF(0, yPosition + 20));
-
-
-        }
 
             else
             {

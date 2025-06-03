@@ -2,7 +2,7 @@
 
 public class MarketingFileSingle
 {
-    
+
     public int Id { get; set; }
     public string DisplayName { get; set; }
     public string FolderRelativePath { get; set; }

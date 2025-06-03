@@ -1,9 +1,9 @@
 ﻿namespace RepPortal.Services;
 
-using Dapper;
-using RepPortal.Models;
-using Microsoft.Data.SqlClient;
 using System.IO;
+using Dapper;
+using Microsoft.Data.SqlClient;
+using RepPortal.Models;
 
 
 
@@ -56,25 +56,25 @@ public class DownloadMarketingInfoService : IMarketingService
             if (isFakeFolder)
             {
                 // Pull files from the root (FolderRelativePath = '/')
-               var folderFiles = allFiles
-                    .Where(f => f.FolderRelativePath == "/" )
-                    .Select(f =>
-                    {
-                        var physicalPath = Path.Combine(_root, f.FileName);
-                        if (!File.Exists(physicalPath))
-                            return null;
+                var folderFiles = allFiles
+                     .Where(f => f.FolderRelativePath == "/")
+                     .Select(f =>
+                     {
+                         var physicalPath = Path.Combine(_root, f.FileName);
+                         if (!File.Exists(physicalPath))
+                             return null;
 
-                        var info = new FileInfo(physicalPath);
-                        return new MarketingFile
-                        {
-                            Name = f.DisplayName ?? f.FileName,
-                            Url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(f.FileName)}",
-                            SizeText = $"{Math.Round(info.Length / 1024.0, 2)} KB"
-                        };
-                    })
-                    .Where(f => f != null)
-                    
-                    .ToList();
+                         var info = new FileInfo(physicalPath);
+                         return new MarketingFile
+                         {
+                             Name = f.DisplayName ?? f.FileName,
+                             Url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(f.FileName)}",
+                             SizeText = $"{Math.Round(info.Length / 1024.0, 2)} KB"
+                         };
+                     })
+                     .Where(f => f != null)
+
+                     .ToList();
 
                 folder.Files = folderFiles;
             }

@@ -26,11 +26,11 @@ public class SmtpEmailSender : IEmailSender
         // Use ConnectAsync without SSL, for port 25 or startTLS on 587
         await client.ConnectAsync(_config["Smtp:Host"], int.Parse(_config["Smtp:Port"]), MailKit.Security.SecureSocketOptions.None);
 
-       // var username = _config["Smtp:Username"];
-       // var password = _config["Smtp:Password"];
+        // var username = _config["Smtp:Username"];
+        // var password = _config["Smtp:Password"];
 
-       // if (!string.IsNullOrEmpty(username))
-          //  await client.AuthenticateAsync(username, password);
+        // if (!string.IsNullOrEmpty(username))
+        //  await client.AuthenticateAsync(username, password);
 
         await client.SendAsync(message);
         await client.DisconnectAsync(true);

@@ -1,9 +1,9 @@
 ﻿namespace RepPortal.Services;
 
-using Dapper;
-using RepPortal.Models;
-using Microsoft.Data.SqlClient;
 using System.IO;
+using Dapper;
+using Microsoft.Data.SqlClient;
+using RepPortal.Models;
 
 public interface IPriceBookService
 {
