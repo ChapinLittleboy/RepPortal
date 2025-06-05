@@ -79,11 +79,33 @@ else
 		        <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
 		        <GridColumn Field="Ship To City" HeaderText="Ship City" Width="120"></GridColumn>
 		        <GridColumn Field="Ship To State" HeaderText="Ship State" Width="120"></GridColumn>
-		        <GridColumn Field="slsman" HeaderText="Salesman" Width="120"></GridColumn>
+                <GridColumn Field="slsman" HeaderText="Salesman" Width="120" Visible="!isLawRep"></GridColumn>
+                
+                <!-- Hidden column for filtering -->
+                <GridColumn Field="Uf_SalesRegion" HeaderText="Region" AllowFiltering="true" Width="120" Visible="isLawRep" />
+                <GridColumn Field="RegionName" HeaderText="Region Name" Width="120" Visible="isLawRep"></GridColumn>
+                
+                
+                <!--
+                <GridColumn HeaderText="Ship-To Region" Width="150">
+                    <Template>
+                        @{
+                            // "context" is an ExpandoObject for the current row
+                            var dict = (IDictionary<string, object>)context;
+                            var salesRegion = dict.ContainsKey("Uf_SalesRegion") ? dict["Uf_SalesRegion"]?.ToString() : "";
+                            var regionName = dict.ContainsKey("RegionName") ? dict["RegionName"]?.ToString() : "";
 
-		        <GridColumn Field="RegionName" HeaderText="Region" Width="120"></GridColumn>
+                            var combined = $"{salesRegion} {regionName}".Trim();
+                        }
+                        <span>@combined</span>
+                    </Template>
+                </GridColumn>
+              
+		        
+                -->
+                
 
-		        <!-- Dynamic Columns -->
+                <!-- Dynamic Columns -->
 		        @foreach (var column in DynamicColumns)
 		        {
 			        <GridColumn Field="@column" HeaderText="@column" Format="C0" Width="120"></GridColumn>
@@ -95,8 +117,8 @@ else
 
 
 @code {
-	[Parameter]
-	public string salesmanType { get; set; }
+    [Parameter]
+    public string salesmanType { get; set; }
 
     private SfGrid<ExpandoObject> Grid;
     private List<Dictionary<string, object>> SalesData = new List<Dictionary<string, object>>();
@@ -108,6 +130,7 @@ else
 
     private AuthenticationState authState;
     private ApplicationUser currentUser;
+    private bool isLawRep;
 
 
     protected override async Task OnParametersSetAsync()
@@ -172,6 +195,7 @@ else
         if (user.Identity.IsAuthenticated)
         {
             currentUser = await UserManager.GetUserAsync(user);
+            isLawRep = RepCodeContext.CurrentRepCode == "LAW";
         }
 
         // Log report usage (no parameters for listing page)
