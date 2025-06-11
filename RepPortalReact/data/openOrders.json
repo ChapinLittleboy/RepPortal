@@ -1,5 +1,0 @@
-[
-  { "order": 1001, "customer": "ABC Industries", "date": "2024-05-12", "amount": 2500 },
-  { "order": 1002, "customer": "XYZ Corp", "date": "2024-05-15", "amount": 4800 },
-  { "order": 1003, "customer": "Sample Co", "date": "2024-05-20", "amount": 3100 }
-]
