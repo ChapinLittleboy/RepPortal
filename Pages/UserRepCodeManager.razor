@@ -87,7 +87,11 @@ else
                 Region = u.Region,                   // <-- Load Region
                 EditedRegion = u.Region,              // <-- Editable Region
                 IsActive = u.IsActive
-            }).ToList();
+            })
+            .OrderByDescending(u => u.IsActive)
+            .ThenBy(u => u.RepCode)
+            .ThenBy(u => u.LastName)
+            .ToList();
     }
 
     private async Task SaveRepAndRegion(UserWithEdit user)
