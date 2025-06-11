@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "ABC Industries",
+    "previousYearTotal": 120000,
+    "currentYearTotal": 150000,
+    "percentChange": 0.25,
+    "monthlyData": [
+      { "month": "Jan", "previousYearAmount": 10, "currentYearAmount": 15 },
+      { "month": "Feb", "previousYearAmount": 8, "currentYearAmount": 12 },
+      { "month": "Mar", "previousYearAmount": 9, "currentYearAmount": 14 }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "XYZ Corp",
+    "previousYearTotal": 100000,
+    "currentYearTotal": 95000,
+    "percentChange": -0.05,
+    "monthlyData": [
+      { "month": "Jan", "previousYearAmount": 9, "currentYearAmount": 8 },
+      { "month": "Feb", "previousYearAmount": 7, "currentYearAmount": 6 },
+      { "month": "Mar", "previousYearAmount": 8, "currentYearAmount": 7 }
+    ]
+  }
+]
