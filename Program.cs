@@ -159,7 +159,7 @@ app.UseEndpoints(endpoints =>
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
-RunDbUp(connectionString);
+//RunDbUp(connectionString);
 RunConfigureRoles();
 
 
