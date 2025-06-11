@@ -1,0 +1,54 @@
+﻿@page "/ssrstest"
+@using Microsoft.Identity.Client
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject RepPortal.Services.IRepCodeContext RepCodeContext
+
+<h3>SSRS Report Viewer</h3>
+
+<p>Click the button below to view the report in a new tab:</p>
+
+<button @onclick="OpenReportInNewTab">View Report</button>
+
+@code {
+    private string ReportUrl;
+
+    protected override void OnInitialized()
+
+    {
+
+
+        string rep = RepCodeContext.CurrentRepCode;
+        // Use the first region if available, otherwise empty string
+        string region = RepCodeContext.CurrentRegions?.FirstOrDefault() ?? string.Empty;
+        string ssrsServer = "http://ciisql10/ReportServer";
+        string reportPath = "/Chapin/Sales/Monthly Rep Reports/Monthly Rep Report with Regions";
+        //ReportUrl = $"{ssrsServer}?{reportPath}&rep={rep}&salesRegion={region}&rs:Command=Render";
+        ReportUrl = $"{ssrsServer}?{reportPath}&rep={rep}&salesRegion={region}&rs:Command=Render&rc:Parameters=false";
+    }
+
+    protected override void OnParametersSet()
+    {
+        UpdateReportUrl();
+    }
+
+    private async Task UpdateReportUrl()
+    {
+        string ssrsServer = "http://ciisql10/ReportServer";
+        string reportPath = "/Chapin/Sales/Monthly Rep Reports/Monthly Rep Report with Regions";
+
+        string rep = RepCodeContext.CurrentRepCode;
+        string region = RepCodeContext.CurrentRegions?.FirstOrDefault() ?? string.Empty;
+
+        ReportUrl = $"{ssrsServer}?{reportPath}&rep={rep}&salesRegion={region}&rs:Command=Render&rc:Parameters=false";
+    }
+
+
+    private async Task OpenReportInNewTab()
+    {
+
+        // NOTE: this is not getting the current CurrentRepCode.  Not sure why.  
+        await UpdateReportUrl();
+        await JS.InvokeVoidAsync("open", ReportUrl, "_blank");
+    }
+}
