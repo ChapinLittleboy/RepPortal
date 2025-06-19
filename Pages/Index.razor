@@ -15,14 +15,131 @@
 {
 	<p></p>
 	<p>💡 Heads Up: You're now viewing <strong>live</strong> data on this portal — no more waiting for overnight updates. What you see reflects what's happening right now.</p>
-
-
-   
-   
 }
 else
 {
     <p>Please log in to continue your session.</p>
+
+
+
+
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Welcome Back</title>
+        <style>
+            .welcome-card {
+                max-width: 600px;
+                margin: 2rem auto;
+                padding: 1.5rem;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                font-family: Arial, sans-serif;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+                text-align: center;
+            }
+                /* Keep the icon roughly the same footprint as your 80 × 80 px placeholder */
+                .welcome-card svg {
+                    width: 80px;
+                    height: 80px;
+                    margin-bottom: 1rem;
+                }
+
+                .welcome-card p {
+                    color: #333;
+                    line-height: 1.6;
+                }
+
+            .btn-reset {
+                display: inline-block;
+                margin-top: 1rem;
+                padding: 0.6rem 1.4rem;
+                background: #0078D4;
+                color: #fff;
+                text-decoration: none;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+
+                .btn-reset:hover {
+                    background: #005A9E;
+                }
+        </style>
+    </head>
+    <body>
+        <div class="welcome-card">
+            <!-- Inline SVG security icon -->
+
+            <img
+                alt="Logo"
+                width="80"
+                height="60"
+                src="data:image/jpeg;base64,
+    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
+    z1/7fVv2h/6biem1sfNBQB//2Q==
+"
+            >
+            <p></p>
+            <p>
+                If you were active on the old Chapin Rep Portal during the previous six months,
+                your account has already been created.
+            </p>
+            <p>
+                To get started, just reset your password below:
+            </p>
+            <a href="/Identity/Account/ForgotPassword" class="btn-reset">
+                Reset Your Password
+            </a>
+        </div>
+    </body>
+    </html>
+
+
+
+
+
+
+
+
 }
 
 
