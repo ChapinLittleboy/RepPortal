@@ -1,0 +1,180 @@
+﻿@page "/admin/usage-dashboard"
+@using RepPortal.Models
+@using RepPortal.Services
+@using Syncfusion.Blazor.Charts
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.DropDowns
+@using LabelPosition = Syncfusion.Blazor.Charts.LabelPosition
+
+@inject IUsageAnalyticsService UsageService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Rep Portal Usage Dashboard</PageTitle>
+
+<div class="container-fluid p-4">
+<h1 class="mb-4">Rep Portal Usage Dashboard</h1>
+
+@if (_isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 50vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <span class="ms-3">Loading analytics data...</span>
+    </div>
+}
+else if (_dashboardData != null)
+{
+    <!-- Section 1: Key Performance Indicators (KPIs) -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Total Feature Clicks</h5>
+                    <p class="card-text fs-2 fw-bold">@_dashboardData.TotalPageViews.ToString("N0")</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Unique Users</h5>
+                    <p class="card-text fs-2 fw-bold">@_dashboardData.UniqueUsers.ToString("N0")</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Active Rep Codes</h5>
+                    <p class="card-text fs-2 fw-bold">@_dashboardData.UniqueRepCodes.ToString("N0")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Feature Usage & RepCode Activity -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100" style="min-height: 500px;">
+                <div class="card-header">
+                    <h5>Most Used Features</h5>
+                </div>
+                <div class="card-body">
+                    <SfChart Title="Feature Usage Count" Height="400px">
+                        <ChartArea>
+                            <ChartAreaBorder Width="0"></ChartAreaBorder>
+                        </ChartArea>
+                        <ChartMargin Left="60" Right="40" Top="40" Bottom="60"></ChartMargin>
+                        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"/>
+                        <ChartPrimaryYAxis Title="Usage Count"/>
+                        <ChartSeriesCollection>
+                            <ChartSeries DataSource="@_dashboardData.FeatureUsage.OrderByDescending(f => f.UsageCount).Take(10)"
+                                         XName="Feature" YName="UsageCount" Type="ChartSeriesType.Bar" Name="Features">
+                                <ChartSeriesDataLabel Visible="true" Position="LabelPosition.Outside"/>
+                            </ChartSeries>
+                        </ChartSeriesCollection>
+                        <ChartTooltipSettings Enable="true"/>
+                    </SfChart>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h5>Most Active Rep Codes</h5>
+                </div>
+                <div class="card-body">
+                    <SfChart Title="Rep Code Usage Count">
+                        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"/>
+                        <ChartPrimaryYAxis Title="Usage Count"/>
+                        <ChartSeriesCollection>
+                            <ChartSeries DataSource="@_dashboardData.RepCodeUsage.OrderByDescending(r => r.UsageCount).Take(10)"
+                                         XName="RepCode" YName="UsageCount" Type="ChartSeriesType.Bar" Name="Rep Codes">
+                                <ChartSeriesDataLabel Visible="true" Position="LabelPosition.Top"/>
+                            </ChartSeries>
+                        </ChartSeriesCollection>
+                        <ChartTooltipSettings Enable="true"/>
+                    </SfChart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Usage Over Time -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header"><h5>Usage Trend</h5></div>
+                <div class="card-body">
+                    <SfChart Title="Daily Page Views">
+                        <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime" LabelFormat="MMM dd"/>
+                        <ChartPrimaryYAxis Title="Views"/>
+                        <ChartSeriesCollection>
+                            <ChartSeries DataSource="@_dashboardData.UsageOverTime.OrderBy(u => u.Date)"
+                                         XName="Date" YName="UsageCount" Type="ChartSeriesType.Line" Name="Views">
+                                <ChartSeriesMarker Visible="true"/>
+                            </ChartSeries>
+                        </ChartSeriesCollection>
+                        <ChartTooltipSettings Enable="true"/>
+                    </SfChart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Data Grids for Detailed Analysis -->
+    <div class="row">
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header"><h5>Rep Code User Details</h5></div>
+                <div class="card-body">
+                    <SfGrid DataSource="@_dashboardData.UsersPerRepCode" AllowPaging="true" AllowSorting="true">
+                        <GridColumns>
+                            <GridColumn Field=@nameof(UsersPerRepCodeSummary.RepCode) HeaderText="Rep Code"/>
+                            <GridColumn Field=@nameof(UsersPerRepCodeSummary.UniqueUserCount) HeaderText="Unique Users" TextAlign="TextAlign.Right"/>
+                        </GridColumns>
+                    </SfGrid>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+    {
+        <div class ="alert alert-danger" role = "alert" >
+                                                Could not load dashboard data.Please check the service connection and try
+
+        again.
+            </div>
+    }
+    </div >
+
+
+@code {
+
+private UsageDashboardViewModel? _dashboardData;
+private bool _isLoading = true;
+
+protected override async Task OnInitializedAsync()
+{
+    try
+    {
+        _dashboardData = await UsageService.GetUsageDashboardDataAsync();
+    }
+    catch (Exception ex)
+    {
+        // In a real app, you would log this exception
+        Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+        _dashboardData = null;
+    }
+    finally
+    {
+        _isLoading = false;
+    }
+}
+
+}

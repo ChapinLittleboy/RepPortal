@@ -93,6 +93,7 @@ builder.Services.AddScoped<HelpContentService>();
 builder.Services.AddScoped<IPageDefinitionService, PageDefinitionService>();
 builder.Services.AddHttpClient<AIService>();
 builder.Services.AddScoped<AIService>();
+builder.Services.AddScoped<IUsageAnalyticsService, UsageAnalyticsService>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -133,6 +134,17 @@ builder.Services.AddRazorPages()
             m => m.EndpointMetadata.Add(
                 new EnableRateLimitingAttribute("ForgotPwdLimiter")));
     });
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    // Absolute lifetime for a “Remember me” cookie
+    options.ExpireTimeSpan = TimeSpan.FromDays(7);   // default is 14 days
+    options.SlidingExpiration = false;                    // re-issue the cookie when half-used
+    // optional niceties
+    options.Cookie.Name     = ".ChapPortal.Auth";
+    // options.LoginPath       = "/login";
+});
+
 
 var app = builder.Build();
 

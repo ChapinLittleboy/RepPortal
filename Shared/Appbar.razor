@@ -148,7 +148,8 @@
 
 	private List<DropDownMenuItem> AdminItems = new()
 	{
-		new DropDownMenuItem { Text = "Manage User Roles", Id = "manageuserroles" },
+        new DropDownMenuItem { Text = "Usage Dashboard", Id = "usagedashboard" },
+        new DropDownMenuItem { Text = "Manage User Roles", Id = "manageuserroles" },
 		new DropDownMenuItem { Text = "Debug User Identity", Id = "debuguseridentity" },
 		new DropDownMenuItem { Text = "Manage RepCodes", Id = "managerepcodes" },
 		new DropDownMenuItem { Text = "Manage Folders", Id = "managefolders" },
@@ -417,9 +418,12 @@
 			case "manageexcludedholdcodes":
 				Navigation.NavigateTo("/admin/credit-hold-codes", forceLoad: true);
 				break;
-			case "connectedusers":
-				Navigation.NavigateTo("/admin/connected", forceLoad: true);
-				break;
+            case "connectedusers":
+                Navigation.NavigateTo("/admin/connected", forceLoad: true);
+                break;
+            case "usagedashboard":
+                Navigation.NavigateTo("/admin/usage-dashboard", forceLoad: true);
+                break;
 		}
 	}
 }
