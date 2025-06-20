@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using Blazored.LocalStorage;
 using Dapper;
 using DbUp;
@@ -14,6 +14,9 @@ using Serilog;
 using Serilog.Events;
 using SixLabors.ImageSharp.Web.DependencyInjection;
 using Syncfusion.Blazor;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
+
 
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxcd3VVRGVYUkV3WUBWYEo=");
 // Set the global command timeout for Dapper
@@ -91,9 +94,45 @@ builder.Services.AddScoped<IPageDefinitionService, PageDefinitionService>();
 builder.Services.AddHttpClient<AIService>();
 builder.Services.AddScoped<AIService>();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("ForgotPwdLimiter", opt =>
+    {
+        opt.PermitLimit = 6;                 // max requests
+        opt.Window = TimeSpan.FromMinutes(10);
+        opt.QueueLimit = 0;                 // reject extra immediately
+       // opt.AutoReplenishment = true;
+        //opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
 
+    // Friendly JSON body when the limiter kicks in
+    options.OnRejected = static (context, cancellationToken) =>
+    {
+        // If the pipeline already started the response, bail out
+        if (context.HttpContext.Response.HasStarted)
+            return ValueTask.CompletedTask;
 
+        var resp = context.HttpContext.Response;
+        resp.StatusCode = StatusCodes.Status429TooManyRequests;
+        resp.ContentType = "application/json";
 
+        return new ValueTask(resp.WriteAsync(
+            """
+            { "error": "Too many reset requests – try again in a few minutes." }
+            """,
+            cancellationToken));
+    };
+});
+
+builder.Services.AddRazorPages()
+    .AddRazorPagesOptions(o =>
+    {
+        // stick the limiter on Identity/Account/ForgotPassword
+        o.Conventions.AddAreaPageApplicationModelConvention(
+            "Identity", "/Account/ForgotPassword",
+            m => m.EndpointMetadata.Add(
+                new EnableRateLimitingAttribute("ForgotPwdLimiter")));
+    });
 
 var app = builder.Build();
 
@@ -140,6 +179,8 @@ app.UseStaticFiles(new StaticFileOptions
 
 
 app.UseRouting();
+app.UseRateLimiter();                       // ❷  Enable the middleware
+
 
 app.UseAuthentication();
 app.UseAuthorization();
