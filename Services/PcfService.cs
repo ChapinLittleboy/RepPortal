@@ -156,13 +156,14 @@ public class PcfService
             cc.City as BillToCity,
             cc.State as BTState,
             cc.Zip as BTZip,
+          cu.terms_code as StandardPaymentTerms,
+          terms.Description as StandardPaymentTermsText,
             i.PCFNumber,
             i.ItemNum,
             it.Stat as ItemStatus, 
             i.CustNum,
             i.ItemDesc,
             i.ProposedPrice as ApprovedPrice
-
 
   
            
@@ -172,6 +173,8 @@ public class PcfService
         LEFT JOIN ConsolidatedCustomers cc 
             ON h.CustNum = cc.CustNum and cc.custseq = 0
         LEFT JOIN CIISQL10.Bat_App.dbo.Item_mst it on i.ItemNum = it.Item
+      left join CIISQL10.Bat_App.dbo.Customer_mst cu on ltrim(rtrim(cu.cust_num)) = h.CustNum and cu.cust_seq = 0
+      left join CIISQL10.BAT_App.dbo.terms_mst terms on cu.terms_code = terms.terms_code
         WHERE h.PCFNum = @PcfNum and (h.SRNum = @RepCode OR @RepCode = 'Admin')";
 
         _logger.LogInformation($"GetPCFHeaderWithItemsAsync: {sql}");

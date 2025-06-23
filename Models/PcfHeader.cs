@@ -95,9 +95,13 @@ public class PCFHeader : INotifyPropertyChanged
     public string PromoPaymentTermsDescription =>
         PaymentTermsList?.FirstOrDefault(t => t.Terms_Code == PromoPaymentTerms)?.Description ?? "";
 
-    public string? StandardPaymentTermsType { get; set; }  // This is the Terms code
-    public string StandardPaymentTermsDescription =>
-        PaymentTermsList?.FirstOrDefault(t => t.Terms_Code == StandardPaymentTermsType)?.Description ?? "";
+
+    public string? StandardPaymentTerms { get; set; }  // This is the Terms code
+
+    public string? StandardPaymentTermsText { get; set; }
+
+    //public string StandardPaymentTermsDescription =>
+   //     PaymentTermsList?.FirstOrDefault(t => t.Terms_Code == StandardPaymentTermsType)?.Description ?? "";
 
     public string? PromoPaymentTerms { get; set; }
     public string? PromoPaymentTermsText { get; set; }
@@ -181,6 +185,21 @@ public class PCFHeader : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
     #endregion
+
+
+    public string PaymentTermsDisplay
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(PromoPaymentTermsText))
+                return $"{PromoPaymentTermsText} (promo)";
+
+            if (!string.IsNullOrWhiteSpace(StandardPaymentTermsText))
+                return $"{StandardPaymentTermsText} (standard)";
+
+            return "Special Terms";
+        }
+    }
 }
 
 public class PaymentTerm

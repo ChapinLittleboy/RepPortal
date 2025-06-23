@@ -62,13 +62,20 @@ else if (isReady)
 
 				<!-- Row 3: Bill To Address -->
 				<div class="row mb-2">
-					<div class="col-md-12">
-						<strong>Bill To Address:</strong>
-						<div>
-							@pcfHeader.BillToAddress, @pcfHeader.BillToCity,
-							@pcfHeader.BTState, @pcfHeader.BTZip
-						</div>
-					</div>
+                    <div class="col-md-4">
+                        <strong>Bill To Address:</strong>
+                        <div>
+                            @pcfHeader.BillToAddress, @pcfHeader.BillToCity,
+                            @pcfHeader.BTState, @pcfHeader.BTZip
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Payment Terms:</strong>
+                        <div>
+                            @pcfHeader.PaymentTermsDisplay
+                          
+                        </div>
+                    </div>
 				</div>
 
 				<!-- Row 4: Buying Group and Promo Terms (conditional) -->
@@ -171,6 +178,7 @@ else if (isReady)
 			if (pcfHeader != null)
 			{
                 
+
                 await ActivityLogService.LogReportUsageActivityAsync("PCF Viewer", pcfNumber.ToString());
 				// Displaylogging();
 				isLoading = false;
