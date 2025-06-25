@@ -5,6 +5,9 @@ using RepPortal.Models;
 
 namespace RepPortal.Services;
 
+/// <summary>
+/// Represents a service for handling PCF (Platform Configuration Framework) related operations.
+/// </summary>
 public class PcfService
 {
     private readonly IDbConnectionFactory _dbConnectionFactory;
@@ -16,6 +19,15 @@ public class PcfService
 
 
 
+    /// <summary>
+    /// Initializes a new instance of the <c>PcfService</c> class with the specified dependencies.
+    /// </summary>
+    /// <param name="configuration">The application configuration settings.</param>
+    /// <param name="authenticationStateProvider">Provider for authentication state information.</param>
+    /// <param name="repCodeContext">Context for representative code information.</param>
+    /// <param name="dbConnectionFactory">Factory for creating database connections.</param>
+    /// <param name="customerService">Service for handling customer-related operations.</param>
+    /// <param name="logger">Logger instance for logging service operations.</param>
     public PcfService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider,
         IRepCodeContext repCodeContext, IDbConnectionFactory dbConnectionFactory, CustomerService customerService, ILogger<PcfService> logger)
     {
@@ -52,6 +64,15 @@ public class PcfService
     */
 
 
+    /// <summary>
+    /// Retrieves a list of distinct PCF header records for customers assigned to the current representative code, 
+    /// while excluding customers specified in an excluded list. 
+    /// Optionally, returns all records if the current RepCode is 'Admin'.
+    /// </summary>
+    /// <returns>
+    /// A task representing the asynchronous operation, containing a list of <see cref="PCFHeader"/> objects 
+    /// that match the filtering and sorting criteria.
+    /// </returns>
     public async Task<List<PCFHeader>> GetPCFHeadersByRepCodeAsync() // Uses RepCode assigned to Customers
     {
         // Get the list of customer numbers that should be excluded from the query
@@ -100,6 +121,15 @@ public class PcfService
         // Convert the result to a list and return it
         return result.ToList();
 
+    /// <summary>
+    /// Asynchronously retrieves a distinct list of allowed customer numbers from the database,
+    /// excluding those in the provided excluded customer list and filtered by the current rep code.
+    /// If the user is 'Admin', all customers except the excluded ones are returned.
+    /// Logs the process and each returned customer number.
+    /// </summary>
+    /// <returns>
+    /// A task representing the asynchronous operation, with a list of allowed customer numbers as result.
+    /// </returns>
     public async Task<List<string>> GetAllowedCustomerNumbersAsync()
     {
         var repCode = _repCodeContext.CurrentRepCode;
@@ -127,6 +157,16 @@ public class PcfService
 
     }
 
+    /// <summary>
+    /// Retrieves a list of PCFHeader records for the current sales representative,
+    /// filtered by allowed customer numbers and relevant criteria.
+    /// If the user is an admin, all customers are included.
+    /// Results are ordered by PCF status and customer name.
+    /// </summary>
+    /// <returns>
+    /// A task representing the asynchronous operation, containing a list of <see cref="PCFHeader"/> objects
+    /// corresponding to the permitted customers and current representative code.
+    /// </returns>
     public async Task<List<PCFHeader>> GetPCFHeadersForRepBySlsman()
     {
         List<string> allowedCustomerNumbers = await GetAllowedCustomerNumbersAsync();
@@ -154,6 +194,17 @@ public class PcfService
     }
 
 
+    /// <summary>
+    /// Asynchronously retrieves a <see cref="PCFHeader"/> record along with its associated <see cref="PCFItem"/> child lines from the database for the specified PCF number.
+    /// This method performs a join between PCF header, items, customer, and related tables. Supports multi-mapping with Dapper to group line items under the header.
+    /// Optionally applies a sales rep code filter unless 'Admin' is the rep code, in which case all results for the PCF number are included.
+    /// Appends sales agency and representative info to the result.
+    /// </summary>
+    /// <param name="pcfNum">The PCF number for which to retrieve header and line items.</param>
+    /// <returns>
+    /// A <see cref="PCFHeader"/> object containing populated header fields and a collection of linked <see cref="PCFItem"/> objects (if present), 
+    /// or <c>null</c> if not found.
+    /// </returns>
     public async Task<PCFHeader> GetPCFHeaderWithItemsAsync(int pcfNum)
     {
         // This query retrieves header fields as well as the associated PCF items.
