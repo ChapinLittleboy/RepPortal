@@ -82,7 +82,7 @@ builder.Services.AddScoped<PcfService>();
 builder.Services.AddScoped<TitleService>();
 builder.Services.AddScoped<ExportService>();
 builder.Services.AddScoped<IItemService, ItemService>();
-builder.Services.AddScoped<IPriceBookService, DownloadPriceBookService>();
+builder.Services.AddScoped<IDownloadPriceBookService, DownloadPriceBookService>();
 builder.Services.AddScoped<IFormsDownloadService, DownloadFormsService>();
 builder.Services.AddScoped<IMarketingService, DownloadMarketingInfoService>();
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
@@ -94,6 +94,7 @@ builder.Services.AddScoped<IPageDefinitionService, PageDefinitionService>();
 builder.Services.AddHttpClient<AIService>();
 builder.Services.AddScoped<AIService>();
 builder.Services.AddScoped<IUsageAnalyticsService, UsageAnalyticsService>();
+builder.Services.AddScoped<IPriceBookService, PriceBookService>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -145,6 +146,11 @@ builder.Services.ConfigureApplicationCookie(options =>
     // options.LoginPath       = "/login";
 });
 
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.PropertyNamingPolicy = null);
+
+// Add the new service
+builder.Services.AddScoped<IInsuranceRequestService, InsuranceRequestService>();
 
 var app = builder.Build();
 
@@ -213,7 +219,7 @@ app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
 //RunDbUp(connectionString);
-RunConfigureRoles();
+await RunConfigureRoles();
 
 
 app.Run();

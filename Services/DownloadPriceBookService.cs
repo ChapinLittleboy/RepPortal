@@ -5,12 +5,12 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using RepPortal.Models;
 
-public interface IPriceBookService
+public interface IDownloadPriceBookService
 {
     Task<List<PriceBookFolder>> GetPriceBookFoldersAsync();
 }
 
-public class DownloadPriceBookService : IPriceBookService
+public class DownloadPriceBookService : IDownloadPriceBookService
 {
     private readonly string _connString;
     private readonly IWebHostEnvironment _env;

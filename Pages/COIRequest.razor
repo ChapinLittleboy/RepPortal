@@ -1,0 +1,116 @@
+﻿@page "/COIRequest"
+@using Newtonsoft.Json
+@using System.Text
+@inject CustomerService CustomerService
+@inject IRepCodeContext RepCodeContext
+
+
+
+<h3>COIRequest</h3>
+
+<PageTitle>Request Certificate of Insurance</PageTitle>
+
+<SfDropDownList TValue="string?" TItem="Customer" Placeholder="Select existing customer"
+                DataSource="@Customers" @bind-Value="Request.ExistingCustomerId"
+                Enabled="@(!EnteringNewCustomer)">
+    <DropDownListFieldSettings Text="Name" Value="CustomerId" />
+</SfDropDownList>
+
+<SfCheckBox Label="New Customer?" @bind-Checked="EnteringNewCustomer" />
+
+@if (EnteringNewCustomer)
+{
+    <SfTextBox Placeholder="Customer Name" @bind-Value="Request.NewCustomer.Name" FloatLabelType="FloatLabelType.Always" />
+    <SfTextBox Placeholder="Address" @bind-Value="Request.NewCustomer.Address" />
+    <SfTextBox Placeholder="Contact Name" @bind-Value="Request.NewCustomer.ContactName" />
+    <SfTextBox Placeholder="Email" @bind-Value="Request.NewCustomer.Email" />
+    <SfTextBox Placeholder="Phone" @bind-Value="Request.NewCustomer.Phone" />
+}
+
+<SfTextArea Placeholder="Additional Notes" RowCount="5" @bind-Value="Request.Notes" />
+
+<SfUploader AutoUpload="false" AllowMultiple="true" AllowedExtensions=".pdf,.doc,.docx,.jpg,.png"
+            @ref="UploaderRef">
+    <UploaderEvents ValueChange="OnChange"></UploaderEvents>
+</SfUploader>
+
+<SfButton OnClick="SubmitRequest">Submit Request</SfButton>
+
+@if (ShowSuccess)
+{
+    <div class="alert alert-success mt-3">
+        Your request was submitted successfully. You should receive the Certificate within 3 business days.
+    </div>
+}
+
+
+@code {
+    private InsuranceRequest Request = new() { NewCustomer = new NewCustomerInfo() };
+    private List<Customer> Customers = new();
+    private bool EnteringNewCustomer = false;
+    private bool ShowSuccess = false;
+
+
+
+
+    private SfUploader UploaderRef;
+
+
+    [Inject] HttpClient Http { get; set; }
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        Customers = await CustomerService.GetCustomersDetailsByRepCodeAsync();
+
+    }
+
+
+    private async Task SubmitRequest()
+    {
+        var content = new MultipartFormDataContent();
+
+
+        //content.Add(new StringContent(JsonSerializer.Serialize(Request), Encoding.UTF8, "application/json"), "data");
+
+
+
+
+        var response = await Http.PostAsync("/api/insurance/request", content);
+        if (response.IsSuccessStatusCode)
+        {
+            ShowSuccess = true;
+        }
+    }
+
+
+ //Check if files exist and if their streams are not null
+
+        private async Task OnChange(UploadChangeEventArgs args)
+        {
+            const string basePath = @"C:\SharedUploads";
+            Directory.CreateDirectory(basePath);      // make sure the folder exists
+
+            foreach (var file in args.Files)
+            {
+                // full path on the server
+                var fullPath = Path.Combine(basePath, file.FileInfo.Name);
+
+                // create target file
+                await using var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write);
+
+                // copy from the browser‐supplied IBrowserFile stream
+                await file.File               // <-- IBrowserFile
+                    .OpenReadStream(long.MaxValue)   // or a real size limit
+                    .CopyToAsync(fs);
+            }
+
+            StateHasChanged();    // refresh UI if needed
+        }
+
+
+
+}

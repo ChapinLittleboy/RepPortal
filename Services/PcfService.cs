@@ -104,7 +104,7 @@ public class PcfService
         AND progcontrol.ProgSDate > '2019-12-31'           -- Only include programs starting after 2019
         AND (@RepCode = 'Admin'                            -- Allow admin to see all records,
              OR SRNum = @RepCode)                          -- otherwise filter by sales rep code
-      ORDER BY PCFNum DESC";                               // Order results by the most recent PCF number
+      ORDER BY PCFNum DESC"; // Order results by the most recent PCF number
 
         // Log the query for debugging or informational purposes
         _logger.LogInformation($"GetPCFHeadersByRepCodeAsync: {query}");
@@ -120,6 +120,7 @@ public class PcfService
 
         // Convert the result to a list and return it
         return result.ToList();
+    }
 
     /// <summary>
     /// Asynchronously retrieves a distinct list of allowed customer numbers from the database,

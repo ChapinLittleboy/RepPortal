@@ -7,7 +7,7 @@
 @using Syncfusion.Blazor.DropDowns
 @inject IItemService ItemService
 @inject ILogger<GetItemPricing> Logger
-@inject IPriceBookService PriceBookService
+@inject IDownloadPriceBookService DownloadPriceBookService
 @using Syncfusion.Blazor.Navigations
 @inject RepPortal.Services.IActivityLogService ActivityLogService
 
@@ -144,7 +144,7 @@
         await ActivityLogService.LogReportUsageActivityAsync("Pricing Form", "");
 
 		// Retrieve the folders
-		PriceBookFolders = await PriceBookService.GetPriceBookFoldersAsync();
+		PriceBookFolders = await DownloadPriceBookService.GetPriceBookFoldersAsync();
 
 		// Log the contents of the /RepDocs folder
 		var repDocsFolder = PriceBookFolders.FirstOrDefault(folder => folder.FolderRelativePath == StaticRequestPath);
