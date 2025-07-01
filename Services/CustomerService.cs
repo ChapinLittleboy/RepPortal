@@ -103,7 +103,7 @@ LEFT JOIN custtype_mst ct ON cu0.cust_type = ct.cust_type
 AND (ca0.credit_hold_reason IS NULL OR ca0.credit_hold_reason NOT IN (
     SELECT Code FROM RepPortal.dbo.CreditHoldReasonCodeExclusions))
 AND (        @RepCode = 'Admin'    
-        OR cu.slsman = @RepCode) 
+        OR cu0.slsman = @RepCode) 
 ORDER BY ca0.[name]";
 
         using var connection = new SqlConnection(_batAppConnection);
