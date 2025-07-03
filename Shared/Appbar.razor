@@ -133,7 +133,8 @@
 
 	private List<DropDownMenuItem> FormsItems = new()
 	{
-		new DropDownMenuItem { Text = "Forms", Id = "formspage" }
+        new DropDownMenuItem { Text = "Forms", Id = "formspage" },
+        new DropDownMenuItem { Text = "Request Certificate of Insurance", Id = "coirequest" }
 	};
 
 	private List<DropDownMenuItem> MarketingItems = new()
@@ -421,8 +422,11 @@
             case "connectedusers":
                 Navigation.NavigateTo("/admin/connected", forceLoad: true);
                 break;
-            case "usagedashboard":
-                Navigation.NavigateTo("/admin/usage-dashboard", forceLoad: true);
+			case "usagedashboard":
+				Navigation.NavigateTo("/admin/usage-dashboard", forceLoad: true);
+				break;
+            case "coirequest":
+                Navigation.NavigateTo("/COIRequest", forceLoad: true);
                 break;
 		}
 	}

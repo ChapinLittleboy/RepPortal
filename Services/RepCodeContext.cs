@@ -13,6 +13,7 @@ public interface IRepCodeContext
     public List<string> CurrentRegions { get; set; }
     string AssignedRegion { get; }
     bool IsAdministrator { get; }
+    string UserName { get; } // Added UserName property
 }
 
 
@@ -75,6 +76,19 @@ public class RepCodeContext : IRepCodeContext
         {
             var user = _httpContextAccessor.HttpContext?.User;
             return user?.IsInRole("Administrator") ?? false;
+        }
+    }
+
+    public string UserName
+    {
+        get
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            // Try common claim types for username
+            return user?.FindFirst("UserName")?.Value
+                ?? user?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+                ?? user?.FindFirst("name")?.Value
+                ?? string.Empty;
         }
     }
 

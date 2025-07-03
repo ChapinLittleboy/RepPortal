@@ -1,116 +1,204 @@
 ﻿@page "/COIRequest"
 @using Newtonsoft.Json
 @using System.Text
+@using Microsoft.CodeAnalysis.CSharp.Syntax
+@using Syncfusion.Blazor.DropDowns
+@using FilterType = Syncfusion.Blazor.DropDowns.FilterType
 @inject CustomerService CustomerService
 @inject IRepCodeContext RepCodeContext
+@inject IEmailService EmailService
+@inject IConfiguration Configuration
+
+<PageTitle>COI Request</PageTitle>
+
+<h3>Certificate of Insurance Request</h3>
 
 
-
-<h3>COIRequest</h3>
-
-<PageTitle>Request Certificate of Insurance</PageTitle>
-
-<SfDropDownList TValue="string?" TItem="Customer" Placeholder="Select existing customer"
-                DataSource="@Customers" @bind-Value="Request.ExistingCustomerId"
-                Enabled="@(!EnteringNewCustomer)">
-    <DropDownListFieldSettings Text="Name" Value="CustomerId" />
-</SfDropDownList>
-
-<SfCheckBox Label="New Customer?" @bind-Checked="EnteringNewCustomer" />
-
-@if (EnteringNewCustomer)
+@if (isLoading)
 {
-    <SfTextBox Placeholder="Customer Name" @bind-Value="Request.NewCustomer.Name" FloatLabelType="FloatLabelType.Always" />
-    <SfTextBox Placeholder="Address" @bind-Value="Request.NewCustomer.Address" />
-    <SfTextBox Placeholder="Contact Name" @bind-Value="Request.NewCustomer.ContactName" />
-    <SfTextBox Placeholder="Email" @bind-Value="Request.NewCustomer.Email" />
-    <SfTextBox Placeholder="Phone" @bind-Value="Request.NewCustomer.Phone" />
+    <p>Loading your customer list, please wait...</p>
 }
-
-<SfTextArea Placeholder="Additional Notes" RowCount="5" @bind-Value="Request.Notes" />
-
-<SfUploader AutoUpload="false" AllowMultiple="true" AllowedExtensions=".pdf,.doc,.docx,.jpg,.png"
-            @ref="UploaderRef">
-    <UploaderEvents ValueChange="OnChange"></UploaderEvents>
-</SfUploader>
-
-<SfButton OnClick="SubmitRequest">Submit Request</SfButton>
-
-@if (ShowSuccess)
+else
 {
-    <div class="alert alert-success mt-3">
-        Your request was submitted successfully. You should receive the Certificate within 3 business days.
+
+    <div style="width: 50%; min-width: 320px;">
+        <EditForm Model="@requestModel" OnValidSubmit="@HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label for="customerName" class="form-label">Customer Name</label>
+                <SfComboBox TValue="string"
+                            TItem="Customer"
+                            Value="@requestModel.CustomerName"
+                            ValueChanged="OnCustomerNameChanged"
+                            ValueExpression="@( () => requestModel.CustomerName )"
+                            DataSource="@customerList"
+                            DebounceDelay="@NumericValue"
+                            AllowFiltering="true"
+                            FilterType="FilterType.Contains"
+                            @ref="WantedCust">
+                    <ComboBoxFieldSettings Text="CustNameWithNum" Value="CustNameWithNum" />
+                </SfComboBox>
+
+
+            </div>
+
+
+            Add
+
+
+
+            <div class="mb-3">
+                <label for="notes" class="form-label">Please add any clarifying notes below</label>
+                <InputTextArea id="notes" class="form-control" @bind-Value="requestModel.Notes" />
+            </div>
+
+            <div class="mb-3">
+                <label for="fileUpload" class="form-label">Upload Supporting Files (optional)</label>
+                <InputFile OnChange="@OnInputFileChange" multiple />
+                @if (uploadedFiles.Count > 0)
+                {
+                    <ul>
+                        @foreach (var file in uploadedFiles)
+                        {
+                            <li>@file.Name (@(file.Size / 1024) KB)</li>
+                        }
+                    </ul>
+                }
+            </div>
+
+            <!--
+            <div class="form-check mb-3">
+                <InputCheckbox id="emailMeCopy" class="form-check-input" @bind-Value="EmailMeCopy" />
+                <label class="form-check-label" for="emailMeCopy">Email me a copy of this request</label>
+            </div>
+                -->
+
+
+            <button type="submit" class="btn btn-primary">Send Request</button>
+        </EditForm>
     </div>
 }
 
 
+@if (!string.IsNullOrEmpty(submitMessage))
+{
+    <div class="alert alert-info mt-3">@submitMessage</div>
+}
+
+
+
 @code {
-    private InsuranceRequest Request = new() { NewCustomer = new NewCustomerInfo() };
-    private List<Customer> Customers = new();
-    private bool EnteringNewCustomer = false;
-    private bool ShowSuccess = false;
+    private COIRequestModel requestModel = new()
+    {
+        // CustomerType = "" // Ensures dropdown binding works
+    };
 
-
-
-
-    private SfUploader UploaderRef;
-
-
-    [Inject] HttpClient Http { get; set; }
-
-
-
+    private List<IBrowserFile> uploadedFiles = new();
+    private string submitMessage;
+    private List<Customer> customerList = new();
+    private bool isLoading = true;
+    private string WantedCustNum = string.Empty;
+    private int NumericValue = 50; // Default value for the combo box DeBounceDelay
+    public SfComboBox<string, Customer> WantedCust { get; set; }
+    public bool EmailMeCopy { get; set; }
+    private string recipientEmail;
 
     protected override async Task OnInitializedAsync()
     {
-
-        Customers = await CustomerService.GetCustomersDetailsByRepCodeAsync();
-
+        recipientEmail = Configuration["COIRequest:RecipientEmail"];
+        var repCode = RepCodeContext.CurrentRepCode;
+        customerList = await CustomerService.GetCustomerNamesByRepCodeAsync();
+        isLoading = false;
     }
 
-
-    private async Task SubmitRequest()
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
-        var content = new MultipartFormDataContent();
-
-
-        //content.Add(new StringContent(JsonSerializer.Serialize(Request), Encoding.UTF8, "application/json"), "data");
-
-
-
-
-        var response = await Http.PostAsync("/api/insurance/request", content);
-        if (response.IsSuccessStatusCode)
-        {
-            ShowSuccess = true;
-        }
+        uploadedFiles.Clear();
+        uploadedFiles.AddRange(e.GetMultipleFiles());
     }
 
-
- //Check if files exist and if their streams are not null
-
-        private async Task OnChange(UploadChangeEventArgs args)
+    private void OnCustomerNameChanged(string newValue)
+    {
+        requestModel.CustomerName = newValue;
+        submitMessage = "";
+    }
+    private async Task HandleValidSubmit()
+    {
+        try
         {
-            const string basePath = @"C:\SharedUploads";
-            Directory.CreateDirectory(basePath);      // make sure the folder exists
+            var selectedCustomer = customerList
+                .FirstOrDefault(c => c.CustNameWithNum == requestModel.CustomerName);
+            var custNameWithNum = selectedCustomer?.CustNameWithNum ?? "Unknown";
 
-            foreach (var file in args.Files)
+            var subject = $"COI Request for {custNameWithNum} for Rep:{RepCodeContext.CurrentRepCode} ";
+            var body = $@"
+                <strong>Rep Code:</strong> {RepCodeContext.CurrentRepCode}<br>
+                <strong>Rep Name:</strong> {RepCodeContext.CurrentFirstName} {RepCodeContext.CurrentLastName}<br>
+                <strong>Logged-in Rep Email:</strong> {RepCodeContext.CurrentFirstName} {RepCodeContext.UserName}<br>
+                <strong>Customer:</strong> {custNameWithNum}<br>
+                <strong>Notes:</strong> {requestModel.Notes}<br>";
+
+            var attachments = new List<EmailAttachment>();
+            foreach (var file in uploadedFiles)
             {
-                // full path on the server
-                var fullPath = Path.Combine(basePath, file.FileInfo.Name);
-
-                // create target file
-                await using var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write);
-
-                // copy from the browser‐supplied IBrowserFile stream
-                await file.File               // <-- IBrowserFile
-                    .OpenReadStream(long.MaxValue)   // or a real size limit
-                    .CopyToAsync(fs);
+                var ms = new MemoryStream();
+                await file.OpenReadStream().CopyToAsync(ms);
+                attachments.Add(new EmailAttachment
+                {
+                    FileName = file.Name,
+                    ContentType = file.ContentType,
+                    Content = ms.ToArray()
+                });
             }
 
-            StateHasChanged();    // refresh UI if needed
-        }
+            // Add attachment info to the email body
+            body += $"<br><strong>Number of Attachments:</strong> {uploadedFiles.Count}<br>";
+            if (uploadedFiles.Count > 0)
+            {
+                body += "<strong>Attachment File Names:</strong><br>";
+                foreach (var file in uploadedFiles)
+                {
+                    body += $"{file.Name}<br>";
+                }
+            }
 
+            await EmailService.SendEmailAsync(recipientEmail, subject, body, true, attachments);
+
+            if (EmailMeCopy)
+            {
+                await EmailService.SendEmailAsync(RepCodeContext.UserName, $"Certificate of Insurance Request for {custNameWithNum} (Your copy)", body, true, attachments);
+            }
+
+            submitMessage = "Request sent successfully! You should receive the Certificate of Insurance within 3 business days.";
+            requestModel = new COIRequestModel { };
+            uploadedFiles.Clear();
+        }
+        catch (Exception ex)
+        {
+            submitMessage = $"Error: {ex.Message}";
+        }
+    }
+
+    public class COIRequestModel
+    {
+        public string CustomerNumber { get; set; }
+        public string CustomerName { get; set; }
+        public string Notes { get; set; }
+        public bool EmailMeCopy { get; set; } = false;
+
+
+    }
 
 
 }
+
+
+
+
+
+
+
+
+

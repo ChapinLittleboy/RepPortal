@@ -95,6 +95,8 @@ builder.Services.AddHttpClient<AIService>();
 builder.Services.AddScoped<AIService>();
 builder.Services.AddScoped<IUsageAnalyticsService, UsageAnalyticsService>();
 builder.Services.AddScoped<IPriceBookService, PriceBookService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+
 
 builder.Services.AddRateLimiter(options =>
 {
