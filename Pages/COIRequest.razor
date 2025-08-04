@@ -1,4 +1,5 @@
 ﻿@page "/COIRequest"
+@attribute [Authorize]
 @using Newtonsoft.Json
 @using System.Text
 @using Microsoft.CodeAnalysis.CSharp.Syntax
@@ -90,6 +91,8 @@ else
 
 
 @code {
+
+    
     private COIRequestModel requestModel = new()
     {
         // CustomerType = "" // Ensures dropdown binding works
@@ -104,6 +107,7 @@ else
     public SfComboBox<string, Customer> WantedCust { get; set; }
     public bool EmailMeCopy { get; set; }
     private string recipientEmail;
+    
 
     protected override async Task OnInitializedAsync()
     {
@@ -132,7 +136,7 @@ else
                 .FirstOrDefault(c => c.CustNameWithNum == requestModel.CustomerName);
             var custNameWithNum = selectedCustomer?.CustNameWithNum ?? "Unknown";
 
-            var subject = $"COI Request for {custNameWithNum} for Rep:{RepCodeContext.CurrentRepCode} ";
+            var subject = $"COI Request for {custNameWithNum} by Rep: {RepCodeContext.CurrentRepCode} ";
             var body = $@"
                 <strong>Rep Code:</strong> {RepCodeContext.CurrentRepCode}<br>
                 <strong>Rep Name:</strong> {RepCodeContext.CurrentFirstName} {RepCodeContext.CurrentLastName}<br>

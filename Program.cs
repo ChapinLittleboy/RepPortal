@@ -180,7 +180,18 @@ else
 
 app.UseHttpsRedirection();
 
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value?.ToLower();
 
+    if (path != null && path.StartsWith("/chapinrep"))
+    {
+        context.Response.Redirect("/", permanent: false); // Or use internal rewrite
+        return;
+    }
+
+    await next();
+});
 
 // This serves files from wwwroot (default behavior)
 
