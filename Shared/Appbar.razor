@@ -13,6 +13,7 @@
 @inject SalesService SalesService
 @inject IRepCodeContext RepCodeContext
 @inject TitleService TitleService
+@inject IJSRuntime JS
 
 
 <div class="control-container">
@@ -396,8 +397,8 @@
 				break;
 			case "downloadcontacts":
                 TitleService.PageHelpLinkText = string.Empty;
-				Navigation.NavigateTo("/RepDocs/Chapin International Internal Departmental Contacts.pdf");
-				break;
+                _ = OpenPdfAsync();
+                break;
 			case "pagehelp":
 				Navigation.NavigateTo("/admin/page-help");
 				break;
@@ -430,6 +431,10 @@
                 break;
 		}
 	}
+    private async Task OpenPdfAsync()
+    {
+        await JS.InvokeVoidAsync("window.open", "/RepDocs/Chapin%20International%20Internal%20Departmental%20Contacts.pdf?v=1", "_blank");
+    }
 }
 
 <style>
