@@ -159,10 +159,6 @@ var app = builder.Build();
 
 
 
-
-
-
-
 var scope = app.Services.CreateScope();
 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
