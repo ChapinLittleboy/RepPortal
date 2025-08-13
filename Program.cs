@@ -64,7 +64,18 @@ builder.Services.Configure<IdentityOptions>(options =>
 builder.Services.AddRazorPages();
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddServerSideBlazor();
+//builder.Services.AddServerSideBlazor();
+builder.Services.AddServerSideBlazor()
+    .AddCircuitOptions(o =>
+    {
+        o.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(15); // default ~3m
+        o.DisconnectedCircuitMaxRetained = 1000; // raise if you have lots of users
+    });
+builder.Services.AddSignalR(o =>
+{
+    o.KeepAliveInterval = TimeSpan.FromSeconds(10);   // default 15s
+    o.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // default 30s
+});
 builder.Services.AddScoped<CreditHoldExclusionService>();
 builder.Services.AddScoped<UserManager<ApplicationUser>>();
 builder.Services.AddScoped<CustomerService>();

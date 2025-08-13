@@ -1,0 +1,71 @@
+﻿@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+@if (show)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title">Heads up: dev2 is being retired</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="Dismiss"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">
+                        <strong>dev2.chapinportal.com</strong> will be removed on <strong>August 15, 2025</strong>.
+                    </p>
+                    @if (DaysLeft >= 0)
+                    {
+                        <p class="small text-muted mb-3">That’s in @DaysLeft day@(DaysLeft == 1 ? "" : "s").</p>
+                    }
+                    <p class="mb-0">
+                        Please update your bookmark to
+                        <a href="https://www.chapinportal.com" class="link-primary">https://www.chapinportal.com</a>.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-primary" href="https://www.chapinportal.com">Go to www now</a>
+                    <button class="btn btn-outline-secondary" @onclick="Dismiss">Dismiss</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool show;
+    private bool shouldCheckLocalStorage; // set on init; avoids JS during prerender
+    private static readonly DateTime Cutoff = new DateTime(2025, 8, 15);
+    private int DaysLeft => (Cutoff.Date - DateTime.Now.Date).Days;
+
+    protected override Task OnInitializedAsync()
+    {
+        var host = new Uri(Nav.Uri).Host;
+
+        // Only consider showing on dev2 host, and before the cutoff date
+        shouldCheckLocalStorage =
+            host.StartsWith("dev2.", StringComparison.OrdinalIgnoreCase) &&
+            DateTime.Now.Date <= Cutoff.Date;
+
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && shouldCheckLocalStorage)
+        {
+            // SAFE place to call JS when prerendering is enabled
+            var dismissed = await JS.InvokeAsync<string>("localStorage.getItem", "dev2NoticeDismissed");
+            show = string.IsNullOrEmpty(dismissed);
+            StateHasChanged();
+        }
+    }
+
+    private async Task Dismiss()
+    {
+        show = false;
+        await JS.InvokeVoidAsync("localStorage.setItem", "dev2NoticeDismissed", "1");
+        StateHasChanged();
+    }
+}
