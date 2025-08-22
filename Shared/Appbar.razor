@@ -327,8 +327,12 @@
 		}
 		else
 		{
-			TitleService.PageSubtitle = selectedItem;
-		}
+            if (selectedItem != "Download Contacts")  // Contacts open in a different tab so don't change the tab that is already in use.
+           
+            {
+                TitleService.PageSubtitle = selectedItem;
+            }
+        }
 
        
 

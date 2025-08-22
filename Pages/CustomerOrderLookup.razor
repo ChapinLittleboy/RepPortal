@@ -238,13 +238,13 @@
 
 
         // If header is already on hold, skip processing
-        if (Header.OrderStatus != "H")
+        if (Header.OrderStatus != "H" && Header.OrderStatus != "S")
         {
 	        var statuses = rows.Select(r => r.LineStatus).Distinct().ToList();
 
 	        if (statuses.All(s => s == "F"))
 	        {
-		        Header.OrderStatus = "S";
+		        Header.OrderStatus = "P";
 	        }
 	        else if (statuses.All(s => s == "O"))
 	        {
@@ -279,9 +279,10 @@
             "O" => "Open",
             "C" => "Completed",
             "H" => "Hold",
-			"S" => "Shipped",
+			"P" => "Shipped",
 			"B" => "Shipped and Backordered",
 			"X" => "Cancelled",
+            "S" => "Stopped",
             _ => code
         };
 
