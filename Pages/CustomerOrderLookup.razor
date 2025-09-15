@@ -9,6 +9,7 @@
 @inject IRepCodeContext RepCodeContext
 @inject CustomerService CustomerService
 @inject RepPortal.Services.IActivityLogService ActivityLogService
+@inject NavigationManager Nav
 
 
 
@@ -31,6 +32,10 @@
         </SfButton>
     </div>
 </div>
+
+<button class="btn btn-primary" @onclick="GoToInvoicesReport" disabled="@(!HasSelectedOrder)">
+    View Invoices for Order
+</button>
 
 @if (Header != null)
 {
@@ -105,7 +110,7 @@
             <GridColumn Field="Description" HeaderText="Description" Width="200" />
             <GridColumn Field="QtyOrdered" HeaderText="Qty Ordered" Width="100" TextAlign="TextAlign.Right" />
             <GridColumn Field="QtyShipped" HeaderText="Qty Shipped" Width="100" TextAlign="TextAlign.Right" />
-            <GridColumn Field="ShipDate" HeaderText="Ship Date" Format="d" Width="120" TextAlign="TextAlign.Center" />
+            <GridColumn Field="ShipDate" HeaderText="Last Ship Date" Format="d" Width="120" TextAlign="TextAlign.Center" />
             <GridColumn Field="DueDate" HeaderText="Expected Ship" Format="d" Width="120" TextAlign="TextAlign.Center" />
 
 
@@ -126,6 +131,9 @@
     private string CustomerNumber { get; set; }
     private string CustomerPo { get; set; }
     private string normalizedPo { get; set; }
+    private string? SelectedOrderNumber { get; set; } = null;
+    private bool HasSelectedOrder => !string.IsNullOrWhiteSpace(SelectedOrderNumber);
+
 
     private OrderHeader Header { get; set; }
     private List<OrderLine> LineItems { get; set; } = new();
@@ -137,6 +145,13 @@
     {
 	    Customers = await CustomerService.GetCustomersDetailsByRepCodeAsync();
     }
+
+    private void GoToInvoicesReport()
+    {
+        if (HasSelectedOrder)
+            Nav.NavigateTo($"/invoices-report/{SelectedOrderNumber}");
+    }
+
 
     /// <summary>
     /// Remove all non-alphanumeric chars from the PO string.
@@ -202,6 +217,8 @@
 
         if (Header == null) return;
 
+        SelectedOrderNumber = Header.CoNum;
+
         // 2) fetch line items
         var lineSql = @"
             SELECT
@@ -213,7 +230,7 @@
                 ci.qty_invoiced AS QtyInvoiced,
                 ci.due_date     AS DueDate,
                 ci.stat         AS LineStatus,
-                cm.ship_date    AS ShipDate
+                coalesce(cm.ship_date, ci.ship_date)    AS ShipDate
             FROM coitem_mst ci
             LEFT JOIN co_ship_mst cm
               ON ci.co_num = cm.co_num

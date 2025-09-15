@@ -60,7 +60,20 @@ public class SalesService
         return repCode;
     }
 
+    public async Task<string> GetCustNumFromCoNum(string coNum) {         if (string.IsNullOrWhiteSpace(coNum))
+            return null;
 
+        coNum = coNum.Trim();
+        const string sql = @"
+        SELECT TOP 1 Cust_Num
+        FROM CO_mst
+        WHERE co_num = @CoNum";
+
+        using var connection = _dbConnectionFactory.CreateBatConnection();
+        // Assuming the connection needs to be opened explicitly
+        var custNum = await connection.QueryFirstOrDefaultAsync<string>(sql, new { CoNum = coNum });
+        return custNum;
+    }
 
 
     public async Task<string> GetRepIDAsync()
@@ -1881,6 +1894,13 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
                     AllowedRegions = allowedRegionsCsv
                 });
 
+
+            if (parameters.CoNum != null && parameters.CoNum != "")
+            {
+                results = results.Where(r => r.CoNum != null && r.CoNum.Trim().ToUpper() == parameters.CoNum.Trim().ToUpper());
+            }
+
+
             return results.ToList();
         }
 
@@ -1901,6 +1921,8 @@ LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc
         public string CustType { get; set; }
         public string EndUserType { get; set; }
         public List<string> AllowedRegions { get; set; } = new List<string>();
+        public string? CoNum { get; set; }
+
 
     }
 

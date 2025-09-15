@@ -1,4 +1,5 @@
 ﻿@page "/invoices-report"
+@page "/invoices-report/{OrderNo?}"
 @attribute [Authorize]
 @using System.Dynamic
 @using System.Globalization
@@ -26,168 +27,165 @@
     }
     else
     {
-	    <div>
-		    <div class="active-filters">
-			    <button @onclick="ClearFilters">Clear Filters</button>
-        
-			    <!--
-        <span class="divider">|</span>
-        <strong class="small-text">Active Filters:</strong>
-        <span class="small-text">@activeFilters</span>
-        -->
-		    </div>
+        <div>
+            <div class="active-filters">
+                <button @onclick="ClearFilters">Clear Filters</button>
+            </div>
+        </div>
 
-	    </div>
-	    if (isReady)
-	    {
-		    <EditForm Model="@parameters" OnValidSubmit="LoadInvoices">
-			    <DataAnnotationsValidator/>
-			    <ValidationSummary/>
-			    <div class="form-grid">
-				    <div class="column">
-					    <div class="form-group">
-						    <label>Begin Invoice Date:</label>
-						    <InputDate @bind-Value="parameters.BeginInvoiceDate"/>
-					    </div>
-					    <div class="form-group">
-						    <label>End Invoice Date: </label>
-						    <InputDate @bind-Value="parameters.EndInvoiceDate"/>
-					    </div>
-				    </div>
-				    <div class="column">
-					    <div class="form-group">
-						    <label>Customer Name (Optional):</label>
-						    <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" FilterType="FilterType.Contains" DataSource="@CustomerList" @ref="WantedCust">
-							  
-							    <ComboBoxFieldSettings Text="CustNameWithNum" Value="Cust_Num"/>
-						    </SfComboBox>
-					    </div>
-						
+        @if (isReady)
+        {
+            <EditForm Model="@parameters" OnValidSubmit="() => LoadInvoices(null)">
+                <DataAnnotationsValidator/>
+                <ValidationSummary/>
+                <div class="form-grid">
+                    <div class="column">
+                        <div class="form-group">
+                            <label>Begin Invoice Date:</label>
+                            <InputDate @bind-Value="parameters.BeginInvoiceDate"/>
+                        </div>
+                        <div class="form-group">
+                            <label>End Invoice Date: </label>
+                            <InputDate @bind-Value="parameters.EndInvoiceDate"/>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="form-group">
+                            <label>Customer Name (Optional):</label>
+                            <SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" FilterType="FilterType.Contains" DataSource="@CustomerList" @ref="WantedCust">
+                                <ComboBoxFieldSettings Text="CustNameWithNum" Value="Cust_Num"/>
+                            </SfComboBox>
+                        </div>
 
-					    <div class="form-group">
-						    <label>Customer Type (Optional):</label>
-						    <InputSelect @bind-Value="parameters.CustType" class="form-control">
-							    <option value="">-- Select a customer type --</option>
-							    @foreach (var type in CustomerTypesList)
-							    {
-								    <option value="@type.CustomerType">@type.DisplayText</option>
-							    }
-						    </InputSelect>
-					    </div>
-				    </div>
-					
+                        <div class="form-group">
+                            <label>Customer Type (Optional):</label>
+                            <InputSelect @bind-Value="parameters.CustType" class="form-control">
+                                <option value="">-- Select a customer type --</option>
+                                @foreach (var type in CustomerTypesList)
+                                {
+                                    <option value="@type.CustomerType">@type.DisplayText</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
 
-					
-					
+                    <!-- Empty 3rd column -->
+                    <div class="column empty-column"></div>
+                    <!-- Empty 4th column -->
+                    <div class="column empty-column"></div>
+                </div>
 
-				    <!-- Empty 3rd column -->
-				    <div class="column empty-column"></div>
-				    <!-- Empty 4th column -->
-				    <div class="column empty-column"></div>
-			    </div>
-			    <div class="visually-hidden">
-				    <label>Rep Code:</label>
-				    <InputText @bind-Value="parameters.RepCode"/>
-			    </div>
-			    <div class="button-row">
-				    <button type="submit">Load Invoices</button>
-			    </div>
-			    @if (showTip)
-			    {
+                <div class="visually-hidden">
+                    <label>Rep Code:</label>
+                    <InputText @bind-Value="parameters.RepCode"/>
+                </div>
 
-				    <div style="margin-top: 5px; color: red; font-size: small">
-					    Tip: Set Items per page to 'ALL' before grouping records
-				    </div>
-			    }
-		    </EditForm>
+                <div class="button-row">
+                    <button type="submit">Load Invoices</button>
+                </div>
 
-		    <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@InvoiceData" AllowTextWrap="true" AllowSorting="true" AllowGrouping="true" AllowReordering="true"
-		            AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })" AllowResizing="true">
-			    <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
-			    <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="InvoiceRptDetail"></GridEvents>
-			    <GridPageSettings PageSizes="@(new string[] { "20", "50", "100", "All" })" PageSize="20"> </GridPageSettings>
-			    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
-			    <GridGroupSettings>
+                @if (showTip)
+                {
+                    <div style="margin-top: 5px; color: red; font-size: small">
+                        Tip: Set Items per page to 'ALL' before grouping records
+                    </div>
+                }
+            </EditForm>
 
-			    </GridGroupSettings>
-			    <GridColumns >
-				    <GridColumn Field="Cust" HeaderText="Cust Num" Width="100"></GridColumn>
-				    <GridColumn Field="B2Name" HeaderText="Customer Name" Width="150"></GridColumn>
-				    <GridColumn Field="ShipToRegion" HeaderText="Region" Width="100" Visible="@(RepCodeContext.CurrentRepCode == "LAW")"></GridColumn>
-				    <GridColumn Field="CustPO" HeaderText="PO Num" Width="100"></GridColumn>
-				    <GridColumn Field="CoNum" HeaderText="Order Num" Width="100"></GridColumn>
-					
-				    <GridColumn Field="InvQty" HeaderText="InvQty" Width="100" Format="N0" TextAlign="TextAlign.Right">
-					    <Template>
-						    @{
-							    var data = context as InvoiceRptDetail;
-							    if (data != null)
-							    {
-								    <div style="text-align: right; padding-right: 10px;">
-									    @data.InvQty.ToString("N0", CultureInfo.InvariantCulture)
-								    </div>
-							    }
-						    }
-					    </Template>
-				    </GridColumn>
+            <SfGrid ID="Grid" @ref="Grid" RowHeight="20" DataSource="@InvoiceData" AllowTextWrap="true" AllowSorting="true" AllowGrouping="true" AllowReordering="true"
+                    AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" Toolbar="@(new List<string>() { "Export to Excel" })" AllowResizing="true">
+                <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
+                <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="InvoiceRptDetail"></GridEvents>
+                <GridPageSettings PageSizes="@(new string[] { "20", "50", "100", "All" })" PageSize="20"> </GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
 
-				    <GridColumn Field="Item" HeaderText="Item" Width="100"></GridColumn>
-				    
-				    <GridColumn Field="ExtPrice" HeaderText="Ext Price" Format="C2" Width="120" TextAlign="TextAlign.Right"></GridColumn>
-				    <GridColumn Field="Ship_Date" HeaderText="Ship Date" Format="d" Width="100"></GridColumn>
-				    <GridColumn Field="InvDate" HeaderText="Invoice Date" Format="d" Width="100"></GridColumn>
-				    <GridColumn Field="DueDate" HeaderText="Estimated Ship Date" Format="d" Width="140"></GridColumn>
-				    <GridColumn Field="InvNum" HeaderText="Invoice Num" Width="100"></GridColumn>
-				    				    
+                <!-- Group the grid by InvNum by default -->
+                <GridGroupSettings Columns="@GroupColumns"></GridGroupSettings>
 
-			    </GridColumns>
-			    <GridAggregates>
-				    <GridAggregate>
-					    <GridAggregateColumns>
-						    <GridAggregateColumn Field=@nameof(InvoiceRptDetail.ExtPrice) Type="AggregateType.Sum" Format="C2">
-							    <GroupFooterTemplate>
-								    @{
-									    var aggregate = (context as AggregateTemplateContext);
-									    <div>
-										    <p>Sum: @aggregate.Sum</p>
-									    </div>
-								    }
-							    </GroupFooterTemplate>
-							    <FooterTemplate>
-								    @{
-									    var aggregate = (context as AggregateTemplateContext);
-								    }
-								    <div>
-									    <p>Total: @aggregate.Sum</p>
-								    </div>
-							    </FooterTemplate>
-						    </GridAggregateColumn>
-					    </GridAggregateColumns>
-				    </GridAggregate>
-			    </GridAggregates>
-		    </SfGrid>
-	    }
+                <GridColumns >
+                    <GridColumn Field="Cust" HeaderText="Cust Num" Width="100"></GridColumn>
+                    <GridColumn Field="B2Name" HeaderText="Customer Name" Width="150"></GridColumn>
+                    <GridColumn Field="ShipToRegion" HeaderText="Region" Width="100" Visible="@(RepCodeContext.CurrentRepCode == "LAW")"></GridColumn>
+                    <GridColumn Field="CustPO" HeaderText="PO Num" Width="100"></GridColumn>
+                    <GridColumn Field="CoNum" HeaderText="Order Num" Width="100"></GridColumn>
+
+                    <GridColumn Field="InvQty" HeaderText="InvQty" Width="100" Format="N0" TextAlign="TextAlign.Right">
+                        <Template>
+                            @{
+                                var data = context as InvoiceRptDetail;
+                                if (data != null)
+                                {
+                                    <div style="text-align: right; padding-right: 10px;">
+                                        @data.InvQty.ToString("N0", CultureInfo.InvariantCulture)
+                                    </div>
+                                }
+                            }
+                        </Template>
+                    </GridColumn>
+
+                    <GridColumn Field="Item" HeaderText="Item" Width="100"></GridColumn>
+                    <GridColumn Field="ExtPrice" HeaderText="Ext Price" Format="C2" Width="120" TextAlign="TextAlign.Right"></GridColumn>
+                    <GridColumn Field="Ship_Date" HeaderText="Ship Date" Format="d" Width="100"></GridColumn>
+                    <GridColumn Field="InvDate" HeaderText="Invoice Date" Format="d" Width="100"></GridColumn>
+                    <GridColumn Field="DueDate" HeaderText="Estimated Ship Date" Format="d" Width="140"></GridColumn>
+                    <GridColumn Field="InvNum" HeaderText="Invoice Num" Width="100"></GridColumn>
+                </GridColumns>
+
+                <GridAggregates>
+                    <GridAggregate>
+                        <GridAggregateColumns>
+                            <GridAggregateColumn Field=@nameof(InvoiceRptDetail.ExtPrice) Type="AggregateType.Sum" Format="C2">
+                                <GroupFooterTemplate>
+                                    @{
+                                        var aggregate = (context as AggregateTemplateContext);
+                                        <div>
+                                            <p>Sum: @aggregate.Sum</p>
+                                        </div>
+                                    }
+                                </GroupFooterTemplate>
+                                <FooterTemplate>
+                                    @{
+                                        var aggregate = (context as AggregateTemplateContext);
+                                    }
+                                    <div>
+                                        <p>Total: @aggregate.Sum</p>
+                                    </div>
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                        </GridAggregateColumns>
+                    </GridAggregate>
+                </GridAggregates>
+            </SfGrid>
+        }
     }
 </div>
 
 @code {
+    // Optional route parameter (null when not supplied)
+    [Parameter] public string? OrderNo { get; set; }
+
     private SfGrid<InvoiceRptDetail> Grid;
     private List<InvoiceRptDetail> InvoiceData = new List<InvoiceRptDetail>();
     private IEnumerable<string> CustomerTypes;
-	private IEnumerable<Customer> CustomerEList;
-	private List<Customer> CustomerList = new List<Customer>();
+    private IEnumerable<Customer> CustomerEList;
+    private List<Customer> CustomerList = new List<Customer>();
     private string WantedCustNum = string.Empty;
-	private int NumericValue = 50; // Default value for the combo box DeBounceDelay
+    private int NumericValue = 50; // Default value for the combo box DeBounceDelay
     private bool isLoading = false;
     private bool showTip = false;
-	private bool isReady = false;
-	private IEnumerable<CustType> CustomerTypesList;
+    private bool isReady = false;
+    private IEnumerable<CustType> CustomerTypesList;
 
     private AuthenticationState authState;
     private ApplicationUser currentUser;
     public SfComboBox<string, Customer> WantedCust { get; set; }
 
     private SalesService.InvoiceRptParameters parameters = new SalesService.InvoiceRptParameters();
+    private string[] GroupColumns =>
+    string.IsNullOrWhiteSpace(OrderNo)
+        ? Array.Empty<string>()      // no grouping when OrderNo is null/empty
+        : new[] { "InvNum" };        // group by InvNum when OrderNo is present
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -198,22 +196,69 @@
             currentUser = await UserManager.GetUserAsync(user);
             parameters.RepCode = RepCodeContext.CurrentRepCode;
         }
-        parameters.BeginInvoiceDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
-        parameters.EndInvoiceDate = DateTime.Now; // Default to today
+
+        // Default UI date range (user-driven submit). If OrderNo is provided,
+        // we will override these in OnParametersSetAsync for that flow.
+        parameters.BeginInvoiceDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); 
+        parameters.EndInvoiceDate = DateTime.Now; 
 
         CustomerTypes = await CustomerService.GetCustomerTypesAsync();
         CustomerTypesList = await CustomerService.GetCustomerTypesListAsync();
-		CustomerList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
-		//CustomerList = CustomerEList.ToList();
+        CustomerList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
         isReady = true;
-
     }
 
-    private async Task LoadInvoices()
+    protected override async Task OnParametersSetAsync()
+    {
+        // If navigated with an OrderNo, automatically load all invoices for that order
+        if (!string.IsNullOrWhiteSpace(OrderNo))
+        {
+            isLoading = true;
+
+            // Look up the customer number from the order number
+            var custNum = await SalesService.GetCustNumFromCoNum(OrderNo);
+
+            // Set parameters specific to "order-based" load
+            parameters.CustNum = custNum;                         // derived customer
+            parameters.CoNum = OrderNo;                           // pass order number into service layer
+            parameters.BeginInvoiceDate = new DateTime(2023, 1, 1);
+            parameters.EndInvoiceDate = DateTime.Now;
+
+            // Log & load
+            var paramJson = System.Text.Json.JsonSerializer.Serialize(parameters);
+            await ActivityLogService.LogReportUsageActivityAsync("Customer Invoices Report (OrderNo)", paramJson);
+
+            InvoiceData = await SalesService.GetInvoiceRptData(parameters);
+
+            isLoading = false;
+            showTip = true;
+        }
+        else
+        {
+            // When no OrderNo is supplied, make sure CoNum is null (per requirement)
+            parameters.CoNum = null;
+        }
+    }
+
+    // Modified to accept an optional order number (CoNum). When null, we load based on UI selections.
+    private async Task LoadInvoices(string? coNum)
     {
         showTip = true;
         isLoading = true;
-        parameters.CustNum = WantedCust.Value;
+
+        // Respect the requirement: parameter.CoNum should be NULL if OrderNo is not supplied
+        parameters.CoNum = string.IsNullOrWhiteSpace(coNum) ? null : coNum;
+
+        // If the user selected a customer in the combobox and we're NOT doing the order-based load,
+        // set CustNum from the combo selection.
+        if (parameters.CoNum is null)
+        {
+            var picked = WantedCust?.Value;
+            if (!string.IsNullOrWhiteSpace(picked))
+            {
+                parameters.CustNum = picked;
+            }
+        }
 
         // Serialize parameters for logging
         var paramJson = System.Text.Json.JsonSerializer.Serialize(parameters);
@@ -222,6 +267,9 @@
         InvoiceData = await SalesService.GetInvoiceRptData(parameters);
         isLoading = false;
     }
+
+    // Kept for the EditForm's OnValidSubmit hookup
+    private async Task LoadInvoices() => await LoadInvoices(null);
 
     public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
     {
@@ -235,95 +283,91 @@
             await this.Grid.ExportToExcelAsync(exportProperties);
         }
     }
+
     private async Task ClearFilters()
     {
-	    await Grid.ClearFilteringAsync();
-
+        await Grid.ClearFilteringAsync();
     }
 
     public async Task OnFilteringHandler(FilteringEventArgs args)
     {
-	    args.PreventDefaultAction = true;
-	    var query = new Query().Where(new WhereFilter() { Field = "Text", Operator = "contains", value = args.Text, IgnoreCase = true });
-	    await WantedCust.FilterAsync(CustomerList, query);
+        args.PreventDefaultAction = true;
+        var query = new Query().Where(new WhereFilter() { Field = "Text", Operator = "contains", value = args.Text, IgnoreCase = true });
+        await WantedCust.FilterAsync(CustomerList, query);
     }
-
 }
 
 <style>
-	.e-grid .e-gridheader .e-headercell {
-		height: 50px; /* Increase header height */
-		white-space: normal !important; /* Allow text wrapping */
+    .e-grid .e-gridheader .e-headercell {
+        height: 50px; /* Increase header height */
+        white-space: normal !important; /* Allow text wrapping */
+    }
+    /* Position the filter icon absolutely within the header cell */
+    .e-grid .e-headercell {
+        position: relative;
+        padding-right: 25px !important; /* Space for the icon */
+    }
+    /* Position the filter icon absolutely within the header cell */
+    .e-grid .e-headercell {
+        position: relative;
+        padding-right: 1px !important; /* Space for the icon */
+    }
 
-	}
-	/* Position the filter icon absolutely within the header cell */
-	.e-grid .e-headercell {
-		position: relative;
-		padding-right: 25px !important; /* Space for the icon */
+    .e-grid .e-headercell .e-filtericon {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-left: 0 !important;
+    }
+    .custom-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    .custom-grid .e-gridheader .e-headercell {
+        font-size: 12px !important;
+        padding: 10px !important; /* Adjust padding if text is cramped */
+    }
 
-	}
-	/* Position the filter icon absolutely within the header cell */
-	.e-grid .e-headercell {
-		position: relative;
-		padding-right: 1px !important; /* Space for the icon */
-	}
+    .custom-grid .e-rowcell {
+        font-size: 10px !important;
+    }
 
-	.e-grid .e-headercell .e-filtericon {
-		position: absolute;
-		right: 5px;
-		top: 50%;
-		transform: translateY(-50%);
-		margin-left: 0 !important;
-	}
-	.custom-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		width: 100%;
-	}
-	.custom-grid .e-gridheader .e-headercell {
-		font-size: 12px !important;
-		padding: 10px !important; /* Adjust padding if text is cramped */
-	}
-
-	.custom-grid .e-rowcell {
-		font-size: 10px !important;
-	}
-
-	.form-grid {
-		display: grid;
-		grid-template-columns: 2fr 2fr 2fr 6fr;
-		gap: 20px;
-	}
-	.form-group {
-		margin-bottom: 15px;
-		display: flex;
-		flex-direction: column;
-	}
-	.column {
-		display: flex;
-		flex-direction: column;
-	}
-	label {
-		margin-bottom: 5px;
-	}
-	.input-container {
-		height: 38px; /* Consistent height for all inputs */
-	}
-	.input-container :deep(input),
-	.input-container :deep(InputDate) {
-		width: 100%;
-		height: 100%;
-		box-sizing: border-box;
-	}
-	.button-row {
-		margin-top: 20px;
-	}
-	.right-padding {
-		padding-right: 0px; /* Adjust the padding as needed */
-
-	}
-	.invqty-column {
-		padding-right: 10px; /* Adjust the value as needed for the desired margin */
-	}
+    .form-grid {
+        display: grid;
+        grid-template-columns: 2fr 2fr 2fr 6fr;
+        gap: 20px;
+    }
+    .form-group {
+        margin-bottom: 15px;
+        display: flex;
+        flex-direction: column;
+    }
+    .column {
+        display: flex;
+        flex-direction: column;
+    }
+    label {
+        margin-bottom: 5px;
+    }
+    .input-container {
+        height: 38px; /* Consistent height for all inputs */
+    }
+    .input-container :deep(input),
+    .input-container :deep(InputDate) {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+    }
+    .button-row {
+        margin-top: 20px;
+    }
+    .right-padding {
+        padding-right: 0px; /* Adjust the padding as needed */
+    }
+    .invqty-column {
+        padding-right: 10px; /* Adjust the value as needed for the desired margin */
+    }
 </style>
