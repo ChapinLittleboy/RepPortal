@@ -28,8 +28,10 @@ else
         <span style="margin-left:20px;">@(showRevenue ? "Showing Revenue Data" : "Showing Quantity Data")</span>
     </div>
 
+    <div style="width:calc(100vw - 3rem); height:70vh;">
+
     <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowFiltering="true" AllowPaging="true" ShowColumnChooser="true" AllowReordering="true"
-    AllowGrouping="true" AllowExcelExport="true"
+    AllowGrouping="true" AllowExcelExport="true" Width="100%" Height="100%"
     Toolbar="@(new List<string>() { "Export to Excel" , "ColumnChooser"})" AllowResizing="true" AllowTextWrap="true">
         <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
         <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
@@ -63,51 +65,36 @@ else
                 // if (shouldShowColumn) { ... }
                 // --- OR --- just show all columns from the list and format appropriately:
 
-                <GridColumn Field="@column" HeaderText="@header" Format="@format" Width="140" TextAlign="TextAlign.Right"></GridColumn>
+               // <GridColumn Field="@column" HeaderText="@header" Format="@format" Width="140" TextAlign="TextAlign.Right"></GridColumn>
+                <GridColumn @key="column"
+                            Field="@column"
+                            HeaderText="@header"
+                            Format="@format"
+                            Width="140"
+                            TextAlign="TextAlign.Right" 
+                            Visible="true"/>
             }
 
         </GridColumns>
         <GridAggregates>
             <GridAggregate>
                 <GridAggregateColumns>
-                    @foreach (var column in DynamicColumnsToShow) // e.g., "FY2024_Rev", "FY2024_Qty"
+                    @foreach (var column in DynamicColumnsToShow)
                     {
-                        // Determine the REQUIRED format for the TEMPLATE based on column name
                         bool isRevenueColumn = column.EndsWith("_Rev", StringComparison.OrdinalIgnoreCase);
-                        string templateFormat = isRevenueColumn ? "C0" : "N0";
+                        string format = isRevenueColumn ? "C0" : "N0";
 
-                        // Define the aggregate column WITHOUT the Format attribute.
-                        // This should instruct the grid to return the raw SUM value (hopefully numeric).
-                        <GridAggregateColumn Field="@column" Type="AggregateType.Sum">
-
-                            @* Group Footer Template: Apply formatting here   LOTS OF WORK NEEDED to implement *@
-
-
-                            @* Footer Template: Apply formatting here *@
-                            <FooterTemplate>
-	                            @{
-		                            string formattedSum = "N/A";
-		                            // Lookup still uses the 'column' variable, which is correct.
-		                            // CalculatedSums should contain entries for ALL keys now.
-		                            if (aggregatesCalculated && CalculatedSums.TryGetValue(column, out decimal manualSum))
-		                            {
-			                            // Determine format based on column name
-			                            bool isRevenueColumn = column.EndsWith("_Rev", StringComparison.OrdinalIgnoreCase);
-			                            string templateFormat = isRevenueColumn ? "C0" : "N0";
-			                            try { formattedSum = manualSum.ToString(templateFormat); } catch { formattedSum = "Format Err"; }
-		                            }
-		                            // ... other conditions ...
-	                            }
-	                            <div><p>Total: @formattedSum</p></div>
-                            </FooterTemplate>
-
-                        </GridAggregateColumn>
+                        <GridAggregateColumn @key="column"
+                                             Field="@column"
+                                             Type="AggregateType.Sum"
+                                             Format="@format" />
                     }
                 </GridAggregateColumns>
             </GridAggregate>
         </GridAggregates>
 
     </SfGrid>
+    </div>
 }
 
 
@@ -133,21 +120,22 @@ else
     // Define ALL keys that require aggregation
     private List<string> KeysToAggregatexx = new List<string> {
 	    // Add ALL _Rev and _Qty keys that might appear in your grid
-	    "FY2024_Rev", "FY2024_Qty",
-	    "FY2025_Rev", "FY2025_Qty",
-	    "Sep2024_Rev", "Sep2024_Qty",
-	    "Oct2024_Rev", "Oct2024_Qty",
-	    "Nov2024_Rev", "Nov2024_Qty",
-	    "Dec2024_Rev", "Dec2024_Qty",
-	    "Jan2025_Rev", "Jan2025_Qty",
-	    "Feb2025_Rev", "Feb2025_Qty",
-	    "Mar2025_Rev", "Mar2025_Qty",
-	    "Apr2025_Rev", "Apr2025_Qty",
-	    "May2025_Rev", "May2025_Qty"
+	    "FY2023_Rev", "FY2023_Qty",
+        "FY2024_Rev", "FY2024_Qty",
+        "FY2025_Rev", "FY2025_Qty",
+        "Sep2025_Rev", "Sep2025_Qty",
+	    "Oct2025_Rev", "Oct2025_Qty",
+	    "Nov2025_Rev", "Nov2025_Qty",
+	    "Dec2025_Rev", "Dec2025_Qty",
+	    "Jan2026_Rev", "Jan2026_Qty",
+	    "Feb2026_Rev", "Feb2026_Qty",
+	    "Mar2026_Rev", "Mar2026_Qty",
+	    "Apr2026_Rev", "Apr2026_Qty",
+	    "May2026_Rev", "May2026_Qty"
 	    // Add any other monthly or yearly keys...
     };
 
-	private List<string> KeysToAggregate = new List<string>();
+    private List<string> KeysToAggregate = new List<string>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -173,13 +161,13 @@ else
         ConvertToDictionaries(rawData);
 
         SalesData = SalesData
-	        .OrderBy(d => d.ContainsKey("Customer Name") ? d["Customer Name"]?.ToString() : null)
-	        .ThenBy(d => d.ContainsKey("Item") ? d["Item"]?.ToString() : null)
-	        .ThenBy(d => d.ContainsKey("Ship To Num") ? d["Ship To Num"]?.ToString() : null)
-	        .ToList();
+            .OrderBy(d => d.ContainsKey("Customer Name") ? d["Customer Name"]?.ToString() : null)
+            .ThenBy(d => d.ContainsKey("Item") ? d["Item"]?.ToString() : null)
+            .ThenBy(d => d.ContainsKey("Ship To Num") ? d["Ship To Num"]?.ToString() : null)
+            .ToList();
 
         eSalesData = SalesData.Select(d => d.ToExpando()).ToList();
-        
+
         // --- Add this Debug Logging ---
 
 
@@ -188,8 +176,8 @@ else
         // 4. Calculate and set the initial list of columns to show
         UpdateDynamicColumnsToShow(); 
         CalculateManualAggregates();
-    
- 
+
+
 
         await base.OnInitializedAsync();
         // Hide the spinner
@@ -199,43 +187,43 @@ else
 
     private void CalculateManualAggregates()
     {
-	    Console.WriteLine("Calculating Manual Aggregates for ALL keys..."); // Debug log
-	    CalculatedSums.Clear();
-	    if (eSalesData == null || !eSalesData.Any())
-	    {
-		    aggregatesCalculated = true;
-		    return;
-	    }
+        Console.WriteLine("Calculating Manual Aggregates for ALL keys..."); // Debug log
+        CalculatedSums.Clear();
+        if (eSalesData == null || !eSalesData.Any())
+        {
+            aggregatesCalculated = true;
+            return;
+        }
 
-	    // Loop through the complete list of keys needing sums
-	    foreach (var columnKey in KeysToAggregate)
-	    {
-		    // Check if the key exists in the first row just to be safe
-		    // (Assumes all rows have the same keys as the first)
-		    var firstRow = eSalesData.First() as IDictionary<string, object>;
-		    if (!firstRow.ContainsKey(columnKey)) {
-			    Console.WriteLine($"Warning: Key '{columnKey}' not found in data, skipping aggregation.");
-			    CalculatedSums[columnKey] = 0; // Store 0 if key is expected but missing
-			    continue;
-		    }
+        // Loop through the complete list of keys needing sums
+        foreach (var columnKey in KeysToAggregate)
+        {
+            // Check if the key exists in the first row just to be safe
+            // (Assumes all rows have the same keys as the first)
+            var firstRow = eSalesData.First() as IDictionary<string, object>;
+            if (!firstRow.ContainsKey(columnKey)) {
+                Console.WriteLine($"Warning: Key '{columnKey}' not found in data, skipping aggregation.");
+                CalculatedSums[columnKey] = 0; // Store 0 if key is expected but missing
+                continue;
+            }
 
-		    decimal currentSum = 0;
-		    foreach (var rowObject in eSalesData)
-		    {
-			    var rowDict = (IDictionary<string, object>)rowObject;
-			    if (rowDict.TryGetValue(columnKey, out var value) && value != null)
-			    {
-				    if (decimal.TryParse(value.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal decimalValue))
-				    {
-					    currentSum += decimalValue;
-				    }
-			    }
-		    }
-		    CalculatedSums[columnKey] = currentSum; // Store sum for this key
-		    Console.WriteLine($"DEBUG MANUAL SUM: Key='{columnKey}', Sum={currentSum}"); // Optional debug log
-	    }
-	    aggregatesCalculated = true;
-	    Console.WriteLine("Finished Calculating Manual Aggregates.");
+            decimal currentSum = 0;
+            foreach (var rowObject in eSalesData)
+            {
+                var rowDict = (IDictionary<string, object>)rowObject;
+                if (rowDict.TryGetValue(columnKey, out var value) && value != null)
+                {
+                    if (decimal.TryParse(value.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal decimalValue))
+                    {
+                        currentSum += decimalValue;
+                    }
+                }
+            }
+            CalculatedSums[columnKey] = currentSum; // Store sum for this key
+            Console.WriteLine($"DEBUG MANUAL SUM: Key='{columnKey}', Sum={currentSum}"); // Optional debug log
+        }
+        aggregatesCalculated = true;
+        Console.WriteLine("Finished Calculating Manual Aggregates.");
     }
 
     public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
@@ -260,9 +248,9 @@ else
 
     private void ProcessDynamicColumns(List<Dictionary<string, object>> records)
     {
-//
-       // Console.WriteLine("Records: " + string.Join(Environment.NewLine, records.Select(record =>
-       //     string.Join(", ", record.Select(kvp => $"{kvp.Key}: {kvp.Value}")))));
+        //
+        // Console.WriteLine("Records: " + string.Join(Environment.NewLine, records.Select(record =>
+        //     string.Join(", ", record.Select(kvp => $"{kvp.Key}: {kvp.Value}")))));
 
         // Get all possible dynamic column names
         var allColumns = records
@@ -276,6 +264,7 @@ else
 
         // Debugging: Log the dynamic columns
         Console.WriteLine("Dynamic Columns: " + string.Join(", ", DynamicColumns));
+        StateHasChanged();
     }
 
     private bool IsFixedColumn(string columnName)
@@ -335,7 +324,7 @@ else
             var monthPart = columnName.Substring(0, 3);
             var yearPart = columnName.Length > 3 ? columnName.Substring(3, 4) : "";
 
-            int previouscolumns = 13;
+            int previouscolumns = 16;  // 13
             var monthOrder = monthPart.ToUpper() switch
             {
 	            "SEP" => previouscolumns + 12,
