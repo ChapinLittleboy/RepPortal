@@ -926,8 +926,8 @@ ORDER BY FY{fiscalYear - 1} DESC;";
         {
             string safeMonth = monthName.Replace("'", "''");
             monthColumns.AppendLine($@"
-        MAX(CASE WHEN Period = '{safeMonth}' THEN RevAmount   ELSE 0 END) AS [{safeMonth}_Rev],
-        MAX(CASE WHEN Period = '{safeMonth}' THEN QtyInvoiced ELSE 0 END) AS [{safeMonth}_Qty],");
+        SUM(CASE WHEN Period = '{safeMonth}' THEN RevAmount   ELSE 0 END) AS [{safeMonth}_Rev],
+        SUM(CASE WHEN Period = '{safeMonth}' THEN QtyInvoiced ELSE 0 END) AS [{safeMonth}_Qty],");
         }
         if (monthColumns.Length > 0)
         {
@@ -1143,8 +1143,8 @@ ORDER BY FY{fiscalYear - 1} DESC;";
         {
             string safeMonthName = monthName.Replace("'", "''");
             monthColumns.AppendLine($@"
-        MAX(CASE WHEN Period = '{safeMonthName}' THEN RevAmount ELSE 0 END) AS [{safeMonthName}_Rev],
-        MAX(CASE WHEN Period = '{safeMonthName}' THEN QtyInvoiced ELSE 0 END) AS [{safeMonthName}_Qty],");
+        SUM(CASE WHEN Period = '{safeMonthName}' THEN RevAmount ELSE 0 END) AS [{safeMonthName}_Rev],
+        SUM(CASE WHEN Period = '{safeMonthName}' THEN QtyInvoiced ELSE 0 END) AS [{safeMonthName}_Qty],");
         }
 
         if (monthColumns.Length > 0)
@@ -1347,8 +1347,8 @@ ORDER BY FY{fiscalYear - 1} DESC;";
         {
             string safeMonthName = monthName.Replace("'", "''");
             monthColumns.AppendLine($@"
-            MAX(CASE WHEN Period = '{safeMonthName}' THEN RevAmount ELSE 0 END) AS [{safeMonthName}_Rev],
-            MAX(CASE WHEN Period = '{safeMonthName}' THEN QtyInvoiced ELSE 0 END) AS [{safeMonthName}_Qty],");
+            SUM(CASE WHEN Period = '{safeMonthName}' THEN RevAmount ELSE 0 END) AS [{safeMonthName}_Rev],
+            SUM(CASE WHEN Period = '{safeMonthName}' THEN QtyInvoiced ELSE 0 END) AS [{safeMonthName}_Qty],");
         }
 
         if (monthColumns.Length > 0)
