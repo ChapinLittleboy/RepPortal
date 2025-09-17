@@ -1,0 +1,594 @@
+﻿@page "/packing-list"
+
+@using PL = RepPortal.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Hosting
+@inject IWebHostEnvironment Env
+
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Drawing
+
+@using Syncfusion.Pdf
+@using Syncfusion.Pdf.Graphics
+@using Syncfusion.Pdf.Grid
+@using GridTextAlign = Syncfusion.Blazor.Grids.TextAlign
+@using PdfTextAlign = Syncfusion.Pdf.Graphics.TextAlign
+@inject PackingListService Service
+@inject IJSRuntime JS
+
+<h3>Packing List</h3>
+
+<!-- Mode selector -->
+<InputRadioGroup @bind-Value="Mode">
+    <div class="d-flex gap-3 align-items-center mb-2">
+        <label>
+            <InputRadio Value="@ShipmentMode" /> Shipment (pack_num)
+        </label>
+        <label class="ms-4">
+            <InputRadio Value="@OrderMode" /> Customer Order (co_num)
+        </label>
+    </div>
+</InputRadioGroup>
+
+<!-- Search -->
+<div class="row g-2 mb-3">
+    <div class="col-auto">
+        <SfTextBox @bind-Value="SearchKey" Placeholder="@PlaceholderText"></SfTextBox>
+    </div>
+    <div class="col-auto">
+        <SfButton CssClass="e-primary" OnClick="SearchAsync">Search</SfButton>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="col-12 mt-2 text-muted"><small>@Message</small></div>
+    }
+</div>
+
+<!-- ORDER MODE: multiple packing lists + selection + print -->
+@if (!IsShipmentMode)
+{
+    if (Lists is not null && Lists.Count > 0)
+    {
+        <div class="d-flex align-items-center gap-3 mb-2">
+            <label class="d-flex align-items-center gap-1">
+                <InputCheckbox @bind-Value="SelectAll" />
+                <span>Select all</span>
+            </label>
+
+            <SfButton CssClass="e-primary"
+                      OnClick="PrintSelectedAsync"
+                      Disabled="@(!AnySelected && Lists?.Count != 1)">
+                Print Selected (PDF)
+            </SfButton>
+
+            <span class="text-muted">
+                @SelectedCount selected
+            </span>
+        </div>
+
+        @foreach (var pl in Lists)
+        {
+            var packNum = pl?.Header?.PackNum ?? string.Empty;
+            <div class="card my-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <InputCheckbox @bind-Value="SelectedMap[packNum]" />
+                            <strong>Pack #:</strong>&nbsp;<span>@packNum</span>
+                        </div>
+                        <SfButton Size="ButtonSize.Small" OnClick="@(() => PrintOneAsync(pl))">Print This (PDF)</SfButton>
+                    </div>
+
+                    @if (pl?.Header is not null)
+                    {
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <div><strong>Pack Date:</strong> @(pl.Header.PackDate?.ToString("yyyy-MM-dd HH:mm"))</div>
+                                <div><strong>Warehouse:</strong> @pl.Header.Whse</div>
+                                <div><strong>CO #:</strong> @pl.Header.CoNum</div>
+                                <div><strong>Customer #:</strong> @pl.Header.CustNum</div>
+                                <div><strong>Customer PO:</strong> @pl.Header.CustPo</div>
+                                <div><strong>Ship Code:</strong> @pl.Header.ShipCode</div>
+                                <div><strong>Carrier:</strong> @pl.Header.Carrier</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div><strong>Ship To:</strong></div>
+                                @if (!string.IsNullOrWhiteSpace(pl.Header.ShipAddr))
+                                {
+                                    <div>@pl.Header.ShipAddr</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(pl.Header.ShipAddr2))
+                                {
+                                    <div>@pl.Header.ShipAddr2</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(pl.Header.ShipAddr3))
+                                {
+                                    <div>@pl.Header.ShipAddr3</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(pl.Header.ShipAddr4))
+                                {
+                                    <div>@pl.Header.ShipAddr4</div>
+                                }
+                                <div>
+                                    @pl.Header.ShipCity
+                                    @if (!string.IsNullOrWhiteSpace(pl.Header.ShipState))
+                                    {
+                                        @(", " + pl.Header.ShipState)
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(pl.Header.ShipZip))
+                                    {
+                                        @(" " + pl.Header.ShipZip)
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (pl?.Items is not null && pl.Items.Count > 0)
+                    {
+                        <SfGrid 
+                                DataSource="pl.Items"
+                                AllowPaging="true"
+                                AllowSorting="true"
+                                AllowFiltering="true">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(PL.PackingListItem.CoLine)" HeaderText="Line" Width="90" TextAlign="GridTextAlign.Right"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.Item)" HeaderText="Item" Width="160"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.UM)" HeaderText="U/M" Width="80"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.ShipmentId)" HeaderText="Shipment ID" Width="140"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.QtyPicked)" HeaderText="Qty Picked" Width="120" TextAlign="GridTextAlign.Right" Format="N4"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.QtyShipped)" HeaderText="Qty Shipped" Width="120" TextAlign="GridTextAlign.Right" Format="N4"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.ItemDesc)" HeaderText="Description" Width="300"></GridColumn>
+                            </GridColumns>
+                        </SfGrid>
+                    }
+                    else
+                    {
+                        <div class="mt-3 text-muted"><small>No items found for this packing list.</small></div>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else if (Searched)
+    {
+        <div class="text-muted">No shipments found for order <strong>@SearchKey</strong>.</div>
+    }
+}
+
+<!-- SHIPMENT MODE: single packing list -->
+@if (IsShipmentMode)
+{
+    <div class="d-flex gap-2 mb-2">
+        <SfButton CssClass="e-primary" OnClick="PrintCurrentAsync" Disabled="@(Current is null)">Print (PDF)</SfButton>
+    </div>
+
+    if (Current is not null && Current.Header is not null)
+    {
+        <div class="card my-3">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div><strong>Pack #:</strong> @Current.Header.PackNum</div>
+                        <div><strong>Pack Date:</strong> @(Current.Header.PackDate?.ToString("yyyy-MM-dd HH:mm"))</div>
+                        <div><strong>Warehouse:</strong> @Current.Header.Whse</div>
+                        <div><strong>CO #:</strong> @Current.Header.CoNum</div>
+                        <div><strong>Customer #:</strong> @Current.Header.CustNum</div>
+                        <div><strong>Customer PO:</strong> @Current.Header.CustPo</div>
+                        <div><strong>Ship Code:</strong> @Current.Header.ShipCode</div>
+                        <div><strong>Carrier:</strong> @Current.Header.Carrier</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div><strong>Ship To:</strong></div>
+                        @if (!string.IsNullOrWhiteSpace(Current.Header.ShipAddr))
+                        {
+                            <div>@Current.Header.ShipAddr</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Current.Header.ShipAddr2))
+                        {
+                            <div>@Current.Header.ShipAddr2</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Current.Header.ShipAddr3))
+                        {
+                            <div>@Current.Header.ShipAddr3</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Current.Header.ShipAddr4))
+                        {
+                            <div>@Current.Header.ShipAddr4</div>
+                        }
+                        <div>
+                            @Current.Header.ShipCity
+                            @if (!string.IsNullOrWhiteSpace(Current.Header.ShipState))
+                            {
+                                @(", " + Current.Header.ShipState)
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Current.Header.ShipZip))
+                            {
+                                @(" " + Current.Header.ShipZip)
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Current.Items is not null && Current.Items.Count > 0)
+        {
+            <SfGrid 
+                    DataSource="Current.Items"
+                    AllowPaging="true"
+                    AllowSorting="true"
+                    AllowFiltering="true">
+                <GridColumns>
+                    <GridColumn Field="@nameof(PL.PackingListItem.CoLine)" HeaderText="Line" Width="90" TextAlign="GridTextAlign.Right"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.Item)" HeaderText="Item" Width="160"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.UM)" HeaderText="U/M" Width="80"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.ShipmentId)" HeaderText="Shipment ID" Width="140"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.QtyPicked)" HeaderText="Qty Picked" Width="120" TextAlign="GridTextAlign.Right" Format="N4"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.QtyShipped)" HeaderText="Qty Shipped" Width="120" TextAlign="GridTextAlign.Right" Format="N4"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.ItemDesc)" HeaderText="Description" Width="300"></GridColumn>
+                </GridColumns>
+            </SfGrid>
+        }
+        else
+        {
+            <div class="text-muted">No items found for shipment <strong>@Current.Header.PackNum</strong>.</div>
+        }
+    }
+    else if (Searched)
+    {
+        <div class="text-muted">No packing list found for shipment <strong>@SearchKey</strong>.</div>
+    }
+}
+
+@code {
+    // --- Mode selection ---
+    private const string ShipmentMode = "Shipment";
+    private const string OrderMode = "Order";
+
+    private string _mode = ShipmentMode;
+    private string Mode
+    {
+        get => _mode;
+        set
+        {
+            if (_mode == value) return;
+            _mode = value;
+            SwitchMode(value);
+        }
+    }
+    private bool IsShipmentMode => Mode == ShipmentMode;
+
+    // --- Page state ---
+    private string SearchKey { get; set; } = "";
+    private bool Searched { get; set; } = false;
+    private string? Message { get; set; }
+
+    private PL.PackingList? Current;           // single packing list (shipment search)
+    private List<PL.PackingList>? Lists;       // multiple packing lists (order search)
+
+    // Selection map for order mode: pack_num -> checked?
+    private Dictionary<string, bool> SelectedMap = new();
+
+    // Select-all binding
+    private bool _selectAll;
+    private bool SelectAll
+    {
+        get => _selectAll;
+        set
+        {
+            _selectAll = value;
+            if (Lists is null) return;
+            foreach (var pl in Lists)
+            {
+                var key = pl?.Header?.PackNum ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(key)) continue;
+                SelectedMap[key] = _selectAll;
+            }
+        }
+    }
+
+    private bool AnySelected => SelectedMap.Values.Any(v => v);
+    private int SelectedCount => SelectedMap.Values.Count(v => v);
+
+    private string PlaceholderText => IsShipmentMode ? "Enter pack_num (shipment #)" : "Enter co_num (customer order #)";
+    private byte[]? _logoBytes;
+
+    private byte[]? GetLogoBytes()
+    {
+        try
+        {
+            var path = System.IO.Path.Combine(Env.WebRootPath, "images", "ChapinLogo.png");
+            return System.IO.File.Exists(path) ? System.IO.File.ReadAllBytes(path) : null;
+        }
+        catch { return null; }
+    }
+
+    private void SwitchMode(string mode)
+    {
+        Current = null;
+        Lists = null;
+        SelectedMap.Clear();
+        SelectAll = false;
+        SearchKey = "";
+        Searched = false;
+        Message = null;
+        StateHasChanged();
+    }
+
+    private async Task SearchAsync()
+    {
+        Message = null;
+        Searched = true;
+
+        var key = SearchKey?.Trim();
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            Message = "Please enter a value to search.";
+            Current = null;
+            Lists = null;
+            SelectedMap.Clear();
+            return;
+        }
+
+        try
+        {
+            if (IsShipmentMode)
+            {
+                Current = await Service.GetPackingListByShipmentAsync(key);
+                Lists = null;
+                SelectedMap.Clear();
+            }
+            else
+            {
+                Lists = await Service.GetShipmentsByOrderAsync(key);
+                Current = null;
+
+                // Initialize selection map; if only one list, no need to select it but Print Selected will still work.
+                SelectedMap.Clear();
+                if (Lists is not null)
+                {
+                    foreach (var pl in Lists)
+                    {
+                        var pn = pl?.Header?.PackNum ?? string.Empty;
+                        if (!string.IsNullOrWhiteSpace(pn))
+                            SelectedMap[pn] = false;
+                    }
+                }
+                SelectAll = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error: {ex.Message}";
+            Current = null;
+            Lists = null;
+            SelectedMap.Clear();
+        }
+    }
+
+    // --- PDF generation (Syncfusion.Pdf) ---
+
+    private async Task PrintCurrentAsync()
+    {
+        if (Current is null) return;
+        await PrintListsAsync(new[] { Current }, $"PackingList_{Current.Header?.PackNum}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+    }
+
+    private async Task PrintOneAsync(PL.PackingList? pl)
+    {
+        if (pl is null) return;
+        var name = $"PackingList_{pl.Header?.PackNum}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+        await PrintListsAsync(new[] { pl }, name);
+    }
+
+    private async Task PrintSelectedAsync()
+    {
+        if (Lists is null || Lists.Count == 0) return;
+
+        // If none selected but exactly one list exists, print that single one
+        var selected = SelectedMap.Values.Any(v => v)
+            ? Lists.Where(pl => pl?.Header?.PackNum is string pn && SelectedMap.TryGetValue(pn, out var chk) && chk)
+                   .ToList()
+            : (Lists.Count == 1 ? new List<PL.PackingList> { Lists[0] } : new List<PL.PackingList>());
+
+        if (selected.Count == 0)
+        {
+            Message = "Select at least one packing list.";
+            return;
+        }
+
+        await PrintListsAsync(selected, $"PackingLists_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+    }
+
+    private async Task PrintListsAsync(IEnumerable<PL.PackingList> lists, string fileName)
+    {
+        using var ms = BuildPdf(lists);
+        var base64 = Convert.ToBase64String(ms.ToArray());
+        await JS.InvokeVoidAsync("saveFile", fileName, base64);
+    }
+
+    private MemoryStream BuildPdf(IEnumerable<PL.PackingList> lists)
+    {
+        var ms = new MemoryStream();
+        using var doc = new PdfDocument();
+        doc.PageSettings.Size = Syncfusion.Pdf.PdfPageSize.Letter;
+        doc.PageSettings.Margins.All = 36; // 0.5"
+        _logoBytes ??= GetLogoBytes();
+        foreach (var pl in lists)
+        {
+            var page = doc.Pages.Add();
+            var g = page.Graphics;
+
+            const float margin = 36f;
+            const float logoW = 144f; // 2 inches
+            const float logoH = 72f;  // 1 inch
+
+            // Logo placeholder 2" x 1"
+            var logoRect = new Syncfusion.Drawing.RectangleF(margin, margin, logoW, logoH);
+
+            // --- draw logo if found; otherwise keep the placeholder box ---
+            if (_logoBytes is not null)
+            {
+                using var imgStream = new MemoryStream(_logoBytes);
+                var logo = new PdfBitmap(imgStream);
+                // Fill the reserved box (simple). If you want to preserve aspect ratio, see note below.
+                // compute a centered “fit” inside logoRect
+                float targetW = logoRect.Width, targetH = logoRect.Height;
+                float imgW = logo.Width, imgH = logo.Height;      // pixels
+                                                                  // assume 72 dpi mapping; for relative fit, the ratio comparison still works
+                float scale = Math.Min(targetW / imgW, targetH / imgH);
+                float drawW = imgW * scale, drawH = imgH * scale;
+                float dx = logoRect.X + (targetW - drawW) / 2f;
+                float dy = logoRect.Y + (targetH - drawH) / 2f;
+
+                g.DrawImage(logo, new Syncfusion.Drawing.RectangleF(dx, dy, drawW, drawH));
+            }
+            else
+            {
+                g.DrawRectangle(PdfPens.Black, logoRect);
+                var logoFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10f, PdfFontStyle.Italic);
+                var logoText = "LOGO (2\" x 1\")";
+                var size = logoFont.MeasureString(logoText);
+                var pt = new Syncfusion.Drawing.PointF(
+                    logoRect.X + (logoRect.Width - size.Width) / 2f,
+                    logoRect.Y + (logoRect.Height - size.Height) / 2f);
+                g.DrawString(logoText, logoFont, PdfBrushes.Gray, pt);
+            }
+
+            // Title
+            var titleFont = new PdfStandardFont(PdfFontFamily.Helvetica, 16f, PdfFontStyle.Bold);
+            g.DrawString("PACKING LIST", titleFont, PdfBrushes.Black, new Syncfusion.Drawing.PointF(margin + logoW + 12f, margin + 8f));
+
+            // Header block
+            float y = margin + logoH + 12f;
+            var labelFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10f, PdfFontStyle.Bold);
+            var textFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10f);
+            float lineH = 14f;
+
+            void DrawRow(string label, string? value)
+            {
+                g.DrawString(label, labelFont, PdfBrushes.Black, new Syncfusion.Drawing.PointF(margin, y));
+                g.DrawString(value ?? "", textFont, PdfBrushes.Black, new Syncfusion.Drawing.PointF(margin + 110f, y));
+                y += lineH;
+            }
+
+            if (pl?.Header is not null)
+            {
+                DrawRow("Shipment #:", pl.Header.PackNum);
+                DrawRow("Pack Date:", pl.Header.PackDate?.ToString("yyyy-MM-dd HH:mm"));
+                DrawRow("Warehouse:", pl.Header.Whse);
+                DrawRow("Customer Order:", pl.Header.CoNum);
+                DrawRow("Customer #:", pl.Header.CustNum);
+                DrawRow("Customer PO:", pl.Header.CustPo);
+                DrawRow("Ship Code:", pl.Header.ShipCode);
+                DrawRow("Carrier:", pl.Header.Carrier);
+
+                // Ship To:
+                g.DrawString("Ship To:", labelFont, PdfBrushes.Black, new Syncfusion.Drawing.PointF(margin, y));
+                float yAddr = y;
+                y += lineH;
+
+                void DrawAddrLine(string? s)
+                {
+                    if (string.IsNullOrWhiteSpace(s)) return;
+                    g.DrawString(s, textFont, PdfBrushes.Black, new Syncfusion.Drawing.PointF(margin + 110f, yAddr));
+                    yAddr += lineH;
+                }
+
+                DrawAddrLine(pl.Header.ShipAddr);
+                DrawAddrLine(pl.Header.ShipAddr2);
+                DrawAddrLine(pl.Header.ShipAddr3);
+                DrawAddrLine(pl.Header.ShipAddr4);
+                var cityLine = (pl.Header.ShipCity ?? "")
+                               + (string.IsNullOrWhiteSpace(pl.Header.ShipState) ? "" : ", " + pl.Header.ShipState)
+                               + (string.IsNullOrWhiteSpace(pl.Header.ShipZip) ? "" : " " + pl.Header.ShipZip);
+                DrawAddrLine(cityLine);
+
+                y = Math.Max(y, yAddr) + 10f;
+            }
+
+            // Items grid
+            var dt = BuildItemsData(pl?.Items);
+            var grid = new PdfGrid { DataSource = dt };
+            // page content width after margins
+            float contentWidth = page.GetClientSize().Width - (margin * 2);
+            float[] widths =
+{
+    30f,   // Line
+    70f,  // Item
+    220f,     // Description (we'll fill the remainder below)
+    30f,   // U/M
+    55f,   // Qty Picked
+    65f   // Qty Shipped
+   
+};
+            //float fixedSum = widths.Take(widths.Length - 1).Sum();
+           // widths[^1] = Math.Max(120f, contentWidth - fixedSum);
+
+            for (int i = 0; i < grid.Columns.Count && i < widths.Length; i++)
+                grid.Columns[i].Width = widths[i];
+
+            grid.Style = new PdfGridStyle
+            {
+                CellPadding = new PdfPaddings(3, 3, 3, 3),
+                Font = new PdfStandardFont(PdfFontFamily.Helvetica, 9f)
+            };
+            grid.Headers[0].Style = new PdfGridRowStyle
+            {
+                Font = new PdfStandardFont(PdfFontFamily.Helvetica, 9f, PdfFontStyle.Bold)
+            };
+            grid.Draw(page, new Syncfusion.Drawing.PointF(margin, y));
+            // If long, Syncfusion will add continuation pages for the same list.
+        }
+
+        doc.Save(ms);
+        doc.Close(true);
+        ms.Position = 0;
+        return ms;
+    }
+
+    private static System.Data.DataTable BuildItemsData(List<PL.PackingListItem>? items)
+    {
+        var dt = new System.Data.DataTable();
+        dt.Columns.Add("Line", typeof(int));
+        dt.Columns.Add("Item", typeof(string));
+        dt.Columns.Add("Description", typeof(string));
+        dt.Columns.Add("U/M", typeof(string));
+        dt.Columns.Add("Qty Picked", typeof(string));
+        dt.Columns.Add("Qty Shipped", typeof(string));
+       
+
+        if (items != null)
+        {
+            foreach (var it in items)
+            {
+                dt.Rows.Add(
+                    it.CoLine,
+                    it.Item,
+                     it.ItemDesc ?? string.Empty,
+                    it.UM,                             
+                    it.QtyPicked.ToString("0.##"),
+                    it.QtyShipped.ToString("0.##")
+                    
+                );
+            }
+        }
+        return dt;
+    }
+}
+
+<script>
+    window.saveFile = (fileName, base64Data) => {
+        const link = document.createElement('a');
+        link.href = 'data:application/pdf;base64,' + base64Data;
+        link.download = fileName || 'packing-lists.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+</script>
