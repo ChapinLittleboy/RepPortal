@@ -1,0 +1,292 @@
+﻿@page "/packing-list"
+
+@using PL = RepPortal.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Buttons
+
+@inject PackingListService Service
+
+<h3>Packing List</h3>
+
+<!-- Mode selector -->
+<InputRadioGroup @bind-Value="Mode">
+    <div class="d-flex gap-3 align-items-center mb-2">
+        <label>
+            <InputRadio Value="@ShipmentMode" /> Shipment (pack_num)
+        </label>
+        <label class="ms-4">
+            <InputRadio Value="@OrderMode" /> Customer Order (co_num)
+        </label>
+    </div>
+</InputRadioGroup>
+
+<!-- Search -->
+<div class="row g-2 mb-3">
+    <div class="col-auto">
+        <SfTextBox @bind-Value="SearchKey" Placeholder="@PlaceholderText"></SfTextBox>
+    </div>
+    <div class="col-auto">
+        <SfButton CssClass="e-primary" OnClick="SearchAsync">Search</SfButton>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="col-12 mt-2 text-muted"><small>@Message</small></div>
+    }
+</div>
+
+<!-- ORDER MODE: multiple packing lists -->
+@if (!IsShipmentMode)
+{
+    if (Lists is not null && Lists.Count > 0)
+    {
+        <h5>@Lists.Count packing list(s) for order @SearchKey</h5>
+
+        @foreach (var pl in Lists)
+        {
+            <div class="card my-3">
+                <div class="card-body">
+                    @if (pl?.Header is not null)
+                    {
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div><strong>Pack #:</strong> @pl.Header.PackNum</div>
+                                <div><strong>Pack Date:</strong> @(pl.Header.PackDate?.ToString("yyyy-MM-dd HH:mm"))</div>
+                                <div><strong>Warehouse:</strong> @pl.Header.Whse</div>
+                                <div><strong>CO #:</strong> @pl.Header.CoNum</div>
+                                <div><strong>Customer #:</strong> @pl.Header.CustNum</div>
+                                <div><strong>Customer PO:</strong> @pl.Header.CustPo</div>
+                                <div><strong>Ship Code:</strong> @pl.Header.ShipCode</div>
+                                <div><strong>Carrier:</strong> @pl.Header.Carrier</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div><strong>Ship To:</strong></div>
+                                @if (!string.IsNullOrWhiteSpace(pl.Header.ShipAddr))
+                                {
+                                    <div>@pl.Header.ShipAddr</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(pl.Header.ShipAddr2))
+                                {
+                                    <div>@pl.Header.ShipAddr2</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(pl.Header.ShipAddr3))
+                                {
+                                    <div>@pl.Header.ShipAddr3</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(pl.Header.ShipAddr4))
+                                {
+                                    <div>@pl.Header.ShipAddr4</div>
+                                }
+                                <div>
+                                    @pl.Header.ShipCity
+                                    @if (!string.IsNullOrWhiteSpace(pl.Header.ShipState))
+                                    {
+                                        @(", " + pl.Header.ShipState)
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(pl.Header.ShipZip))
+                                    {
+                                        @(" " + pl.Header.ShipZip)
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (pl?.Items is not null && pl.Items.Count > 0)
+                    {
+                        <SfGrid TItem="PL.PackingListItem"
+                                DataSource="pl.Items"
+                                AllowPaging="true"
+                                AllowSorting="true"
+                                AllowFiltering="true"
+                                AllowPdfExport="true"
+                                AllowExcelExport="true"
+                                Toolbar="GridToolbar">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(PL.PackingListItem.CoLine)" HeaderText="Line" Width="90" TextAlign="TextAlign.Right"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.Item)" HeaderText="Item" Width="160"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.UM)" HeaderText="U/M" Width="80"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.ShipmentId)" HeaderText="Shipment ID" Width="140"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.QtyPicked)" HeaderText="Qty Picked" Width="120" TextAlign="TextAlign.Right" Format="N4"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.QtyShipped)" HeaderText="Qty Shipped" Width="120" TextAlign="TextAlign.Right" Format="N4"></GridColumn>
+                                <GridColumn Field="@nameof(PL.PackingListItem.ItemDesc)" HeaderText="Description" Width="300"></GridColumn>
+                            </GridColumns>
+                        </SfGrid>
+                    }
+                    else
+                    {
+                        <div class="mt-3 text-muted"><small>No items found for this packing list.</small></div>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else if (Searched)
+    {
+        <div class="text-muted">No shipments found for order <strong>@SearchKey</strong>.</div>
+    }
+}
+
+<!-- SHIPMENT MODE: single packing list -->
+@if (IsShipmentMode)
+{
+    if (Current is not null && Current.Header is not null)
+    {
+        <div class="card my-3">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div><strong>Pack #:</strong> @Current.Header.PackNum</div>
+                        <div><strong>Pack Date:</strong> @(Current.Header.PackDate?.ToString("yyyy-MM-dd HH:mm"))</div>
+                        <div><strong>Warehouse:</strong> @Current.Header.Whse</div>
+                        <div><strong>CO #:</strong> @Current.Header.CoNum</div>
+                        <div><strong>Customer #:</strong> @Current.Header.CustNum</div>
+                        <div><strong>Customer PO:</strong> @Current.Header.CustPo</div>
+                        <div><strong>Ship Code:</strong> @Current.Header.ShipCode</div>
+                        <div><strong>Carrier:</strong> @Current.Header.Carrier</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div><strong>Ship To:</strong></div>
+                        @if (!string.IsNullOrWhiteSpace(Current.Header.ShipAddr))
+                        {
+                            <div>@Current.Header.ShipAddr</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Current.Header.ShipAddr2))
+                        {
+                            <div>@Current.Header.ShipAddr2</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Current.Header.ShipAddr3))
+                        {
+                            <div>@Current.Header.ShipAddr3</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Current.Header.ShipAddr4))
+                        {
+                            <div>@Current.Header.ShipAddr4</div>
+                        }
+                        <div>
+                            @Current.Header.ShipCity
+                            @if (!string.IsNullOrWhiteSpace(Current.Header.ShipState))
+                            {
+                                @(", " + Current.Header.ShipState)
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Current.Header.ShipZip))
+                            {
+                                @(" " + Current.Header.ShipZip)
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Current.Items is not null && Current.Items.Count > 0)
+        {
+            <SfGrid TItem="PL.PackingListItem"
+                    DataSource="Current.Items"
+                    AllowPaging="true"
+                    AllowSorting="true"
+                    AllowFiltering="true"
+                    AllowPdfExport="true"
+                    AllowExcelExport="true"
+                    Toolbar="GridToolbar">
+                <GridColumns>
+                    <GridColumn Field="@nameof(PL.PackingListItem.CoLine)" HeaderText="Line" Width="90" TextAlign="TextAlign.Right"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.Item)" HeaderText="Item" Width="160"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.UM)" HeaderText="U/M" Width="80"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.ShipmentId)" HeaderText="Shipment ID" Width="140"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.QtyPicked)" HeaderText="Qty Picked" Width="120" TextAlign="TextAlign.Right" Format="N4"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.QtyShipped)" HeaderText="Qty Shipped" Width="120" TextAlign="TextAlign.Right" Format="N4"></GridColumn>
+                    <GridColumn Field="@nameof(PL.PackingListItem.ItemDesc)" HeaderText="Description" Width="300"></GridColumn>
+                </GridColumns>
+            </SfGrid>
+        }
+        else
+        {
+            <div class="text-muted">No items found for shipment <strong>@Current.Header.PackNum</strong>.</div>
+        }
+    }
+    else if (Searched)
+    {
+        <div class="text-muted">No packing list found for shipment <strong>@SearchKey</strong>.</div>
+    }
+}
+
+@code {
+    // --- Mode selection ---
+    private const string ShipmentMode = "Shipment";
+    private const string OrderMode = "Order";
+
+    private string _mode = ShipmentMode;
+    private string Mode
+    {
+        get => _mode;
+        set
+        {
+            if (_mode == value) return;
+            _mode = value;
+            SwitchMode(value);
+        }
+    }
+    private bool IsShipmentMode => Mode == ShipmentMode;
+
+    // --- Page state ---
+    private string SearchKey { get; set; } = "";
+    private bool Searched { get; set; } = false;
+    private string? Message { get; set; }
+
+    private PL.PackingList? Current;           // single packing list (shipment search)
+    private List<PL.PackingList>? Lists;       // multiple packing lists (order search)
+
+    // Grid toolbar items (avoid Razor quoting issues)
+    private readonly List<string> GridToolbar = new() { "Print", "PdfExport", "ExcelExport" };
+
+    private string PlaceholderText => IsShipmentMode ? "Enter pack_num (shipment #)" : "Enter co_num (customer order #)";
+
+    private void SwitchMode(string mode)
+    {
+        // Reset view on mode change
+        Current = null;
+        Lists = null;
+        SearchKey = "";
+        Searched = false;
+        Message = null;
+        StateHasChanged();
+    }
+
+    private async Task SearchAsync()
+    {
+        Message = null;
+        Searched = true;
+
+        var key = SearchKey?.Trim();
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            Message = "Please enter a value to search.";
+            Current = null;
+            Lists = null;
+            return;
+        }
+
+        try
+        {
+            if (IsShipmentMode)
+            {
+                Current = await Service.GetPackingListByShipmentAsync(key);
+                Lists = null;
+            }
+            else
+            {
+                Lists = await Service.GetShipmentsByOrderAsync(key);
+                Current = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error: {ex.Message}";
+            Current = null;
+            Lists = null;
+        }
+    }
+}
