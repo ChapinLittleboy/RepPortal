@@ -25,11 +25,12 @@
 <!-- Mode selector -->
 <InputRadioGroup @bind-Value="Mode">
     <div class="d-flex gap-3 align-items-center mb-2">
-        <label>
-            <InputRadio Value="@ShipmentMode" /> Shipment (pack_num)
-        </label>
+     
         <label class="ms-4">
             <InputRadio Value="@OrderMode" /> Customer Order (co_num)
+        </label>
+        <label>
+            <InputRadio Value="@ShipmentMode" /> Shipment (pack_num)
         </label>
     </div>
 </InputRadioGroup>
