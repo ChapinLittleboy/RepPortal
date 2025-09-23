@@ -30,70 +30,70 @@ else
 
     <div style="width:calc(100vw - 3rem); height:70vh;">
 
-    <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowFiltering="true" AllowPaging="true" ShowColumnChooser="true" AllowReordering="true"
-    AllowGrouping="true" AllowExcelExport="true" Width="100%" Height="100%"
-    Toolbar="@(new List<string>() { "Export to Excel" , "ColumnChooser"})" AllowResizing="true" AllowTextWrap="true">
-        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
-        <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
-        <GridPageSettings PageSizes="@(new string[] { "20", "50", "100",  "All" })" PageSize="20"></GridPageSettings>
-        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+        <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowFiltering="true" AllowPaging="true" ShowColumnChooser="true" AllowReordering="true"
+                AllowGrouping="true" AllowExcelExport="true" Width="100%" Height="100%"
+                Toolbar="@(new List<string>() { "Export to Excel", "ColumnChooser" })" AllowResizing="true" AllowTextWrap="true">
+            <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
+            <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
+            <GridPageSettings PageSizes="@(new string[] { "20", "50", "100", "All" })" PageSize="20"></GridPageSettings>
+            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
 
 
-        <GridColumns>
-            <!-- Fixed Columns -->
-            <GridColumn Field="Customer" HeaderText="Customer" Width="100"></GridColumn>
-            <GridColumn Field="Customer Name" HeaderText="Name" Width="150"></GridColumn>
-            <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
-            <GridColumn Field="Ship To City" HeaderText="Ship City" Width="120"></GridColumn>
-            <GridColumn Field="Ship To State" HeaderText="Ship State" Width="120"></GridColumn>
-            <GridColumn Field="slsman" HeaderText="Salesman" Width="120"></GridColumn>
-            <GridColumn Field="Bill To State" HeaderText="Bill State" Width="100"></GridColumn>
-            <GridColumn Field="RegionName" HeaderText="Region" Width="120"></GridColumn>
-            <GridColumn Field="Item" HeaderText="Item" Width="120"></GridColumn>
-            <GridColumn Field="ItemDescription" HeaderText="Description" Width="120"></GridColumn>
+            <GridColumns>
+                <!-- Fixed Columns -->
+                <GridColumn Field="Customer" HeaderText="Customer" Width="100"></GridColumn>
+                <GridColumn Field="Customer Name" HeaderText="Name" Width="150"></GridColumn>
+                <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
+                <GridColumn Field="Ship To City" HeaderText="Ship City" Width="120"></GridColumn>
+                <GridColumn Field="Ship To State" HeaderText="Ship State" Width="120"></GridColumn>
+                <GridColumn Field="slsman" HeaderText="Salesman" Width="120"></GridColumn>
+                <GridColumn Field="Bill To State" HeaderText="Bill State" Width="100"></GridColumn>
+                <GridColumn Field="RegionName" HeaderText="Region" Width="120"></GridColumn>
+                <GridColumn Field="Item" HeaderText="Item" Width="120"></GridColumn>
+                <GridColumn Field="ItemDescription" HeaderText="Description" Width="120"></GridColumn>
 
-            <!-- Dynamic Columns -->
-            @foreach (var column in DynamicColumnsToShow)
-            {
-                // Determine if it's Revenue or Quantity based on name
-                bool isRevenueColumn = column.EndsWith("_Rev", StringComparison.OrdinalIgnoreCase);
-                string format = isRevenueColumn ? "C0" : "N0"; // C0 for Rev, N0 for Qty
-                var header = column.Replace("_", " "); // Header: "FY2024 Rev", "FY2024 Qty"
+                <!-- Dynamic Columns -->
+                @foreach (var column in DynamicColumnsToShow)
+                {
+                    // Determine if it's Revenue or Quantity based on name
+                    bool isRevenueColumn = column.EndsWith("_Rev", StringComparison.OrdinalIgnoreCase);
+                    string format = isRevenueColumn ? "C0" : "N0"; // C0 for Rev, N0 for Qty
+                    var header = column.Replace("_", " "); // Header: "FY2024 Rev", "FY2024 Qty"
 
-                // Optional: You could use the showRevenue flag to *skip* columns you don't want
-                // bool shouldShowColumn = (isRevenueColumn && showRevenue) || (!isRevenueColumn && !showRevenue);
-                // if (shouldShowColumn) { ... }
-                // --- OR --- just show all columns from the list and format appropriately:
+                    // Optional: You could use the showRevenue flag to *skip* columns you don't want
+                    // bool shouldShowColumn = (isRevenueColumn && showRevenue) || (!isRevenueColumn && !showRevenue);
+                    // if (shouldShowColumn) { ... }
+                    // --- OR --- just show all columns from the list and format appropriately:
 
-               // <GridColumn Field="@column" HeaderText="@header" Format="@format" Width="140" TextAlign="TextAlign.Right"></GridColumn>
-                <GridColumn @key="column"
-                            Field="@column"
-                            HeaderText="@header"
-                            Format="@format"
-                            Width="140"
-                            TextAlign="TextAlign.Right" 
-                            Visible="true"/>
-            }
+                    // <GridColumn Field="@column" HeaderText="@header" Format="@format" Width="140" TextAlign="TextAlign.Right"></GridColumn>
+                    <GridColumn @key="column"
+                                Field="@column"
+                                HeaderText="@header"
+                                Format="@format"
+                                Width="140"
+                                TextAlign="TextAlign.Right"
+                                Visible="true" />
+                }
 
-        </GridColumns>
-        <GridAggregates>
-            <GridAggregate>
-                <GridAggregateColumns>
-                    @foreach (var column in DynamicColumnsToShow)
-                    {
-                        bool isRevenueColumn = column.EndsWith("_Rev", StringComparison.OrdinalIgnoreCase);
-                        string format = isRevenueColumn ? "C0" : "N0";
+            </GridColumns>
+            <GridAggregates>
+                <GridAggregate>
+                    <GridAggregateColumns>
+                        @foreach (var column in DynamicColumnsToShow)
+                        {
+                            bool isRevenueColumn = column.EndsWith("_Rev", StringComparison.OrdinalIgnoreCase);
+                            string format = isRevenueColumn ? "C0" : "N0";
 
-                        <GridAggregateColumn @key="column"
-                                             Field="@column"
-                                             Type="AggregateType.Sum"
-                                             Format="@format" />
-                    }
-                </GridAggregateColumns>
-            </GridAggregate>
-        </GridAggregates>
+                            <GridAggregateColumn @key="column"
+                                                 Field="@column"
+                                                 Type="AggregateType.Sum"
+                                                 Format="@format" />
+                        }
+                    </GridAggregateColumns>
+                </GridAggregate>
+            </GridAggregates>
 
-    </SfGrid>
+        </SfGrid>
     </div>
 }
 
@@ -124,14 +124,14 @@ else
         "FY2024_Rev", "FY2024_Qty",
         "FY2025_Rev", "FY2025_Qty",
         "Sep2025_Rev", "Sep2025_Qty",
-	    "Oct2025_Rev", "Oct2025_Qty",
-	    "Nov2025_Rev", "Nov2025_Qty",
-	    "Dec2025_Rev", "Dec2025_Qty",
-	    "Jan2026_Rev", "Jan2026_Qty",
-	    "Feb2026_Rev", "Feb2026_Qty",
-	    "Mar2026_Rev", "Mar2026_Qty",
-	    "Apr2026_Rev", "Apr2026_Qty",
-	    "May2026_Rev", "May2026_Qty"
+        "Oct2025_Rev", "Oct2025_Qty",
+        "Nov2025_Rev", "Nov2025_Qty",
+        "Dec2025_Rev", "Dec2025_Qty",
+        "Jan2026_Rev", "Jan2026_Qty",
+        "Feb2026_Rev", "Feb2026_Qty",
+        "Mar2026_Rev", "Mar2026_Qty",
+        "Apr2026_Rev", "Apr2026_Qty",
+        "May2026_Rev", "May2026_Qty"
 	    // Add any other monthly or yearly keys...
     };
 
@@ -174,7 +174,7 @@ else
 
         // --- Calculate aggregates for ALL keys ---
         // 4. Calculate and set the initial list of columns to show
-        UpdateDynamicColumnsToShow(); 
+        UpdateDynamicColumnsToShow();
         CalculateManualAggregates();
 
 
@@ -201,7 +201,8 @@ else
             // Check if the key exists in the first row just to be safe
             // (Assumes all rows have the same keys as the first)
             var firstRow = eSalesData.First() as IDictionary<string, object>;
-            if (!firstRow.ContainsKey(columnKey)) {
+            if (!firstRow.ContainsKey(columnKey))
+            {
                 Console.WriteLine($"Warning: Key '{columnKey}' not found in data, skipping aggregation.");
                 CalculatedSums[columnKey] = 0; // Store 0 if key is expected but missing
                 continue;
@@ -234,9 +235,9 @@ else
             // Log report usage (no parameters for listing page)
             await ActivityLogService.LogReportUsageActivityAsync("Monthly Item Sales Historic Report Export", ExcelFileName);
             ExcelExportProperties exportProperties = new ExcelExportProperties
-                {
-                    FileName = ExcelFileName
-                };
+            {
+                FileName = ExcelFileName
+            };
             await this.Grid.ExportToExcelAsync(exportProperties);
         }
     }
@@ -327,18 +328,18 @@ else
             int previouscolumns = 16;  // 13
             var monthOrder = monthPart.ToUpper() switch
             {
-	            "SEP" => previouscolumns + 12,
-	            "OCT" => previouscolumns + 11,
-	            "NOV" => previouscolumns + 10,
-	            "DEC" => previouscolumns + 9,
-	            "JAN" => previouscolumns + 8,
-	            "FEB" => previouscolumns + 7,
-	            "MAR" => previouscolumns + 6,
-	            "APR" => previouscolumns + 5,
-	            "MAY" => previouscolumns + 4,
-	            "JUN" => previouscolumns + 3,
-	            "JUL" => previouscolumns + 2,
-	            "AUG" => previouscolumns + 1,
+                "SEP" => previouscolumns + 12,
+                "OCT" => previouscolumns + 11,
+                "NOV" => previouscolumns + 10,
+                "DEC" => previouscolumns + 9,
+                "JAN" => previouscolumns + 8,
+                "FEB" => previouscolumns + 7,
+                "MAR" => previouscolumns + 6,
+                "APR" => previouscolumns + 5,
+                "MAY" => previouscolumns + 4,
+                "JUN" => previouscolumns + 3,
+                "JUL" => previouscolumns + 2,
+                "AUG" => previouscolumns + 1,
 
                 _ => -1 // Unknown month
             };
@@ -424,40 +425,40 @@ else
     // Toggles the selection and updates the list of columns to display
     void ToggleDataType()
     {
-	
-	    showRevenue = !showRevenue;
-	    UpdateDynamicColumnsToShow(); // <--- Use the helper
-	    StateHasChanged();
+
+        showRevenue = !showRevenue;
+        UpdateDynamicColumnsToShow(); // <--- Use the helper
+        StateHasChanged();
 
     }
 
     private void UpdateDynamicColumnsToShow()
     {
-	    // Use the master list (ensure it's populated)
+        // Use the master list (ensure it's populated)
         DynamicColumnsToShow = KeysToAggregate
-		    .Where(col => showRevenue ? col.EndsWith("_Rev", StringComparison.OrdinalIgnoreCase) : col.EndsWith("_Qty", StringComparison.OrdinalIgnoreCase))
-		    .OrderBy(GetColumnOrder) // Keep your original ordering logic
-		    .ToList();
+            .Where(col => showRevenue ? col.EndsWith("_Rev", StringComparison.OrdinalIgnoreCase) : col.EndsWith("_Qty", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(GetColumnOrder) // Keep your original ordering logic
+            .ToList();
 
-	    Console.WriteLine($"Updated DynamicColumnsToShow (Show Revenue: {showRevenue}): {string.Join(", ", DynamicColumnsToShow)}");
+        Console.WriteLine($"Updated DynamicColumnsToShow (Show Revenue: {showRevenue}): {string.Join(", ", DynamicColumnsToShow)}");
     }
 
     private void ProcessDynamicColumnsAndPopulateKeysToAggregate(List<Dictionary<string, object>> records)
     {
-	    if (records == null || !records.Any())
-	    {
-		    KeysToAggregate = new List<string>();
-		    return;
-	    }
-	    // Discover all non-fixed keys from the data
-	    KeysToAggregate = records
-		    .SelectMany(r => r.Keys)
-		    .Where(k => !IsFixedColumn(k)) // Your existing IsFixedColumn check
-		    .Distinct()
-		    // .OrderBy(GetColumnOrder) // Order here IF needed for KeysToAggregate itself, otherwise ordering is done in UpdateDynamicColumnsToShow
-		    .ToList();
+        if (records == null || !records.Any())
+        {
+            KeysToAggregate = new List<string>();
+            return;
+        }
+        // Discover all non-fixed keys from the data
+        KeysToAggregate = records
+            .SelectMany(r => r.Keys)
+            .Where(k => !IsFixedColumn(k)) // Your existing IsFixedColumn check
+            .Distinct()
+            // .OrderBy(GetColumnOrder) // Order here IF needed for KeysToAggregate itself, otherwise ordering is done in UpdateDynamicColumnsToShow
+            .ToList();
 
-	    Console.WriteLine("Populated KeysToAggregate: " + string.Join(", ", KeysToAggregate));
+        Console.WriteLine("Populated KeysToAggregate: " + string.Join(", ", KeysToAggregate));
     }
 
 }

@@ -1,0 +1,169 @@
+﻿@page "/monthly-item-sales-pivot"
+@attribute [Authorize]
+@using System.Dynamic
+@using System.Globalization
+@using RepPortal.Services
+@using RepPortal.Data
+@using RepPortal.Models
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.PivotView
+@inject SalesService SalesService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject IRepCodeContext RepCodeContext
+@inject RepPortal.Services.IActivityLogService ActivityLogService
+
+<meta name="referrer" content="never">
+<div class="control-section">
+    <div class="content-wrapper">
+<SfPivotView TValue="SaleRow" Height="600" AllowCalculatedField="true" ShowFieldList="true" ShowGroupingBar=true ShowToolbar="true" Toolbar="@PivotToolbar" EnableValueSorting=true EnableVirtualization =true AllowExcelExport=true ExportAllPages=false>
+    <PivotViewDataSourceSettings DataSource="@Sales"
+           ShowAggregationOnValueField=false                      ExpandAll="false">
+        <PivotViewTemplates>
+            <CellTemplate>
+                @{
+                    var cell = context as Syncfusion.Blazor.PivotView.AxisSet;
+
+                    // Only touch column headers; leave value cells and row headers alone
+                    if (cell != null && cell.Axis == "column")
+                    {
+                        // Be selective: target the FiscalYear level.
+                        // Depending on your build, either Hierarchy or LevelUniqueName will contain the field name.
+                        bool isFiscalYearLevel =
+                        (cell.Hierarchy?.Contains("FiscalYear", StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (cell.LevelUniqueName?.Contains("FiscalYear", StringComparison.OrdinalIgnoreCase) ?? false);
+
+                        if (isFiscalYearLevel && !string.IsNullOrEmpty(cell.FormattedText))
+                        {
+                            @($"FY{cell.FormattedText}")
+                        }
+                        else
+                        {
+                            @cell.FormattedText
+                        }
+                    }
+                    else
+                    {
+                        @cell?.FormattedText
+                    }
+                }
+            </CellTemplate>
+        </PivotViewTemplates>
+        <PivotViewRows>
+            <PivotViewRow Name="CorpNumWithName" Caption="CorpCust" ExpandAll="true" />
+            <PivotViewRow Name="ItemNumWithProduct" Caption="Item" />
+        </PivotViewRows>
+        <PivotViewColumns>
+            <PivotViewColumn Name="FiscalYearLabel" Caption="FiscalYear" ShowValueTypeIcon=false/>
+            <PivotViewColumn Name="QuarterOfFiscalYearLabel" Caption="Quarter" />
+            <PivotViewColumn Name="NumberedMonthShort" Caption="Month" />
+        </PivotViewColumns>
+        <PivotViewValues>
+            <PivotViewValue Name="Quantity" Type="SummaryTypes.Sum" Caption="Qty" ShowValueTypeIcon=false />
+            <PivotViewValue Name="SalesAmount" Type=SummaryTypes.Sum Caption="Amount" />
+        </PivotViewValues>
+        <PivotViewFormatSettings>
+            <PivotViewFormatSetting Name="SalesAmount" Format="C" />
+        </PivotViewFormatSettings>
+ 
+
+    </PivotViewDataSourceSettings>
+    <PivotViewGroupingBarSettings ShowFilterIcon="true" ShowSortIcon="false" ShowRemoveIcon="true" ShowValueTypeIcon="false"></PivotViewGroupingBarSettings>
+</SfPivotView>
+</div>
+</div>
+<style>
+    .e-pivotview {
+        min-height: 200px;
+    }
+    .e-pivotview .e-grouping-bar {
+  border: 0;
+  background: transparent;
+}
+.e-pivotview .e-grouping-bar  .e-pivot-button
+{
+  background: #f6f7f9;                 /* neutral, low-contrast */
+  border: 1px solid #e5e7eb;           /* light border */
+  border-radius: 12px;                  /* rounded “pill” */
+  box-shadow: none;                     /* flatter */
+  padding: 4px 10px;
+  visibility: hidden;
+  margin: 4px 6px;
+  min-height: 30px;
+  transition: background .15s ease, border-color .15s ease;
+}
+    html, body {
+        height: 100%;
+    }
+    .e-custom-class {
+        text-decoration: auto;
+    }
+    .e-custom-class:hover {
+        text-decoration: underline;
+    }
+    .e-pivotview .e-grouping-bar .e-pivot-button .e-pvt-btn-div .e-icons {
+  opacity: .45;
+  transition: opacity .15s;
+}
+
+</Style>
+
+@code {
+    public List<SaleRow> Sales { get; set; } = new();
+    
+
+    public List<Syncfusion.Blazor.PivotView.ToolbarItems> PivotToolbar = new List<Syncfusion.Blazor.PivotView.ToolbarItems>
+    {
+        Syncfusion.Blazor.PivotView.ToolbarItems.FieldList,
+       // Syncfusion.Blazor.PivotView.ToolbarItems.New,
+       // Syncfusion.Blazor.PivotView.ToolbarItems.Save,
+        //Syncfusion.Blazor.PivotView.ToolbarItems.SaveAs,
+        //Syncfusion.Blazor.PivotView.ToolbarItems.Rename,
+       // Syncfusion.Blazor.PivotView.ToolbarItems.Remove,
+        //Syncfusion.Blazor.PivotView.ToolbarItems.Load,
+        //Syncfusion.Blazor.PivotView.ToolbarItems.Grid,
+       // Syncfusion.Blazor.PivotView.ToolbarItems.Chart,
+        Syncfusion.Blazor.PivotView.ToolbarItems.Export,
+       // Syncfusion.Blazor.PivotView.ToolbarItems.SubTotal,
+       // Syncfusion.Blazor.PivotView.ToolbarItems.GrandTotal,
+        Syncfusion.Blazor.PivotView.ToolbarItems.Formatting
+        
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Sales = await SalesService.GetRecentSalesAsync();
+        
+
+    }
+
+    public class SaleRow
+    {
+        public DateTime OrderDate { get; set; }
+        public string CustomerName { get; set; } = "";
+        public string CorporateName { get; set; } = "";
+        public string ProductName { get; set; } = "";
+        public int Quantity { get; set; }
+        public decimal SalesAmount { get; set; }
+        public string CustNum { get; set; } = "";
+        public string ItemNum { get; set; } = "";
+        public string MonthShort { get; set; } = "";
+        public int DayOfMonth { get; set; }
+        public int FiscalYear { get; set; }
+        public string DayShort { get; set; } = "";
+        public int MonthOfFiscalYear { get; set; }
+        public int QuarterOfFiscalYear { get; set; }
+
+
+        // Returns ItemNum + '-' + ProductName
+        public string ItemNumWithProduct => $"{ItemNum} - {ProductName}";
+
+        // Returns CustomerName + '(' + trimmed CustNum + ')'
+        public string CustomerNameWithNum => $"{CustomerName} ({CustNum.Trim()})";
+        public string NumberedMonthShort => $"{MonthOfFiscalYear} - {MonthShort}";
+        public string QuarterOfFiscalYearLabel => $"Fiscal Q{QuarterOfFiscalYear}";
+        public string CorpNumWithName => $"{CustNum} - {CorporateName}";
+        public string FiscalYearLabel => $"FY{FiscalYear}";
+
+    }
+}
