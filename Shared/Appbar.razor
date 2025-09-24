@@ -118,13 +118,14 @@
 	{
 		new DropDownMenuItem { Text = "Rep Customer List - Active & Inactive Accounts", Id = "customerlist" },
 		new DropDownMenuItem { Text = "Quick Order Lookup - Order/PO # Status", Id = "quickorderlookup" },
-		// new DropDownMenuItem { Text = "Print Packing Lists", Id = "packinglists" },
+		new DropDownMenuItem { Text = "Print Packing Lists", Id = "packinglists" },
 		new DropDownMenuItem { Text = "Sales Rep - Monthly Invoiced Sales Reports", Id = "salesrepmonthlyinvoicesales" },
 		new DropDownMenuItem { Text = "Open Orders Report", Id = "openordersreport" },
 		new DropDownMenuItem { Text = "Shipments Report", Id = "shipmentsreport" },
 		new DropDownMenuItem { Text = "Invoiced Accounts Report", Id = "invoicesreport" },
 		new DropDownMenuItem { Text = "Monthly Sales Report - Historic Territory Based Sales", Id = "monthlysalesreport" },
-		new DropDownMenuItem { Text = "Monthly Sales by Item Report - Historic Territory Based Sales", Id = "monthlysalesbyitemreport" }
+		new DropDownMenuItem { Text = "Monthly Sales by Item Report - Historic Territory Based Sales", Id = "monthlysalesbyitemreport" },
+		new DropDownMenuItem { Text = "Pivot table Sales by Item - Historic Territory Based Sales", Id = "pivotsalesbyitemreport" }
 	};
 
 	private List<DropDownMenuItem> PricingItems = new()
@@ -369,6 +370,11 @@
 			case "monthlysalesbyitemreport":
 				//Navigate to Monthly Sales Report page
 				Navigation.NavigateTo("/monthly-item-sales-with-qty");
+				break;
+			case "pivotsalesbyitemreport":
+				//Navigate to Monthly Sales Report page
+				TitleService.PageHelpLinkText = "How to use this pivot table";
+				Navigation.NavigateTo("/monthly-item-sales-pivot");
 				break;
 			case "shipmentsreport":
 				//Navigate to Monthly Sales Report page
