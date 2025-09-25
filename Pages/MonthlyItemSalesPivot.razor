@@ -248,6 +248,7 @@
         public string DayShort { get; set; } = "";
         public int MonthOfFiscalYear { get; set; }
         public int QuarterOfFiscalYear { get; set; }
+        public string RegionName { get; set; } = "";
 
         public string ItemNumWithProduct => $"{ItemNum} - {ProductName}";
         public string CustomerNameWithNum => $"{ShipToName} ({CustNum.Trim()})";
