@@ -73,7 +73,7 @@
                         </PivotViewTemplates>
 
                         <PivotViewRows>
-                            <PivotViewRow Name="CorpNumWithName" Caption="CorpCust" ExpandAll="true" AllowDragAndDrop=true/>
+                            <PivotViewRow Name="CorpNumWithName" Caption="Customer" ExpandAll="true" AllowDragAndDrop=true/>
                             <PivotViewRow Name="ItemNumWithProduct" Caption="Item" />
                         </PivotViewRows>
 
@@ -235,8 +235,8 @@
     public class SaleRow
     {
         public DateTime OrderDate { get; set; }
+        public string ShipToName { get; set; } = "";
         public string CustomerName { get; set; } = "";
-        public string CorporateName { get; set; } = "";
         public string ProductName { get; set; } = "";
         public int Quantity { get; set; }
         public decimal SalesAmount { get; set; }
@@ -250,10 +250,10 @@
         public int QuarterOfFiscalYear { get; set; }
 
         public string ItemNumWithProduct => $"{ItemNum} - {ProductName}";
-        public string CustomerNameWithNum => $"{CustomerName} ({CustNum.Trim()})";
+        public string CustomerNameWithNum => $"{ShipToName} ({CustNum.Trim()})";
         public string NumberedMonthShort => $"{MonthOfFiscalYear} - {MonthShort}";
         public string QuarterOfFiscalYearLabel => $"Fiscal Q{QuarterOfFiscalYear}";
-        public string CorpNumWithName => $"{CustNum} - {CorporateName}";
+        public string CorpNumWithName => $"{CustNum} - {CustomerName}";
         public string FiscalYearLabel => $"FY{FiscalYear}";
     }
 }
