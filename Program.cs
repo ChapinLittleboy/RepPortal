@@ -19,7 +19,7 @@ using System.Threading.RateLimiting;
 using Syncfusion.Blazor;
 
 
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxcd3VVRGVYUkV3WUBWYEo=");
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JEaF5cXmRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXhecXRSQmhdWEV/XEZWYE0="); //v30
 // Set the global command timeout for Dapper
 SqlMapper.Settings.CommandTimeout = 60; // Timeout set to 60 seconds
 

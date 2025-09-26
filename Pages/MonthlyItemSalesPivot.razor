@@ -29,6 +29,7 @@
         else
         {
             <!-- Option B: pivot appears only once data is ready -->
+
             <div class="pivot-wrap">
                 <SfPivotView ID="PivotView" TValue="SaleRow" Height="600"
                              AllowCalculatedField="true"
@@ -39,7 +40,8 @@
                              EnableValueSorting="true"
                              EnableVirtualization="true"
                              AllowExcelExport="true"
-                             ExportAllPages="false">
+                             ExportAllPages="false"
+                             >
 
                     <PivotViewDataSourceSettings DataSource="@Sales"
                                                  ShowAggregationOnValueField="false"
@@ -193,6 +195,7 @@
     {
         Syncfusion.Blazor.PivotView.ToolbarItems.FieldList,
         Syncfusion.Blazor.PivotView.ToolbarItems.Export
+        
 
     };
 
@@ -215,11 +218,12 @@
     }
 
 
+
     public void beforeExport(BeforeExportEventArgs args)
     {
         ExcelExportProperties ExcelProperties = new ExcelExportProperties();
         var repCode = RepCodeContext.CurrentRepCode;
-        ExcelProperties.FileName = $"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}.xlsx";
+        ExcelProperties.FileName = $"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}";
         args.ExcelExportProperties = ExcelProperties;
         args.FileName = ExcelProperties.FileName;
     }
