@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Blazored.LocalStorage;
 using Dapper;
 using DbUp;
@@ -13,9 +13,10 @@ using RepPortal.Services;
 using Serilog;
 using Serilog.Events;
 using SixLabors.ImageSharp.Web.DependencyInjection;
-using Syncfusion.Blazor;
+
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
+using Syncfusion.Blazor;
 
 
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXxcd3VVRGVYUkV3WUBWYEo=");
@@ -39,6 +40,7 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSyncfusionBlazor();
 builder.Host.UseSerilog();
 
 
@@ -80,7 +82,7 @@ builder.Services.AddScoped<CreditHoldExclusionService>();
 builder.Services.AddScoped<UserManager<ApplicationUser>>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<SalesService>();
-builder.Services.AddSyncfusionBlazor();
+
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRepCodeContext, RepCodeContext>();
