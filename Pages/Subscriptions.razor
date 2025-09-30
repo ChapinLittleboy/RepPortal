@@ -1,0 +1,119 @@
+﻿@page "/subscriptions"
+@using Hangfire
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IRecurringJobManager RecurringJobs
+@inject ReportRunner ReportRunner
+@inject AuthenticationStateProvider AuthStateProvider
+
+<h3>Create Monthly Sales report Subscription</h3>
+
+@if (Error is not null)
+{
+    <div class="alert alert-danger">@Error</div>
+}
+@if (Success is not null)
+{
+    <div class="alert alert-success">@Success</div>
+}
+
+<EditForm Model="@Model" OnValidSubmit="@CreateOrUpdate">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Day of month</label>
+        <InputNumber class="form-control" @bind-Value="Model.DayOfMonth" />
+        <div class="form-text">1–28 recommended (handles short months gracefully).</div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Hour (0–23)</label>
+        <InputNumber class="form-control" @bind-Value="Model.Hour24" />
+        <div class="form-text">Local server time zone.</div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Year (optional)</label>
+        <InputNumber class="form-control" @bind-Value="Model.Year" />
+        <div class="form-text">Leave blank to always send last month.</div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Month (1–12, optional)</label>
+        <InputNumber class="form-control" @bind-Value="Model.Month" />
+        <div class="form-text">Leave blank to always send last month.</div>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Create / Update Subscription</button>
+</EditForm>
+
+@code {
+    private string? Error;
+    private string? Success;
+
+    private SubscriptionModel Model = new()
+    {
+        DayOfMonth = 1,
+        Hour24 = 8
+    };
+
+    private sealed class SubscriptionModel
+    {
+        [System.ComponentModel.DataAnnotations.Range(1, 31)]
+        public int DayOfMonth { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(0, 23)]
+        public int Hour24 { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(0, 9999)]
+        public int? Year { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(1, 12)]
+        public int? Month { get; set; }
+    }
+
+    private async Task CreateOrUpdate()
+    {
+        Error = Success = null;
+
+        try
+        {
+            var auth = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = auth.User;
+
+            if (user?.Identity?.IsAuthenticated != true)
+            {
+                Error = "You must be signed in.";
+                return;
+            }
+
+            var email = user.FindFirst("email")?.Value
+                       ?? user.Identity?.Name
+                       ?? throw new InvalidOperationException("Could not determine user email.");
+
+            // Build a job id unique to the user
+            var jobId = $"monthly-item-sales:{email.ToLowerInvariant()}";
+
+            // (Optional) lock to last month every time by passing year/month = 0
+            var year = Model.Year ?? 0;
+            var month = Model.Month ?? 0;
+
+            // This is the method Hangfire will call:
+            // () => ReportRunner.SendMonthlyItemSalesEmailAsync(email, year, month)
+            // We also specify a CRON that runs monthly on the chosen day/hour.
+            var cron = Cron.Monthly(Math.Clamp(Model.DayOfMonth, 1, 28), Math.Clamp(Model.Hour24, 0, 23));
+
+            RecurringJobs.AddOrUpdate(
+                recurringJobId: jobId,
+                methodCall: () => ReportRunner.SendMonthlyItemSalesEmailAsync(email, year, month),
+                cronExpression: cron,
+                timeZone: TimeZoneInfo.Local);
+
+            Success = $"Subscription saved. It will run monthly on day {Model.DayOfMonth} at {Model.Hour24:00}:00 and email {email}.";
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+    }
+}

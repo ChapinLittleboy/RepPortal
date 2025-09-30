@@ -1,10 +1,16 @@
 using System.Reflection;
+using System.Threading.RateLimiting;
 using Blazored.LocalStorage;
 using Dapper;
 using DbUp;
+using Hangfire;
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using RepPortal.Areas.Identity;
@@ -13,10 +19,10 @@ using RepPortal.Services;
 using Serilog;
 using Serilog.Events;
 using SixLabors.ImageSharp.Web.DependencyInjection;
-
-using Microsoft.AspNetCore.RateLimiting;
-using System.Threading.RateLimiting;
 using Syncfusion.Blazor;
+using HangfireAuthorizationFilter = RepPortal.Data.HangfireAuthorizationFilter;
+
+
 
 
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JEaF5cXmRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXhecXRSQmhdWEV/XEZWYE0="); //v30
@@ -81,6 +87,8 @@ builder.Services.AddSignalR(o =>
 builder.Services.AddScoped<CreditHoldExclusionService>();
 builder.Services.AddScoped<UserManager<ApplicationUser>>();
 builder.Services.AddScoped<CustomerService>();
+// Core: auth-free — used by both pages and jobs
+builder.Services.AddScoped<ISalesDataService, SalesDataService>();
 builder.Services.AddScoped<SalesService>();
 
 builder.Services.AddBlazoredLocalStorage();
@@ -110,6 +118,47 @@ builder.Services.AddScoped<IUsageAnalyticsService, UsageAnalyticsService>();
 builder.Services.AddScoped<IPriceBookService, PriceBookService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<PackingListService>();
+
+// Hangfire storage + server
+//var repPortalConn = builder.Configuration.GetConnectionString("RepPortalConnection");
+//EnsureHangfireSchema(repPortalConn, "HangFire");
+
+builder.Services.AddHangfire(cfg => cfg
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("RepPortalConnection"),
+        new SqlServerStorageOptions
+        {
+            SchemaName = "hangfire",
+            PrepareSchemaIfNecessary = true,
+            QueuePollInterval = TimeSpan.FromSeconds(15)
+        }));
+builder.Services.AddHangfireServer(options =>
+{
+    options.Queues = new[] { "reports", "default" };   // dedicate a queue for report jobs
+});
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("HangfireAdmins", policy =>
+        policy.RequireRole("HangfireAdmin")); // policy name matches what your filter expects
+});
+
+builder.Services.AddTransient<RepPortal.Services.SmtpEmailSender>();      // concrete
+builder.Services.AddTransient<IEmailSender, RepPortal.Services.SmtpEmailSender>();
+builder.Services.AddTransient<IAttachmentEmailSender, RepPortal.Services.SmtpEmailSender>();
+
+builder.Services.AddSingleton<IUserContextResolver>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var cs = config.GetConnectionString("RepPortalConnection"); // or however you store it
+    var logger = sp.GetService<ILogger<UserContextResolver>>();
+    return new UserContextResolver(cs!, logger);
+});
+builder.Services.AddScoped<ReportRunner>();            // the job body
+builder.Services.AddScoped<SubscriptionService>();     // creates/updates jobs
+
 
 
 builder.Services.AddRateLimiter(options =>
@@ -167,6 +216,8 @@ builder.Services.AddControllers()
 
 // Add the new service
 builder.Services.AddScoped<IInsuranceRequestService, InsuranceRequestService>();
+
+
 
 var app = builder.Build();
 
@@ -234,7 +285,10 @@ app.UseEndpoints(endpoints =>
     endpoints.MapControllers();
 });
 
-
+app.MapHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAuthorizationFilter("HangfireAdmins") }
+});
 
 
 //app.MapControllers();
@@ -243,6 +297,7 @@ app.MapFallbackToPage("/_Host");
 
 //RunDbUp(connectionString);
 await RunConfigureRoles();
+
 
 
 app.Run();
@@ -279,7 +334,7 @@ async Task RunConfigureRoles()
     var scope = app.Services.CreateScope();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-    string[] roles = new[] { "Administrator", "SalesManager", "SalesRep", "User", "SuperUser" };
+    string[] roles = new[] { "Administrator", "SalesManager", "SalesRep", "User", "SuperUser", "HangfireAdmin" };
     foreach (var role in roles)
     {
         if (!await roleManager.RoleExistsAsync(role))
@@ -289,3 +344,19 @@ async Task RunConfigureRoles()
     }
 
 }
+
+static void EnsureHangfireSchema(string connectionString, string schemaName)
+{
+    using var con = new SqlConnection(connectionString);
+    con.Open();
+
+    using var cmd = new SqlCommand(@"
+IF SCHEMA_ID(@schema) IS NULL
+BEGIN
+    DECLARE @sql nvarchar(max) = N'CREATE SCHEMA ' + QUOTENAME(@schema) + N';';
+    EXEC (@sql);
+END", con);
+    cmd.Parameters.AddWithValue("@schema", schemaName);
+    cmd.ExecuteNonQuery();
+}
+

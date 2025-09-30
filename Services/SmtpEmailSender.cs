@@ -1,36 +1,80 @@
 ﻿namespace RepPortal.Services;
 
 using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using MimeKit;
 
-public class SmtpEmailSender : IEmailSender
+public interface IAttachmentEmailSender
+{
+    Task SendAsync(
+        string toEmail,
+        string subject,
+        string htmlBody,
+        IEnumerable<(string FileName, byte[] Bytes, string ContentType)> attachments);
+}
+
+public class SmtpEmailSender : IEmailSender, IAttachmentEmailSender
 {
     private readonly IConfiguration _config;
 
-    public SmtpEmailSender(IConfiguration config)
-    {
-        _config = config;
-    }
+    public SmtpEmailSender(IConfiguration config) => _config = config;
 
-    public async Task SendEmailAsync(string email, string subject, string htmlMessage)
+    // Identity UI contract (no attachments)
+    public Task SendEmailAsync(string email, string subject, string htmlMessage) =>
+        SendAsync(email, subject, htmlMessage, attachments: null);
+
+    // Attachment-aware version for reports
+    public async Task SendAsync(
+        string toEmail,
+        string subject,
+        string htmlBody,
+        IEnumerable<(string FileName, byte[] Bytes, string ContentType)>? attachments)
     {
+        var fromName = _config["Smtp:SenderName"] ?? "Chapin Rep Portal";
+        var fromEmail = _config["Smtp:SenderEmail"] ?? "noreply@yourco.com";
+        var host = _config["Smtp:Host"] ?? throw new InvalidOperationException("Smtp:Host missing");
+        var portStr = _config["Smtp:Port"] ?? "25";
+        var user = _config["Smtp:Username"];
+        var pass = _config["Smtp:Password"];
+        var sslMode = (_config["Smtp:SecureSocketOptions"] ?? "StartTls").Trim(); // Auto|None|SslOnConnect|StartTls
+
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress("Chapin Rep Portal", _config["Smtp:SenderEmail"]));
-        message.To.Add(MailboxAddress.Parse(email));
+        message.From.Add(new MailboxAddress(fromName, fromEmail));
+        message.To.Add(MailboxAddress.Parse(toEmail));
         message.Subject = subject;
-        message.Body = new TextPart("html") { Text = htmlMessage };
+
+        var builder = new BodyBuilder { HtmlBody = htmlBody };
+
+        if (attachments != null)
+        {
+            foreach (var a in attachments)
+            {
+                builder.Attachments.Add(a.FileName, a.Bytes, ContentType.Parse(a.ContentType));
+            }
+        }
+
+        message.Body = builder.ToMessageBody();
 
         using var client = new SmtpClient();
 
-        // Use ConnectAsync without SSL, for port 25 or startTLS on 587
-        await client.ConnectAsync(_config["Smtp:Host"], int.Parse(_config["Smtp:Port"]), MailKit.Security.SecureSocketOptions.None);
+        var secure = sslMode switch
+        {
+            "Auto" => SecureSocketOptions.Auto,
+            "None" => SecureSocketOptions.None,
+            "SslOnConnect" => SecureSocketOptions.SslOnConnect,
+            _ => SecureSocketOptions.StartTls // default
+        };
 
-        // var username = _config["Smtp:Username"];
-        // var password = _config["Smtp:Password"];
+        if (!int.TryParse(portStr, out var port)) port = 25;
 
-        // if (!string.IsNullOrEmpty(username))
-        //  await client.AuthenticateAsync(username, password);
+        await client.ConnectAsync(host, port, secure);
+
+        // Authenticate only if credentials are provided
+        if (!string.IsNullOrWhiteSpace(user))
+            await client.AuthenticateAsync(user, pass);
 
         await client.SendAsync(message);
         await client.DisconnectAsync(true);

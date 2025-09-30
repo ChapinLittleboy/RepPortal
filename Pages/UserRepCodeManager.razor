@@ -1,82 +1,103 @@
 ﻿@page "/admin/manage-repcodes"
 @attribute [Authorize(Roles = "Administrator")]
+@using Syncfusion.Blazor.Grids
+@using FilterType = Syncfusion.Blazor.Grids.FilterType
 @inject UserManager<ApplicationUser> UserManager
 @inject IJSRuntime JS
 
 <h3>Manage RepCodes and Regions</h3>
 
-@if (users == null)
+@if (users is null)
 {
     <p><em>Loading users...</em></p>
 }
 else
 {
-    <table class="table table-bordered table-striped">
-        <thead>
-            <tr>
-                <th>Email</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Current RepCode</th>
-                <th>Update RepCode</th>
-                <th>Current Region</th>
-                <th>Update Region</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var user in users)
-            {
-                <tr>
-                    <td>@user.Email</td>
-                    <td>@user.FirstName</td>
-                    <td>@user.LastName</td>
-                    <td>@user.RepCode</td>
-                    <td>
+    <SfGrid TValue="UserWithEdit"
+            @ref="Grid"
+            DataSource="users"
+            AllowSorting="true"
+            AllowFiltering="true"
+            Toolbar="@(new List<string>() { "Search" })"
+            Height="500">
+        <GridFilterSettings Type="FilterType.Excel" />
+
+        <GridColumns>
+            <GridColumn Field="Email" HeaderText="Email" Width="220" />
+            <GridColumn Field="FirstName" HeaderText="First Name" Width="140" />
+            <GridColumn Field="LastName" HeaderText="Last Name" Width="140" />
+            <GridColumn Field="RepCode" HeaderText="Current RepCode" Width="140" />
+            <GridColumn HeaderText="Update RepCode" Width="160">
+                <Template Context="ctx">
+                    @{
+                        var u = (UserWithEdit)ctx;
+                    }
+                    <input class="form-control form-control-sm"
+                           style="width: 120px;"
+                           @bind="u.EditedRepCode" />
+                </Template>
+            </GridColumn>
+
+            <GridColumn Field="Region" HeaderText="Current Region" Width="140" />
+            <GridColumn HeaderText="Update Region" Width="180">
+                <Template Context="ctx">
+                    @{
+                        var u = (UserWithEdit)ctx;
+                    }
+                    <div class="d-flex flex-column">
                         <input class="form-control form-control-sm"
-                               style="width: 100px;"
-                               @bind="user.EditedRepCode" />
-                    </td>
-                    <td>@user.Region</td>
-                    <td>
-                        <input class="form-control form-control-sm"
-                               style="width: 100px;"
-                               @bind="user.EditedRegion" />
+                               style="width: 120px;"
+                               @bind="u.EditedRegion" />
                         <button class="btn btn-sm btn-primary mt-1"
-                                @onclick="() => SaveRepAndRegion(user)">
+                                @onclick="() => SaveRepAndRegion(u)">
                             Save
                         </button>
-                    </td>
-                    <td>@(user.IsActive ? "Active" : "Inactive")</td>
-                    <td>
-                        <button class="btn btn-sm @(user.IsActive ? "btn-danger" : "btn-success")"
-                                @onclick="() => ToggleUserStatus(user)">
-                            @(user.IsActive ? "Deactivate" : "Activate")
-                        </button>
+                    </div>
+                </Template>
+            </GridColumn>
 
-                        <AuthorizeView Roles="SuperUser">
-                            <Authorized>
-                                <button class="btn btn-sm btn-outline-danger ms-2"
-                                        @onclick="() => DeleteUser(user)">
-                                    Delete
-                                </button>
-                            </Authorized>
-                        </AuthorizeView>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+            <GridColumn Field="IsActive" HeaderText="Status" Width="110">
+                <Template Context="ctx">
+                    @{
+                        var u = (UserWithEdit)ctx;
+                    }
+                    @(u.IsActive ? "Active" : "Inactive")
+                </Template>
+            </GridColumn>
+
+            <GridColumn HeaderText="Actions" Width="220">
+                <Template Context="ctx">
+                    @{
+                        var u = (UserWithEdit)ctx;
+                    }
+                    <button class="btn btn-sm @(u.IsActive ? "btn-danger" : "btn-success")"
+                            @onclick="() => ToggleUserStatus(u)">
+                        @(u.IsActive ? "Deactivate" : "Activate")
+                    </button>
+
+                    <AuthorizeView Roles="SuperUser">
+                        <Authorized>
+                            <button class="btn btn-sm btn-outline-danger ms-2"
+                                    @onclick="() => DeleteUser(u)">
+                                Delete
+                            </button>
+                        </Authorized>
+                    </AuthorizeView>
+                </Template>
+            </GridColumn>
+        </GridColumns>
+    </SfGrid>
 }
 
 @code {
     private List<UserWithEdit> users;
+    private SfGrid<UserWithEdit> Grid;
 
     protected override async Task OnInitializedAsync()
     {
         var allUsers = UserManager.Users.ToList();
-        users = allUsers.Select(u => new UserWithEdit
+        users = allUsers
+            .Select(u => new UserWithEdit
             {
                 Id = u.Id,
                 Email = u.Email,
@@ -84,31 +105,31 @@ else
                 LastName = u.LastName,
                 RepCode = u.RepCode,
                 EditedRepCode = u.RepCode,
-                Region = u.Region,                   // <-- Load Region
-                EditedRegion = u.Region,              // <-- Editable Region
+                Region = u.Region,
+                EditedRegion = u.Region,
                 IsActive = u.IsActive
             })
             .OrderByDescending(u => u.IsActive)
-            .ThenBy(u => u.RepCode)
             .ThenBy(u => u.LastName)
+            .ThenBy(u => u.RepCode)
             .ToList();
     }
 
     private async Task SaveRepAndRegion(UserWithEdit user)
     {
         var targetUser = await UserManager.FindByIdAsync(user.Id);
-        if (targetUser != null)
+        if (targetUser is not null)
         {
             targetUser.RepCode = user.EditedRepCode;
             targetUser.Region = user.EditedRegion;
 
             var result = await UserManager.UpdateAsync(targetUser);
-
             if (result.Succeeded)
             {
                 user.RepCode = user.EditedRepCode;
                 user.Region = user.EditedRegion;
                 await UserManager.UpdateSecurityStampAsync(targetUser);
+                await (Grid?.Refresh() ?? Task.CompletedTask);
             }
         }
     }
@@ -116,7 +137,7 @@ else
     private async Task ToggleUserStatus(UserWithEdit user)
     {
         var targetUser = await UserManager.FindByIdAsync(user.Id);
-        if (targetUser != null)
+        if (targetUser is not null)
         {
             targetUser.IsActive = !targetUser.IsActive;
             var result = await UserManager.UpdateAsync(targetUser);
@@ -124,6 +145,7 @@ else
             {
                 user.IsActive = targetUser.IsActive;
                 await UserManager.UpdateSecurityStampAsync(targetUser);
+                await (Grid?.Refresh() ?? Task.CompletedTask);
             }
         }
     }
@@ -131,16 +153,16 @@ else
     private async Task DeleteUser(UserWithEdit user)
     {
         bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete {user.Email}?");
-        if (!confirmed)
-            return;
+        if (!confirmed) return;
 
         var targetUser = await UserManager.FindByIdAsync(user.Id);
-        if (targetUser != null)
+        if (targetUser is not null)
         {
             var result = await UserManager.DeleteAsync(targetUser);
             if (result.Succeeded)
             {
                 users.Remove(user);
+                await (Grid?.Refresh() ?? Task.CompletedTask);
                 StateHasChanged();
             }
             else
@@ -162,8 +184,8 @@ else
         public string LastName { get; set; }
         public string RepCode { get; set; }
         public string EditedRepCode { get; set; }
-        public string Region { get; set; }          // Current Region
-        public string EditedRegion { get; set; }    // Editable Region
+        public string Region { get; set; }
+        public string EditedRegion { get; set; }
         public bool IsActive { get; set; }
     }
 }

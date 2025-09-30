@@ -18,6 +18,7 @@ public class SalesService
     private readonly IRepCodeContext? _repCodeContext;
     private readonly IDbConnectionFactory? _dbConnectionFactory;
     private readonly ILogger<SalesService>? _logger;
+    private readonly ISalesDataService _core;
 
     // Primary DI ctor
     public SalesService(
@@ -25,7 +26,8 @@ public class SalesService
         AuthenticationStateProvider authenticationStateProvider,
         IRepCodeContext repCodeContext,
         IDbConnectionFactory dbConnectionFactory,
-        ILogger<SalesService> logger)
+        ILogger<SalesService> logger,
+        ISalesDataService core)
     {
         _connectionString = configuration.GetConnectionString("BatAppConnection")
                             ?? throw new InvalidOperationException("Missing BatAppConnection connection string.");
@@ -33,6 +35,7 @@ public class SalesService
         _repCodeContext = repCodeContext;
         _dbConnectionFactory = dbConnectionFactory;
         _logger = logger;
+        _core = core;
     }
 
     // Convenience ctor (tests/console). Only methods that use the raw connection string will work.
