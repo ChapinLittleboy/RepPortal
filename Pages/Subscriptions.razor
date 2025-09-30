@@ -1,119 +1,261 @@
 ﻿@page "/subscriptions"
+@attribute [Authorize]
+@inject NavigationManager Nav
+@inject IJSRuntime JS
 @using Hangfire
+@using Hangfire.Storage
+@using RepPortal.Services
 @using Microsoft.AspNetCore.Components.Authorization
-@inject IRecurringJobManager RecurringJobs
-@inject ReportRunner ReportRunner
 @inject AuthenticationStateProvider AuthStateProvider
 
-<h3>Create Monthly Sales report Subscription</h3>
+<PageTitle>Subscriptions</PageTitle>
 
-@if (Error is not null)
+<h3>Your Subscriptions</h3>
+
+@if (_subs is null)
 {
-    <div class="alert alert-danger">@Error</div>
+    <p><em>Loading subscriptions...</em></p>
 }
-@if (Success is not null)
+else if (_subs.Count == 0)
 {
-    <div class="alert alert-success">@Success</div>
+    <p>No active subscriptions.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Report</th>
+               
+                <th>Customer</th>
+                <th>Date Range</th>
+                <th>Schedule</th>
+                <th>Time Zone</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var sub in _subs)
+            {
+                <tr>
+                    <td>@sub.ReportType</td>
+                    
+                    <td>@(sub.CustomerId ?? "ALL")</td>
+                    <td>@(sub.DateRangeCode ?? "DEFAULT")</td>
+                    <td>@DescribeCron(sub.Cron, sub.TimeZone)</td>
+                    <td>@sub.TimeZone</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm"
+                                @onclick="() => Remove(sub)">
+                            Remove
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 }
 
-<EditForm Model="@Model" OnValidSubmit="@CreateOrUpdate">
+<hr />
+
+<h4>New Subscription</h4>
+
+<EditForm Model="_newSub" OnValidSubmit="Add">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
-    <div class="mb-3">
-        <label class="form-label">Day of month</label>
-        <InputNumber class="form-control" @bind-Value="Model.DayOfMonth" />
-        <div class="form-text">1–28 recommended (handles short months gracefully).</div>
+    <div class="mb-2">
+        <label>Report</label>
+        <InputSelect @bind-Value="_newSub.ReportType">
+            @foreach (var type in Enum.GetValues<ReportType>())
+            {
+                <option value="@type">@type</option>
+            }
+        </InputSelect>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Hour (0–23)</label>
-        <InputNumber class="form-control" @bind-Value="Model.Hour24" />
-        <div class="form-text">Local server time zone.</div>
+    <div class="mb-2">
+        <label>Email</label>
+        <InputText @bind-Value="_newSub.Email" class="form-control" readonly />
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Year (optional)</label>
-        <InputNumber class="form-control" @bind-Value="Model.Year" />
-        <div class="form-text">Leave blank to always send last month.</div>
+    <div class="mb-2">
+        <label>Customer ID (optional)</label>
+        <InputText @bind-Value="_newSub.CustomerId" class="form-control" />
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Month (1–12, optional)</label>
-        <InputNumber class="form-control" @bind-Value="Model.Month" />
-        <div class="form-text">Leave blank to always send last month.</div>
+    <div class="mb-2">
+        <label>Date Range Code (optional)</label>
+        <InputText @bind-Value="_newSub.DateRangeCode" class="form-control" />
     </div>
 
-    <button class="btn btn-primary" type="submit">Create / Update Subscription</button>
+    <div class="mb-2">
+        
+        <CronPicker @bind-Value="_newSub.Cron" />
+        
+    </div>
+
+    <div class="mb-2">
+        <label>Time Zone</label>
+        <InputText @bind-Value="_newSub.TimeZone" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Add Subscription</button>
 </EditForm>
 
 @code {
-    private string? Error;
-    private string? Success;
+    private List<SubscriptionVm>? _subs;
+    private string? _currentUserEmail;
 
-    private SubscriptionModel Model = new()
+
+    private NewSubVm _newSub = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        DayOfMonth = 1,
-        Hour24 = 8
-    };
+        var auth = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = auth.User;
 
-    private sealed class SubscriptionModel
-    {
-        [System.ComponentModel.DataAnnotations.Range(1, 31)]
-        public int DayOfMonth { get; set; }
+       
 
-        [System.ComponentModel.DataAnnotations.Range(0, 23)]
-        public int Hour24 { get; set; }
-
-        [System.ComponentModel.DataAnnotations.Range(0, 9999)]
-        public int? Year { get; set; }
-
-        [System.ComponentModel.DataAnnotations.Range(1, 12)]
-        public int? Month { get; set; }
+        _currentUserEmail = user.FindFirst("email")?.Value
+                            ?? user.Identity?.Name
+                            ?? throw new InvalidOperationException("Could not determine user email.");
+        Load();
     }
 
-    private async Task CreateOrUpdate()
+    private void Load()
     {
-        Error = Success = null;
+        using var conn = JobStorage.Current.GetConnection();
+        var jobs = conn.GetRecurringJobs()
+            .Where(j => j.Id.StartsWith("subs:") && j.Id.Contains(_currentUserEmail!, StringComparison.OrdinalIgnoreCase))
+            .ToList();
 
+        _subs = jobs.Select(Parse).ToList();
+    }
+
+    private SubscriptionVm Parse(RecurringJobDto job)
+    {
+        // ID format: subs:ReportType:Email:CustomerId:DateRange
+        var parts = job.Id.Split(':');
+        return new SubscriptionVm
+        {
+            Id = job.Id,
+            ReportType = Enum.TryParse<ReportType>(parts[1], out var rt) ? rt : ReportType.MonthlySales,
+            Email = parts[2],
+            CustomerId = parts.Length > 3 && parts[3] != "ALL" ? parts[3] : null,
+            DateRangeCode = parts.Length > 4 && parts[4] != "DEFAULT" ? parts[4] : null,
+            Cron = job.Cron,
+            TimeZone = job.TimeZoneId
+        };
+    }
+
+    private void Add()
+    {
+        if (_currentUserEmail is null) return;
+
+        _newSub.Email = _currentUserEmail;
+
+        ReportSubscriptions.Upsert(
+            _newSub.ReportType,
+            _newSub.Email,
+            _newSub.CustomerId,
+            _newSub.DateRangeCode,
+            _newSub.Cron,
+            _newSub.TimeZone);
+
+        Load();
+        _newSub = new() { Email = _currentUserEmail };
+    }
+
+    private void Remove(SubscriptionVm sub)
+    {
+        RecurringJob.RemoveIfExists(sub.Id);
+        Load();
+    }
+
+    private sealed class SubscriptionVm
+    {
+        public string Id { get; set; } = default!;
+        public ReportType ReportType { get; set; }
+        public string Email { get; set; } = default!;
+        public string? CustomerId { get; set; }
+        public string? DateRangeCode { get; set; }
+        public string Cron { get; set; } = default!;
+        public string TimeZone { get; set; } = default!;
+    }
+
+    private sealed class NewSubVm
+    {
+        public ReportType ReportType { get; set; } = ReportType.MonthlySales;
+        public string Email { get; set; } = "";
+        public string? CustomerId { get; set; }
+        public string? DateRangeCode { get; set; }
+        public string Cron { get; set; } = "0 6 * * 1-5";
+        public string TimeZone { get; set; } = "America/New_York";
+    }
+    private static string DescribeCron(string cron, string timeZoneId)
+    {
+        if (string.IsNullOrWhiteSpace(cron)) return "";
+
+        var parts = cron.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 5) return cron;
+
+        // minute hour day-of-month month day-of-week
+        if (!int.TryParse(parts[0], out var minute)) return cron;
+        if (!int.TryParse(parts[1], out var hour)) return cron;
+        var dom = parts[2];
+        var dow = parts[4];
+
+        var timeText = FormatTime(hour, minute, timeZoneId);
+
+        // Daily: m h * * *
+        if (dom == "*" && dow == "*")
+            return $"Daily at {timeText}";
+
+        // Weekdays: m h * * 1-5
+        if (dom == "*" && string.Equals(dow, "1-5", StringComparison.Ordinal))
+            return $"Weekdays at {timeText}";
+
+        // Weekly: m h * * d (0=Sunday ... 6=Saturday)
+        if (dom == "*" && int.TryParse(dow, out var dowInt) && dowInt is >= 0 and <= 6)
+            return $"Every {Enum.GetName(typeof(DayOfWeek), dowInt)} at {timeText}";
+
+        // Monthly: m h D * *
+        if (dow == "*" && int.TryParse(dom, out var day) && day is >= 1 and <= 31)
+            return $"Monthly on the {Ordinal(day)} at {timeText}";
+
+        // Fallback
+        return cron;
+    }
+
+    private static string FormatTime(int hour, int minute, string timeZoneId)
+    {
+        // Cron is evaluated in the job's time zone; we just pretty-print the local hh:mm AM/PM.
+        // If you want to append TZ abbrev, you can — but abbreviations are messy across platforms.
         try
         {
-            var auth = await AuthStateProvider.GetAuthenticationStateAsync();
-            var user = auth.User;
-
-            if (user?.Identity?.IsAuthenticated != true)
-            {
-                Error = "You must be signed in.";
-                return;
-            }
-
-            var email = user.FindFirst("email")?.Value
-                       ?? user.Identity?.Name
-                       ?? throw new InvalidOperationException("Could not determine user email.");
-
-            // Build a job id unique to the user
-            var jobId = $"monthly-item-sales:{email.ToLowerInvariant()}";
-
-            // (Optional) lock to last month every time by passing year/month = 0
-            var year = Model.Year ?? 0;
-            var month = Model.Month ?? 0;
-
-            // This is the method Hangfire will call:
-            // () => ReportRunner.SendMonthlyItemSalesEmailAsync(email, year, month)
-            // We also specify a CRON that runs monthly on the chosen day/hour.
-            var cron = Cron.Monthly(Math.Clamp(Model.DayOfMonth, 1, 28), Math.Clamp(Model.Hour24, 0, 23));
-
-            RecurringJobs.AddOrUpdate(
-                recurringJobId: jobId,
-                methodCall: () => ReportRunner.SendMonthlyItemSalesEmailAsync(email, year, month),
-                cronExpression: cron,
-                timeZone: TimeZoneInfo.Local);
-
-            Success = $"Subscription saved. It will run monthly on day {Model.DayOfMonth} at {Model.Hour24:00}:00 and email {email}.";
+            // This try/catch is just to be resilient if TZ is invalid on the host.
+            var _ = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            var dt = new DateTime(2000, 1, 1, hour, minute, 0);
+            return dt.ToString("h:mm tt");
         }
-        catch (Exception ex)
+        catch
         {
-            Error = ex.Message;
+            return $"{hour:00}:{minute:00}";
         }
     }
+
+    private static string Ordinal(int n)
+    {
+        // 1 -> 1st, 2 -> 2nd, 3 -> 3rd, 4 -> 4th, …
+        if (n % 100 is 11 or 12 or 13) return $"{n}th";
+        return (n % 10) switch
+        {
+            1 => $"{n}st",
+            2 => $"{n}nd",
+            3 => $"{n}rd",
+            _ => $"{n}th"
+        };
+    }
+
 }

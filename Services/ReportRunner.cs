@@ -1,21 +1,23 @@
-﻿namespace RepPortal.Services;
+﻿using RepPortal.Models;
 
+namespace RepPortal.Services;
+
+using System;
+using System.Collections.Generic;
 using System.Data;
-
+using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using MimeKit;
 using Syncfusion.XlsIO;
-using RepPortal.Services;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using RepPortal.Services;
+using Hangfire;
+
+
 
 public class ReportRunner
 {
-    private readonly IConfiguration _cfg;
-    private readonly string _connString;
+  
+    private readonly string _connString = @"Data Source=ciisql10;Database=RepPortal;User Id=sa;Password='*id10t*';TrustServerCertificate=True;";
     private readonly IAttachmentEmailSender _email;
     private readonly ISalesDataService _salesData;
     private readonly IUserContextResolver _userCtx;
@@ -24,7 +26,7 @@ public class ReportRunner
 
     public ReportRunner( IAttachmentEmailSender email, ISalesDataService salesData, IUserContextResolver userCtx )
     {
-        _connString = @"Data Source=ciisql10;Database=RepPortal;User Id=sa;Password='*id10t*';TrustServerCertificate=True;";
+        
         _email = email;
         _salesData = salesData;
         _userCtx = userCtx;
@@ -32,10 +34,44 @@ public class ReportRunner
 
     }
 
+
+    // prevent overlap if a run is slow
+    [DisableConcurrentExecution(timeoutInSeconds: 60 * 60)]
+    public async Task RunAsync(ReportRequest req)
+    {
+        var ctx = await _userCtx.ResolveByEmailAsync(req.Email)
+                  ?? throw new InvalidOperationException($"No user context for {req.Email}");
+
+        switch (req.ReportType)
+        {
+            case ReportType.MonthlyInvoicedSales:
+                await SendMonthlyInvoicedSalesAsync(ctx, req.CustomerId);
+                break;
+            case ReportType.OpenOrders:
+                await SendOpenOrdersAsync(ctx, req.CustomerId);
+                break;
+            case ReportType.Shipments:
+                await SendShipmentsAsync(ctx, req.CustomerId, req.DateRangeCode);
+                break;
+            case ReportType.InvoicedAccounts:
+                await SendInvoicedAccountsAsync(ctx, req.CustomerId, req.DateRangeCode);
+                break;
+            case ReportType.MonthlySales:
+                await SendMonthlySalesAsync(ctx, req.CustomerId);
+                break;
+            case ReportType.MonthlySalesByItem:
+                await SendMonthlySalesByItemAsync(ctx, req.CustomerId);
+                break;
+            case ReportType.PivotSalesByItem:
+                await SendPivotSalesByItemAsync(ctx, req.CustomerId);
+                break;
+        }
+    }
+
     // This is what Hangfire calls per subscription id
     public async Task RunSubscriptionAsync(long subscriptionId)
     {
-        using var conn = new SqlConnection(_cfg.GetConnectionString("RepPortalConnection"));
+        using var conn = new SqlConnection(_connString);
         await conn.OpenAsync();
 
         var sub = await LoadSubscriptionAsync(conn, subscriptionId);
@@ -168,6 +204,51 @@ WHERE s.SubscriptionId = @id;", conn);
             });
     }
 
+    private async Task SendOpenOrdersAsync(UserContextResult ctx, string? customerId)
+    {
+        // TODO: query open orders via _sales using ctx.RepCode, ctx.AllowedRegions, customerId
+        // TODO: transform results to DataTable/Excel
+        // TODO: email results
+        await Task.CompletedTask;
+    }
+
+    private async Task SendMonthlyInvoicedSalesAsync(UserContextResult ctx, string? customerId)
+    {
+        // TODO: query open orders via _sales using ctx.RepCode, ctx.AllowedRegions, customerId
+        // TODO: transform results to DataTable/Excel
+        // TODO: email results
+        await Task.CompletedTask;
+    }
+
+    private async Task SendShipmentsAsync(UserContextResult ctx, string? customerId, string? dateRangeCode)
+    {
+        // TODO: query shipments via _sales
+        await Task.CompletedTask;
+    }
+
+    private async Task SendInvoicedAccountsAsync(UserContextResult ctx, string? customerId, string? dateRangeCode)
+    {
+        // TODO: query invoiced accounts via _sales
+        await Task.CompletedTask;
+    }
+
+    private async Task SendMonthlySalesAsync(UserContextResult ctx, string? customerId)
+    {
+        // TODO: query monthly sales via _sales
+        await Task.CompletedTask;
+    }
+
+    private async Task SendMonthlySalesByItemAsync(UserContextResult ctx, string? customerId)
+    {
+        // TODO: query monthly sales by item via _sales
+        await Task.CompletedTask;
+    }
+
+    private async Task SendPivotSalesByItemAsync(UserContextResult ctx, string? customerId)
+    {
+        // TODO: query pivot sales by item via _sales
+        await Task.CompletedTask;
+    }
     private static (DateTime Start, DateTime End) MonthRange(int year, int month)
     {
         var start = new DateTime(year, month, 1);

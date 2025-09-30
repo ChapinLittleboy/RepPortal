@@ -1,0 +1,161 @@
+﻿@* CronPicker.razor *@
+<div class="mb-2">
+    <label class="form-label">Frequency</label>
+    <InputSelect @bind-Value="Frequency" class="form-select" @bind-Value:after="OnUiChanged">
+        <option value="Daily">Daily</option>
+        <option value="Weekdays">Weekdays (Mon–Fri)</option>
+        <option value="Weekly">Weekly</option>
+        <option value="Monthly">Monthly</option>
+        <option value="Custom">Custom (cron)</option>
+    </InputSelect>
+</div>
+
+@if (Frequency == "Weekly")
+{
+    <div class="mb-2">
+        <label class="form-label">Day of week</label>
+        <InputSelect @bind-Value="DayOfWeek" class="form-select" @bind-Value:after="OnUiChanged">
+            @foreach (var day in Enum.GetValues<DayOfWeek>())
+            {
+                <option value="@day">@day</option>
+            }
+        </InputSelect>
+    </div>
+}
+@if (Frequency == "Monthly")
+{
+    <div class="mb-2">
+        <label class="form-label">Day of month</label>
+        <InputNumber TValue="int" @bind-Value="DayOfMonth" class="form-control" @bind-Value:after="OnUiChanged" />
+        <div class="form-text">1–28 recommended.</div>
+    </div>
+}
+
+@if (Frequency != "Custom")
+{
+    <div class="mb-2">
+        <label class="form-label">Time of day</label>
+        <TimePicker @bind-Value="TimeOfDay" Class="form-control" Step="60" @bind-Value:after="OnUiChanged" />
+    </div>
+}
+else
+{
+    <div class="mb-2">
+        <label class="form-label">Cron expression</label>
+        <InputText @bind-Value="CustomCron" class="form-control" @bind-Value:after="OnUiChanged" />
+    </div>
+}
+
+<div class="mb-2">
+    <label class="form-label">Resulting cron</label>
+    <InputText @bind-Value="Value" class="form-control" readonly />
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    private string Frequency { get; set; } = "Daily";
+    private DayOfWeek DayOfWeek { get; set; } = System.DayOfWeek.Monday;
+    private int DayOfMonth { get; set; } = 1;
+    private TimeSpan TimeOfDay { get; set; } = new(9, 0, 0);
+    private string CustomCron { get; set; } = "0 9 * * 1-5";
+
+    private bool _initialized;
+
+    protected override void OnParametersSet()
+    {
+        // Initialize once from incoming Value (no ValueChanged here!)
+        if (_initialized) return;
+
+        if (!string.IsNullOrWhiteSpace(Value))
+        {
+            if (!TryParseCron(Value, out var parsed))
+            {
+                Frequency = "Custom";
+                CustomCron = Value;
+            }
+            else
+            {
+                Frequency = parsed.Frequency;
+                DayOfWeek = parsed.DayOfWeek ?? DayOfWeek;
+                DayOfMonth = parsed.DayOfMonth ?? DayOfMonth;
+                TimeOfDay = new TimeSpan(parsed.Hour, parsed.Minute, 0);
+            }
+        }
+
+        _initialized = true;
+    }
+
+    private async Task OnUiChanged()
+    {
+        var newValue = BuildCron();
+        if (!string.Equals(newValue, Value, StringComparison.Ordinal))
+        {
+            Value = newValue;
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+
+    private string BuildCron()
+    {
+        if (Frequency == "Custom") return CustomCron;
+
+        int minute = TimeOfDay.Minutes;
+        int hour = TimeOfDay.Hours;
+
+        return Frequency switch
+        {
+            "Daily" => $"{minute} {hour} * * *",
+            "Weekdays" => $"{minute} {hour} * * 1-5",
+            "Weekly" => $"{minute} {hour} * * {(int)DayOfWeek}",
+            "Monthly" => $"{minute} {hour} {DayOfMonth} * *",
+            _ => $"{minute} {hour} * * *"
+        };
+    }
+
+    // Minimal parser for values we generate; everything else becomes Custom
+    private static bool TryParseCron(string cron, out (string Frequency, int Hour, int Minute, DayOfWeek? DayOfWeek, int? DayOfMonth) parsed)
+    {
+        parsed = default;
+
+        var parts = cron.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 5) return false;
+
+        if (!int.TryParse(parts[0], out var min)) return false;
+        if (!int.TryParse(parts[1], out var hr)) return false;
+
+        var dom = parts[2];
+        var dow = parts[4];
+
+        // Daily: m h * * *
+        if (dom == "*" && dow == "*")
+        {
+            parsed = ("Daily", hr, min, null, null);
+            return true;
+        }
+
+        // Weekdays: m h * * 1-5
+        if (dom == "*" && string.Equals(dow, "1-5", StringComparison.Ordinal))
+        {
+            parsed = ("Weekdays", hr, min, null, null);
+            return true;
+        }
+
+        // Weekly: m h * * d
+        if (dom == "*" && int.TryParse(dow, out var dowInt) && dowInt >= 0 && dowInt <= 6)
+        {
+            parsed = ("Weekly", hr, min, (DayOfWeek)dowInt, null);
+            return true;
+        }
+
+        // Monthly: m h D * *
+        if (dow == "*" && int.TryParse(dom, out var day) && day >= 1 && day <= 31)
+        {
+            parsed = ("Monthly", hr, min, null, day);
+            return true;
+        }
+
+        return false;
+    }
+}

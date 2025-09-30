@@ -202,7 +202,10 @@
     // IMPORTANT: Let the page render first, then fetch.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // Log report usage (no parameters for listing page)
+       
         if (!firstRender) return;
+        await ActivityLogService.LogReportUsageActivityAsync("Monthly Sales Pivot", "");
 
         try
         {
