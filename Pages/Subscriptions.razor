@@ -6,6 +6,10 @@
 @using Hangfire.Storage
 @using RepPortal.Services
 @using Microsoft.AspNetCore.Components.Authorization
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.DropDowns
+@using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs
+@using FilterType = Syncfusion.Blazor.DropDowns.FilterType
 @inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Subscriptions</PageTitle>
@@ -41,7 +45,7 @@ else
                     <td>@sub.ReportType</td>
                     
                     <td>@(sub.CustomerId ?? "ALL")</td>
-                    <td>@(sub.DateRangeCode ?? "DEFAULT")</td>
+                    <td>@DescribeDateRange(sub.DateRangeCode)</td>
                     <td>@DescribeCron(sub.Cron, sub.TimeZone)</td>
                     <td>@sub.TimeZone</td>
                     <td>
@@ -66,28 +70,73 @@ else
 
     <div class="mb-2">
         <label>Report</label>
-        <InputSelect @bind-Value="_newSub.ReportType">
-            @foreach (var type in Enum.GetValues<ReportType>())
-            {
-                <option value="@type">@type</option>
-            }
-        </InputSelect>
-    </div>
 
+        <SfDropDownList TValue="ReportType"
+                        TItem="ReportTypeOption"
+                        DataSource="@ReportTypeOptions"
+                        Placeholder="Select report"
+                        Width="25%"
+                        @bind-Value="_newSub.ReportType"
+                        @bind-Value:after="ReportType_Change">
+            <DropDownListFieldSettings Text="Text" Value="Value" />
+        </SfDropDownList>
+    </div>
     <div class="mb-2">
         <label>Email</label>
         <InputText @bind-Value="_newSub.Email" class="form-control" readonly />
     </div>
 
-    <div class="mb-2">
-        <label>Customer ID (optional)</label>
-        <InputText @bind-Value="_newSub.CustomerId" class="form-control" />
+    <div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label>Customer Name (Optional):</label>
+            <SfComboBox TValue="string"
+                        TItem="Customer"
+                        @bind-Value="_newSub.CustomerId"
+                        DebounceDelay="@ComboDebounceMs"
+                        AllowFiltering="true"
+                        FilterType="FilterType.Contains"
+                        DataSource="@CustomerList"
+                        Placeholder="Type to search customers…"
+                        Enabled="@AllowCustSelection"
+                        @ref="WantedCust">
+                <ComboBoxFieldSettings Text="CustNameWithNum" Value="Cust_Num" />
+            </SfComboBox>
+
+            <small class="form-text text-muted">
+                Leave blank to subscribe for ALL customers.
+            </small>
+        </div>
+    </div>
     </div>
 
+   
     <div class="mb-2">
-        <label>Date Range Code (optional)</label>
-        <InputText @bind-Value="_newSub.DateRangeCode" class="form-control" />
+        <label>Date Range (Optional)</label>
+
+        <SfDropDownList TValue="DateRangeCodeType"
+                        TItem="DateRangeTypeOption"
+                        DataSource="@DateRangeOptions"
+                        Placeholder="Select a date range"
+                        Width="25%"
+                        Enabled="@AllowDateRangeSelection"
+                        @bind-Value="_newSub.DateRangeCode"
+                        @bind-Value:after="DateRange_Change">
+            <DropDownListFieldSettings Text="Text" Value="Value" />
+        </SfDropDownList>
+
+        @if (!AllowDateRangeSelection)
+        {
+            <small class="text-muted">Date range applies only to InvoicedAccounts or Shipments.</small>
+        }
     </div>
+
+    
+    
+    
+    
+    
+
 
     <div class="mb-2">
         
@@ -104,22 +153,53 @@ else
 </EditForm>
 
 @code {
+    [Inject] private CustomerService CustomerService { get; set; } = default!;
     private List<SubscriptionVm>? _subs;
     private string? _currentUserEmail;
+    private int ComboDebounceMs { get; set; } = 300;
+    // Data sources for the two inputs
+    private List<Customer> CustomerList { get; set; } = new();
+    private bool AllowCustSelection = false;
+    private bool AllowDateRangeSelection = false;
+    public DateRangeCodeType DateRangeCode { get; set; } = DateRangeCodeType.CurrentMonth;
 
-
+    // Reference to the combo (optional, if you want to interact with it)
+    private SfComboBox<string, Customer>? WantedCust;
     private NewSubVm _newSub = new();
+
+    private List<ReportTypeOption> ReportTypeOptions { get; set; } =
+        Enum.GetValues<ReportType>()
+            .Select(rt => new ReportTypeOption
+            {
+                Text = GetReportDisplay(rt), // customize display if you want
+                Value = rt
+            })
+            .ToList(); 
+    
+    private List<DateRangeTypeOption> DateRangeOptions { get; set; } =
+        DateRangeOrder
+            .Select(dt => new DateRangeTypeOption
+            {
+                Text  = GetDateRangeDisplay(dt),
+                Value = dt
+            })
+            .ToList();
 
     protected override async Task OnInitializedAsync()
     {
         var auth = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = auth.User;
 
-       
+
 
         _currentUserEmail = user.FindFirst("email")?.Value
                             ?? user.Identity?.Name
                             ?? throw new InvalidOperationException("Could not determine user email.");
+        CustomerList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
+
+        AllowCustSelection = _newSub.ReportType is ReportType.InvoicedAccounts or ReportType.Shipments;
+        AllowDateRangeSelection = AllowCustSelection;
+
         Load();
     }
 
@@ -132,7 +212,19 @@ else
 
         _subs = jobs.Select(Parse).ToList();
     }
-
+    private static string GetReportDisplay(ReportType rt)
+    {
+        // Optionally map to friendly names; default is enum name
+        return rt.ToString();
+    }
+    private static string GetDateRangeDisplay(DateRangeCodeType dt) => dt switch
+    {
+        DateRangeCodeType.PriorMonth           => "Prior Month",
+        DateRangeCodeType.CurrentMonth         => "Current Month (MTD)",
+        DateRangeCodeType.PriorAndCurrentMonth => "Prior + Current Month",
+        DateRangeCodeType.AllDates             => "All Dates",
+        _                                      => dt.ToString()
+    };
     private SubscriptionVm Parse(RecurringJobDto job)
     {
         // ID format: subs:ReportType:Email:CustomerId:DateRange
@@ -159,7 +251,7 @@ else
             _newSub.ReportType,
             _newSub.Email,
             _newSub.CustomerId,
-            _newSub.DateRangeCode,
+            _newSub.DateRangeCode.ToString(),
             _newSub.Cron,
             _newSub.TimeZone);
 
@@ -172,6 +264,49 @@ else
         RecurringJob.RemoveIfExists(sub.Id);
         Load();
     }
+
+    private void ReportType_Change()
+    {
+        // Customer selection allowed only for InvoicedAccounts or Shipments?
+        AllowCustSelection = _newSub.ReportType is ReportType.InvoicedAccounts or ReportType.Shipments;
+
+        // Date range allowed only for those same reports
+        AllowDateRangeSelection = AllowCustSelection;
+
+        if (!AllowCustSelection)
+        {
+            _newSub.CustomerId = null; // clears SfComboBox selection via binding
+        }
+
+        if (!AllowDateRangeSelection)
+        {
+            _newSub.DateRangeCode = DateRangeCodeType.AllDates; // reset to default when not applicable
+        }
+
+        StateHasChanged();
+    }
+        
+    private void ClearWantedCustSelection()
+    {
+        // Set the bound value to null or empty
+        _newSub.CustomerId = null;
+
+        // Refresh the ComboBox UI
+         WantedCust!.ClearAsync();
+         InvokeAsync(StateHasChanged);
+    }
+
+    private sealed class ReportTypeOption
+    {
+        public string Text { get; set; } = "";
+        public ReportType Value { get; set; }
+    }
+    private sealed class DateRangeTypeOption
+    {
+        public string Text { get; set; } = "";
+        public DateRangeCodeType Value { get; set; }
+    }
+
 
     private sealed class SubscriptionVm
     {
@@ -186,10 +321,10 @@ else
 
     private sealed class NewSubVm
     {
-        public ReportType ReportType { get; set; } = ReportType.MonthlySales;
+        public ReportType ReportType { get; set; } = ReportType.MonthlyInvoicedSales;
         public string Email { get; set; } = "";
         public string? CustomerId { get; set; }
-        public string? DateRangeCode { get; set; }
+        public DateRangeCodeType DateRangeCode { get; set; } = DateRangeCodeType.AllDates;
         public string Cron { get; set; } = "0 6 * * 1-5";
         public string TimeZone { get; set; } = "America/New_York";
     }
@@ -258,4 +393,25 @@ else
         };
     }
 
+
+    public sealed class CustomerTypeVm
+    {
+        public string CustomerType { get; set; } = "";
+        public string DisplayText { get; set; } = "";
+    }
+    private static string DescribeDateRange(string? code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return "DEFAULT";
+        return Enum.TryParse<DateRangeCodeType>(code, out var parsed)
+            ? GetDateRangeDisplay(parsed)
+            : code; // fallback to raw
+    }
+    private void DateRange_Change() { /* reserved for future validation */ }
+    private static readonly DateRangeCodeType[] DateRangeOrder =
+    {
+        DateRangeCodeType.PriorMonth,
+        DateRangeCodeType.CurrentMonth,
+        DateRangeCodeType.PriorAndCurrentMonth,
+        DateRangeCodeType.AllDates
+    };
 }

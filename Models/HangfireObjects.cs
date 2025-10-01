@@ -17,6 +17,15 @@ public enum ReportType
     PivotSalesByItem       //no parameters (Historic territory)
 }
 
+public enum DateRangeCodeType
+{
+    PriorMonth,
+    CurrentMonth,
+    PriorAndCurrentMonth,
+    AllDates
+
+}
+
 public sealed record ReportRequest(
     ReportType ReportType,
     string Email,

@@ -127,10 +127,11 @@ builder.Services.AddHangfire(cfg => cfg
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
+    .UseSerilogLogProvider()
     .UseSqlServerStorage(builder.Configuration.GetConnectionString("RepPortalConnection"),
         new SqlServerStorageOptions
         {
-            SchemaName = "hangfire",
+            SchemaName = "HangFire",
             PrepareSchemaIfNecessary = true,
             QueuePollInterval = TimeSpan.FromSeconds(15)
         }));
@@ -287,6 +288,7 @@ app.UseEndpoints(endpoints =>
 
 app.MapHangfireDashboard("/hangfire", new DashboardOptions
 {
+    AppPath = "https://ChapinPortal.com",
     Authorization = new[] { new HangfireAuthorizationFilter("HangfireAdmins") }
 });
 
