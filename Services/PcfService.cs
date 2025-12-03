@@ -250,7 +250,13 @@ public class PcfService
         LEFT JOIN CIISQL10.Bat_App.dbo.Item_mst it on i.ItemNum = it.Item
       left join CIISQL10.Bat_App.dbo.Customer_mst cu on ltrim(rtrim(cu.cust_num)) = h.CustNum and cu.cust_seq = 0
       left join CIISQL10.BAT_App.dbo.terms_mst terms on cu.terms_code = terms.terms_code
-        WHERE h.PCFNum = @PcfNum and (h.SRNum = @RepCode OR @RepCode = 'Admin')";
+        WHERE h.PCFNum = @PcfNum and (h.SRNum = @RepCode OR @RepCode = 'Admin' OR (
+                @RepCode = 'DAL'
+                AND (
+                        h.SRNum = @RepCode
+                        OR h.CustNum IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )) ";
 
         _logger.LogInformation($"GetPCFHeaderWithItemsAsync: {sql}");
         using var connection = _dbConnectionFactory.CreatePcfConnection();
