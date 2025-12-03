@@ -210,7 +210,25 @@
 				OR co.co_num = dbo.ExpandKyByType('CoNumType',@CustPo))
 
               AND co.cust_num = dbo.ExpandKyByType('CustNumType', @CustNum)
-			 AND co.slsman = @RepCode;  
+			 AND (
+        -- Admin gets everything
+        @RepCode = 'Admin'
+
+        -- DAL gets their normal customers + special customer list
+        OR (
+                @RepCode = 'DAL'
+                AND (
+                        co.slsman = @RepCode
+                        OR co.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+
+        -- All other reps get only customers matching their rep code
+        OR (
+                @RepCode NOT IN ('Admin', 'DAL')
+                AND co.slsman = @RepCode
+           )
+    );
         ";
         //Note: uses slsman on the Customer Order, not customer
         Header = await conn.QueryFirstOrDefaultAsync<OrderHeader>(headerSql, new { CustPo = normalizedPo, CustNum = WantedCust.Value, RepCode = RepCodeContext.CurrentRepCode});

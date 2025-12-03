@@ -281,7 +281,15 @@ public class SalesService
         LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
         LEFT JOIN Bat_App.dbo.Item_mst im WITH (NOLOCK) ON ii.item = im.item
         WHERE ih.inv_date BETWEEN '{fyMinus3Start:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}'
-          AND cu.slsman = @RepCode{regionFilter}";
+                AND ( cu.slsman = @RepCode{regionFilter} 
+OR         (
+                @RepCode = 'DAL'
+                AND (
+                        cu.slsman = @RepCode
+                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+          )";
 
         var sql = $@"
     WITH InvoiceData AS (
@@ -433,7 +441,15 @@ public class SalesService
         LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
         LEFT JOIN Bat_App.dbo.Item_mst im WITH (NOLOCK) ON ii.item = im.item
         WHERE ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}'
-          AND cu.slsman = @RepCode{regionFilter}";
+                AND ( cu.slsman = @RepCode{regionFilter} 
+OR         (
+                @RepCode = 'DAL'
+                AND (
+                        cu.slsman = @RepCode
+                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+          )";
 
         return $@"
     WITH InvoiceData AS (
@@ -638,7 +654,13 @@ public class SalesService
             FROM CIISQL10.INTRANET.DBO.Cust Cust
             INNER JOIN CIISQL10.INTRANET.DBO.OpenOrders OpenOrders
                 ON Cust.CustSeq = OpenOrders.CustSeq AND Cust.Cust = OpenOrders.Cust
-            WHERE Cust.slsman = @RepCode
+            WHERE Cust.slsman = @RepCode OR (
+                @RepCode = 'DAL'
+                AND (
+                        Cust.slsman = @RepCode
+                        OR Cust.cust IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
             ORDER BY Cust.CorpName;";
 
         using var connection = new SqlConnection(_connectionString);
@@ -705,7 +727,25 @@ public class SalesService
         LEFT JOIN CIISQL10.BAT_App.DBO.Item_mst Item ON Item.Item = ci.Item
         LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc ON cu.cust_num = cc.cust_num
         WHERE ci.STAT = 'O'
-          AND co.slsman = @RepCode
+          AND (
+        -- Admin gets everything
+        @RepCode = 'Admin'
+
+        -- DAL gets their normal customers + special customer list
+        OR (
+                @RepCode = 'DAL'
+                AND (
+                        co.slsman = @RepCode
+                        OR co.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+
+        -- All other reps get only customers matching their rep code
+        OR (
+                @RepCode NOT IN ('Admin', 'DAL')
+                AND co.slsman = @RepCode
+           )
+    )
           AND ci.qty_ordered - ci.qty_shipped > 0";
 
         if (allowedRegions != null && allowedRegions.Any())
@@ -828,7 +868,25 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_Sal
   Join tempwork.dbo.FiscalCalendarVw fc on Cast(ih.inv_date as date)=fc.[Date]
             WHERE 1 = 1 
               AND ih.inv_date > dbo.midnightof('9/1/2022')
-              AND cu.slsman = @RepCode";
+              AND (
+        -- Admin gets everything
+        @RepCode = 'Admin'
+
+        -- DAL gets their normal customers + special customer list
+        OR (
+                @RepCode = 'DAL'
+                AND (
+                        co.slsman = @RepCode
+                        OR co.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+
+        -- All other reps get only customers matching their rep code
+        OR (
+                @RepCode NOT IN ('Admin', 'DAL')
+                AND co.slsman = @RepCode
+           )
+    )";
 
 
         if (allowedRegions != null && allowedRegions.Any())
@@ -925,7 +983,15 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_Sal
     JOIN Bat_App.dbo.customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
     LEFT JOIN Bat_App.dbo.Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
     WHERE ih.inv_date >= '{fyMinus3Start:yyyy-MM-dd}'
-      AND cu.slsman = @RepCode{regionFilter}
+      AND ( cu.slsman = @RepCode{regionFilter} 
+OR         (
+                @RepCode = 'DAL'
+                AND (
+                        cu.slsman = @RepCode
+                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+          )
     GROUP BY 
         ih.cust_num, ca0.Name, ih.cust_seq, ca.City, ca.State,
         ca0.name, ca0.state, cu.Uf_SalesRegion, rn.RegionName,
@@ -1014,7 +1080,15 @@ ORDER BY FY{fiscalYear - 1} DESC;";
         LEFT JOIN Bat_App.dbo.Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
         LEFT JOIN Bat_App.dbo.Item_mst im ON ii.item = im.item
         WHERE ih.inv_date >= '{fyPriorStart:yyyy-MM-dd}'
-          AND cu.slsman = @RepCode{regionFilter}
+                AND ( cu.slsman = @RepCode{regionFilter} 
+OR         (
+                @RepCode = 'DAL'
+                AND (
+                        cu.slsman = @RepCode
+                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+          )
         GROUP BY 
             ih.cust_num, ca0.Name, ih.cust_seq, ca.City, ca.State,
             ca0.name, ca0.state, cu.Uf_SalesRegion, rn.RegionName,

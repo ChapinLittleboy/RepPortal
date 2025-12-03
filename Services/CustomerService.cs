@@ -36,8 +36,24 @@ public class CustomerService
 AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
     SELECT Code FROM RepPortal.dbo.CreditHoldReasonCodeExclusions))
     AND (
-        @RepCode = 'Admin'    
-        OR cu.slsman = @RepCode)";  // if Admin, include all customers otherwise only their own
+        -- Admin gets everything
+        @RepCode = 'Admin'
+
+        -- DAL gets their normal customers + special customer list
+        OR (
+                @RepCode = 'DAL'
+                AND (
+                        cu.slsman = @RepCode
+                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+
+        -- All other reps get only customers matching their rep code
+        OR (
+                @RepCode NOT IN ('Admin', 'DAL')
+                AND cu.slsman = @RepCode
+           )
+    )";  // if Admin, include all customers otherwise only their own
 
 
         using var connection = new SqlConnection(_batAppConnection);
@@ -65,8 +81,25 @@ LEFT JOIN Chap_SalesManagers sm ON cu.uf_c_slsmgr = sm.SalesManagerInitials
 WHERE  1=1
 AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
     SELECT Code FROM RepPortal.dbo.CreditHoldReasonCodeExclusions))
-AND (        @RepCode = 'Admin'    
-        OR cu.slsman = @RepCode) 
+AND (
+        -- Admin gets everything
+        @RepCode = 'Admin'
+
+        -- DAL gets their normal customers + special customer list
+        OR (
+                @RepCode = 'DAL'
+                AND (
+                        cu.slsman = @RepCode
+                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+
+        -- All other reps get only customers matching their rep code
+        OR (
+                @RepCode NOT IN ('Admin', 'DAL')
+                AND cu.slsman = @RepCode
+           )
+    )
 ORDER BY ca.[name]";
 
         using var connection = new SqlConnection(_batAppConnection);
@@ -102,8 +135,25 @@ LEFT JOIN custtype_mst ct ON cu0.cust_type = ct.cust_type
             WHERE  1=1
 AND (ca0.credit_hold_reason IS NULL OR ca0.credit_hold_reason NOT IN (
     SELECT Code FROM RepPortal.dbo.CreditHoldReasonCodeExclusions))
-AND (        @RepCode = 'Admin'    
-        OR cu0.slsman = @RepCode) 
+AND (
+        -- Admin gets everything
+        @RepCode = 'Admin'
+
+        -- DAL gets their normal customers + special customer list
+        OR (
+                @RepCode = 'DAL'
+                AND (
+                        cu0.slsman = @RepCode
+                        OR cu0.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+
+        -- All other reps get only customers matching their rep code
+        OR (
+                @RepCode NOT IN ('Admin', 'DAL')
+                AND cu0.slsman = @RepCode
+           )
+    )
 ORDER BY ca0.[name]";
 
         using var connection = new SqlConnection(_batAppConnection);
@@ -121,8 +171,25 @@ ORDER BY ca0.[name]";
 FROM   customer_mst cu 
 join RepPortal.dbo.CustTypes rct on cu.cust_type= rct.Cust_Type
 WHERE   (
-        @RepCode = 'Admin'    
-        OR cu.slsman = @RepCode) ORDER BY cu.cust_type";
+        @RepCode = 'Admin'
+
+        -- DAL gets their normal customers + special customer list
+        OR (
+                @RepCode = 'DAL'
+                AND (
+                        cu.slsman = @RepCode
+                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+
+        -- All other reps get only customers matching their rep code
+        OR (
+                @RepCode NOT IN ('Admin', 'DAL')
+                AND cu.slsman = @RepCode
+           ) 
+        )
+
+ORDER BY cu.cust_type";
 
         using var connection = new SqlConnection(_batAppConnection);
         return await connection.QueryAsync<string>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
@@ -137,8 +204,26 @@ WHERE   (
 FROM   customer_mst cu 
 join RepPortal.dbo.CustTypes rct on cu.cust_type= rct.Cust_Type
 WHERE   (
-        @RepCode = 'Admin'    
-        OR cu.slsman = @RepCode) ORDER BY cu.cust_type";
+        @RepCode = 'Admin'
+
+        -- DAL gets their normal customers + special customer list
+        OR (
+                @RepCode = 'DAL'
+                AND (
+                        cu.slsman = @RepCode
+                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+
+        -- All other reps get only customers matching their rep code
+        OR (
+                @RepCode NOT IN ('Admin', 'DAL')
+                AND cu.slsman = @RepCode
+           )
+    )
+
+
+ORDER BY cu.cust_type";
 
         using var connection = new SqlConnection(_batAppConnection);
         return await connection.QueryAsync<CustType>(sql, new { RepCode = _repCodeContext.CurrentRepCode });
