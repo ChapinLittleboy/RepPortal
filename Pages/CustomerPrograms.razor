@@ -1,0 +1,260 @@
+﻿@page "/customer-programs"
+@attribute [Authorize]
+@using System.Dynamic
+@using System.Globalization
+@using RepPortal.Services
+@using RepPortal.Data
+@using RepPortal.Models
+@using Syncfusion.Blazor.Grids
+@using FilterType = Syncfusion.Blazor.DropDowns.FilterType
+@inject SalesService SalesService
+@inject CustomerService CustomerService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject IRepCodeContext RepCodeContext
+@inject RepPortal.Services.IActivityLogService ActivityLogService
+
+
+
+<PageTitle>Customer Program Details</PageTitle>
+
+
+@if (isLoading)
+{
+	<SfSpinner Visible="true" Label="Loading summaries..." Size="40"></SfSpinner>
+}
+
+
+<div>
+	<div class="active-filters">
+		<button @onclick="ClearFilters">Clear Filters</button>
+
+		<!--
+		<span class="divider">|</span>
+		<strong class="small-text">Active Filters:</strong>
+		<span class="small-text">@activeFilters</span>
+		-->
+	</div>
+
+</div>
+@if (isReady)
+{
+	<EditForm Model="@parameters" OnValidSubmit="LoadShipments">
+		<DataAnnotationsValidator />
+		<ValidationSummary />
+		<div class="form-grid">
+
+			<div class="column">
+				<div class="form-group">
+					<label>Customer Name (Optional):</label>
+					<SfComboBox TValue="string" TItem="Customer" DebounceDelay="@NumericValue" AllowFiltering="true" FilterType="FilterType.Contains" DataSource="@CustomerList" @ref="WantedCust">
+
+						<ComboBoxFieldSettings Text="CustNameWithNum" Value="Cust_Num" />
+					</SfComboBox>
+				</div>
+			
+
+			</div>
+
+			<!-- Empty 3rd column -->
+			<div class="column empty-column"></div>
+			<!-- Empty 4th column -->
+			<div class="column empty-column"></div>
+		</div>
+		<div class="visually-hidden">
+			<label>Rep Code:</label>
+			<InputText @bind-Value="parameters.RepCode" />
+		</div>
+		<div class="button-row">
+			<button type="submit">Load Shipments</button>
+
+		</div>
+
+		@if (showTip)
+		{
+
+			<div style="margin-top: 5px; color: red; font-size: small">
+				Tip: Set Items per page to 'ALL' before grouping records
+			</div>
+		}
+
+	</EditForm>
+
+	
+}
+@code {
+
+	private SfGrid<CustomerShipment> Grid;
+	private List<CustomerShipment> ShipmentsData = new List<CustomerShipment>();
+
+	private bool isLoading = false;
+	private bool showTip = false;
+	private IEnumerable<string> CustomerTypes;
+	private bool isReady = false;
+	private int NumericValue = 50; // Default value for the combo box DeBounceDelay
+	private IEnumerable<Customer> CustomerEList;
+	private List<Customer> CustomerList = new List<Customer>();
+	private string WantedCustNum = string.Empty;
+	public SfComboBox<string, Customer> WantedCust { get; set; }
+	private bool isLawlessRep = false;
+	private IEnumerable<CustType> CustomerTypesList;
+
+
+	private AuthenticationState authState;
+	private ApplicationUser currentUser;
+
+	private SalesService.ShipmentsParameters parameters = new SalesService.ShipmentsParameters();
+
+	
+    protected override async Task OnInitializedAsync()
+    {
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentUser = await UserManager.GetUserAsync(user);
+            // parameters.RepCode = currentUser.RepCode;
+            parameters.RepCode = RepCodeContext.CurrentRepCode;
+            isLawlessRep = RepCodeContext.CurrentRepCode == "LAW";
+
+
+          
+
+        }
+
+
+        parameters.BeginShipDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
+        parameters.EndShipDate = DateTime.Now; // Default to today
+
+        CustomerTypes = await CustomerService.GetCustomerTypesAsync();
+        CustomerTypesList = await CustomerService.GetCustomerTypesListAsync();
+
+        //CustomerEList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
+        CustomerList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
+        var filteredCustomers = CustomerList
+            .Where(c => !c.Cust_Name.Contains("Do Not Use", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        CustomerList = filteredCustomers;
+        isReady = true;
+
+    }
+	
+
+
+	private async Task ClearFilters()
+	{
+		await Grid.ClearFilteringAsync();
+
+	}
+
+	private async Task LoadShipments()
+	{
+		showTip = true;
+		isLoading = true;
+		parameters.CustNum = WantedCust.Value;
+		parameters.ShipToRegion = RepCodeContext.RepRegion;
+
+		// Serialize parameters for logging
+		var paramJson = System.Text.Json.JsonSerializer.Serialize(parameters);
+		await ActivityLogService.LogReportUsageActivityAsync("Customer Shipments Report", paramJson);
+
+		ShipmentsData = await SalesService.GetShipmentsData(parameters);
+		isLoading = false;
+	}
+
+	public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+	{
+		if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
+		{
+			var ExcelFileName = $"Chapin Shipments Report({RepCodeContext.CurrentRepCode}).xlsx";
+			ExcelExportProperties exportProperties = new ExcelExportProperties
+			{
+				FileName = ExcelFileName
+			};
+			await this.Grid.ExportToExcelAsync(exportProperties);
+		}
+	}
+
+
+}
+
+<style>
+	.e-grid .e-gridheader .e-headercell {
+		height: 50px; /* Increase header height */
+		white-space: normal !important; /* Allow text wrapping */
+	}
+	/* Position the filter icon absolutely within the header cell */
+	.e-grid .e-headercell {
+		position: relative;
+		padding-right: 25px !important; /* Space for the icon */
+	}
+	/* Position the filter icon absolutely within the header cell */
+	.e-grid .e-headercell {
+		position: relative;
+		padding-right: 1px !important; /* Space for the icon */
+	}
+
+		.e-grid .e-headercell .e-filtericon {
+			position: absolute;
+			right: 5px;
+			top: 50%;
+			transform: translateY(-50%);
+			margin-left: 0 !important;
+		}
+
+	.custom-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		width: 100%;
+	}
+
+	.custom-grid .e-gridheader .e-headercell {
+		font-size: 12px !important;
+		padding: 10px !important; /* Adjust padding if text is cramped */
+	}
+
+	.custom-grid .e-rowcell {
+		font-size: 10px !important;
+	}
+
+	.form-grid {
+		display: grid;
+		grid-template-columns: 2fr 2fr 2fr 6fr;
+		gap: 20px;
+	}
+
+	.form-group {
+		margin-bottom: 15px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.column {
+		display: flex;
+		flex-direction: column;
+	}
+
+	label {
+		margin-bottom: 5px;
+	}
+
+	.input-container {
+		height: 38px; /* Consistent height for all inputs */
+	}
+
+		.input-container :deep(input),
+		.input-container :deep(InputDate) {
+			width: 100%;
+			height: 100%;
+			box-sizing: border-box;
+		}
+
+	.button-row {
+		margin-top: 20px;
+	}
+
+	.right-padding {
+		padding-right: 0px; /* Adjust the padding as needed */
+	}
+</style>

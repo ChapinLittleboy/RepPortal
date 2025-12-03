@@ -70,4 +70,7 @@ public static class ReportSubscriptions
 
     public static void Remove(ReportType type, string email, int? customerId)
         => RecurringJob.RemoveIfExists($"subs:{type}:{email}:{(customerId?.ToString() ?? "ALL")}");
+
+
+
 }

@@ -16,10 +16,13 @@ using Microsoft.Extensions.FileProviders;
 using RepPortal.Areas.Identity;
 using RepPortal.Data;
 using RepPortal.Services;
+using RepPortal.Services.ReportExport;
+using RepPortal.Services.Reports;
 using Serilog;
 using Serilog.Events;
 using SixLabors.ImageSharp.Web.DependencyInjection;
 using Syncfusion.Blazor;
+using static RepPortal.Services.ReportExport.ExcelReportExporter;
 using HangfireAuthorizationFilter = RepPortal.Data.HangfireAuthorizationFilter;
 
 
@@ -99,6 +102,11 @@ builder.Services.AddScoped<CircuitHandler, TrackingCircuitHandler>();
 builder.Services.AddScoped<SignInManager<ApplicationUser>, CustomSignInManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+
+
+
+
+
 builder.Services.AddScoped<PcfService>();
 builder.Services.AddScoped<TitleService>();
 builder.Services.AddScoped<ExportService>();
@@ -159,7 +167,8 @@ builder.Services.AddSingleton<IUserContextResolver>(sp =>
 });
 builder.Services.AddScoped<ReportRunner>();            // the job body
 builder.Services.AddScoped<SubscriptionService>();     // creates/updates jobs
-
+builder.Services.AddScoped<IInvoicedAccountsReport, InvoicedAccountsReport>();
+builder.Services.AddScoped<IShipmentsReport, ShipmentsReport>();
 
 
 builder.Services.AddRateLimiter(options =>
@@ -217,7 +226,7 @@ builder.Services.AddControllers()
 
 // Add the new service
 builder.Services.AddScoped<IInsuranceRequestService, InsuranceRequestService>();
-
+builder.Services.AddSingleton<IExcelReportExporter, ExcelReportExporter>();
 
 
 var app = builder.Build();

@@ -1,337 +1,223 @@
-﻿using RepPortal.Models;
-
-namespace RepPortal.Services;
-
+﻿// Services/ReportRunner.cs
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Data.SqlTypes;
 using System.Threading.Tasks;
-using Microsoft.Data.SqlClient;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
-using MimeKit;
-using Syncfusion.XlsIO;
 using Hangfire;
+using MailKit;
+using Microsoft.Extensions.Logging;
+using RepPortal.Models;
+using RepPortal.Services.ReportExport;
+using RepPortal.Services.Reports;
 
-
-
-public class ReportRunner
+namespace RepPortal.Services
 {
-  
-    private readonly string _connString = @"Data Source=ciisql10;Database=RepPortal;User Id=sa;Password='*id10t*';TrustServerCertificate=True;";
-    private readonly IAttachmentEmailSender _email;
-    private readonly ISalesDataService _salesData;
-    private readonly IUserContextResolver _userCtx;
-
-
-
-    public ReportRunner( IAttachmentEmailSender email, ISalesDataService salesData, IUserContextResolver userCtx )
+    public sealed class ReportRunner
     {
-        
-        _email = email;
-        _salesData = salesData;
-        _userCtx = userCtx;
+        private readonly IUserContextResolver _userCtx;
+        private readonly SmtpEmailSender _email;
 
+        private readonly IInvoicedAccountsReport _invoicedAccounts;
+        private readonly IShipmentsReport _shipments;
+        private readonly IExcelReportExporter _excel;
+        // inject others as you implement…
 
-    }
+        private readonly ILogger<ReportRunner> _logger;
 
-
-    // prevent overlap if a run is slow
-    [DisableConcurrentExecution(timeoutInSeconds: 60 * 60)]
-    public async Task RunAsync(ReportRequest req)
-    {
-        var ctx = await _userCtx.ResolveByEmailAsync(req.Email)
-                  ?? throw new InvalidOperationException($"No user context for {req.Email}");
-
-        switch (req.ReportType)
+        public ReportRunner(
+            IUserContextResolver userCtx,
+            SmtpEmailSender email,
+            IInvoicedAccountsReport invoicedAccounts,
+            IShipmentsReport shipments,
+            IExcelReportExporter excel,
+            ILogger<ReportRunner> logger)
         {
-            case ReportType.MonthlyInvoicedSales:
-                await SendMonthlyInvoicedSalesAsync(ctx, req.CustomerId);
-                break;
-            case ReportType.OpenOrders:
-                await SendOpenOrdersAsync(ctx, req.CustomerId);
-                break;
-            case ReportType.Shipments:
-                await SendShipmentsAsync(ctx, req.CustomerId, req.DateRangeCode);
-                break;
-            case ReportType.InvoicedAccounts:
-                await SendInvoicedAccountsAsync(ctx, req.CustomerId, req.DateRangeCode);
-                break;
-            case ReportType.MonthlySales:
-                await SendMonthlySalesAsync(ctx, req.CustomerId);
-                break;
-            case ReportType.MonthlySalesByItem:
-                await SendMonthlySalesByItemAsync(ctx, req.CustomerId);
-                break;
-            case ReportType.PivotSalesByItem:
-                await SendPivotSalesByItemAsync(ctx, req.CustomerId);
-                break;
-        }
-    }
-
-    // This is what Hangfire calls per subscription id
-    public async Task RunSubscriptionAsync(long subscriptionId)
-    {
-        using var conn = new SqlConnection(_connString);
-        await conn.OpenAsync();
-
-        var sub = await LoadSubscriptionAsync(conn, subscriptionId);
-        if (sub is null || !sub.IsActive) return;
-
-        var data = await ExecuteReportAsync(conn, sub);
-        var bytes = BuildExcel(data);
-
-        // await SendEmailAsync(sub, bytes);
-        await MarkRunAsync(conn, subscriptionId, success: true, null);
-    }
-
-    private async Task<ReportSub?> LoadSubscriptionAsync(SqlConnection conn, long id)
-    {
-        using var cmd = new SqlCommand(@"
-SELECT s.SubscriptionId, s.ReportId, d.StoredProcName, s.TimeZoneId, s.Format, s.Recipients, s.IsActive
-FROM dbo.ReportSubscription s
-JOIN dbo.ReportDefinition d ON d.ReportId = s.ReportId
-WHERE s.SubscriptionId = @id;", conn);
-        cmd.Parameters.AddWithValue("@id", id);
-
-        using var r = await cmd.ExecuteReaderAsync();
-        if (!await r.ReadAsync()) return null;
-
-        return new ReportSub
-        {
-            SubscriptionId = r.GetInt64(0),
-            ReportId = r.GetInt32(1),
-            StoredProc = r.GetString(2),
-            TimeZoneId = r.GetString(3),
-            Format = r.GetString(4),
-            Recipients = r.GetString(5),
-            IsActive = r.GetBoolean(6),
-        };
-    }
-
-    private async Task<DataTable> ExecuteReportAsync(SqlConnection conn, ReportSub sub)
-    {
-        // load filters
-        var filters = new Dictionary<string, string>();
-        using (var fcmd = new SqlCommand(
-                   "SELECT Name, Value FROM dbo.ReportSubscriptionFilter WHERE SubscriptionId = @id", conn))
-        {
-            fcmd.Parameters.AddWithValue("@id", sub.SubscriptionId);
-            using var fr = await fcmd.ExecuteReaderAsync();
-            while (await fr.ReadAsync()) filters[fr.GetString(0)] = fr.GetString(1);
+            _userCtx = userCtx;
+            _email = email;
+            _invoicedAccounts = invoicedAccounts;
+            _shipments = shipments;
+            _logger = logger;
+            _excel = excel;
         }
 
-        using var cmd = new SqlCommand(sub.StoredProc, conn) { CommandType = System.Data.CommandType.StoredProcedure };
-        foreach (var kvp in filters)
-            cmd.Parameters.AddWithValue("@" + kvp.Key, kvp.Value);
-
-        using var da = new SqlDataAdapter(cmd);
-        var dt = new DataTable();
-        da.Fill(dt);
-        return dt;
-    }
-
-    private byte[] BuildExcel(DataTable dt)
-    {
-        if (dt is null) throw new ArgumentNullException(nameof(dt));
-
-        using var engine = new ExcelEngine();
-        IApplication app = engine.Excel;
-        app.DefaultVersion = ExcelVersion.Xlsx; // ensures .xlsx formatting
-
-        // NOTE: Do NOT wrap wb in 'using' — IWorkbook is not IDisposable.
-        IWorkbook wb = app.Workbooks.Create(1);
-        IWorksheet ws = wb.Worksheets[0];
-
-        ws.Name = "Report";
-        ws.ImportDataTable(dt, isFieldNameShown: true, firstRow: 1, firstColumn: 1);
-        ws.UsedRange.AutofitColumns();
-
-        using var ms = new MemoryStream();
-        wb.SaveAs(ms); // writes the workbook to the stream
-        // No need to reset Position when using ToArray()
-        return ms.ToArray(); // engine.Dispose() will close workbook/resources
-    }
-
-
-
-    private async Task MarkRunAsync(SqlConnection conn, long id, bool success, string? error)
-    {
-        using var cmd = new SqlCommand("rpt.SubscriptionMarkRun", conn)
-            { CommandType = System.Data.CommandType.StoredProcedure };
-        cmd.Parameters.AddWithValue("@SubscriptionId", id);
-        cmd.Parameters.AddWithValue("@Success", success);
-        cmd.Parameters.AddWithValue("@Error", (object?)error ?? DBNull.Value);
-        await cmd.ExecuteNonQueryAsync();
-    }
-
-    /// <summary>
-    /// Entry point for Hangfire recurring job. Computes the month, generates xlsx, emails it.
-    /// </summary>
-    public async Task SendMonthlyItemSalesEmailAsync(string toEmail, int year, int month)
-    {
-        if (year == 0 || month == 0)
+        [DisableConcurrentExecution(timeoutInSeconds: 3600)]
+        public async Task RunAsync(ReportRequest req)
         {
-            var prev = DateTime.Today.AddMonths(-1);
-            year = prev.Year;
-            month = prev.Month;
-        }
+            // Normalize (enforces server-side rules you added earlier)
+            Normalize(req.ReportType, req.CustomerId, req.DateRangeCode,
+                out var cust, out var rangeCode);
 
-        var (start, end) = (new DateTime(year, month, 1), new DateTime(year, month, 1).AddMonths(1));
-        //var dt = await GetMonthlyItemSalesAsync(start, end);
-        var userCtx = await _userCtx.ResolveByEmailAsync(toEmail);
-        if (userCtx is null)
-            throw new InvalidOperationException($"Could not resolve user context for {toEmail}");
+            var userCtx = await _userCtx.ResolveByEmailAsync(req.Email)
+                          ?? throw new InvalidOperationException($"No user context for {req.Email}");
+            var (repCode, regions) = (userCtx.RepCode, (IReadOnlyList<string>?)userCtx.AllowedRegions);
 
-       
+            // Translate DateRangeCodeType -> concrete range (use user's timezone if applicable)
+            var (start, end) = ToDateRange(rangeCode, TimeZoneInfo.FindSystemTimeZoneById("America/New_York"));
 
-        var rawDatat = await _salesData.GetSalesReportData(repCode: userCtx.RepCode, allowedRegions: userCtx.AllowedRegions);
-
-        var dt = ToDataTable(rawDatat);
-        var xlsx = BuildExcel(dt, $"Monthly Item Sales {year}-{month:00}");
-
-        var subject = $"Monthly Item Sales - {year}-{month:00}";
-        var body = $"<p>Attached is the Monthly Item Sales report for {year}-{month:00}.</p>";
-
-        await _email.SendAsync(
-            toEmail,
-            subject,
-            body,
-            new[]
+            List<Dictionary<string, object>> data;
+            List<InvoiceRptDetail> invData;
+            switch (req.ReportType)
             {
-                (FileName: $"Monthly_Item_Sales_{year}-{month:00}.xlsx",
-                    Bytes: xlsx,
-                    ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            });
-    }
-
-    private async Task SendOpenOrdersAsync(UserContextResult ctx, string? customerId)
-    {
-        // TODO: query open orders via _sales using ctx.RepCode, ctx.AllowedRegions, customerId
-        // TODO: transform results to DataTable/Excel
-        // TODO: email results
-        await Task.CompletedTask;
-    }
-
-    private async Task SendMonthlyInvoicedSalesAsync(UserContextResult ctx, string? customerId)
-    {
-        // TODO: query open orders via _sales using ctx.RepCode, ctx.AllowedRegions, customerId
-        // TODO: transform results to DataTable/Excel
-        // TODO: email results
-        await Task.CompletedTask;
-    }
-
-    private async Task SendShipmentsAsync(UserContextResult ctx, string? customerId, string? dateRangeCode)
-    {
-        // TODO: query shipments via _sales
-        await Task.CompletedTask;
-    }
-
-    private async Task SendInvoicedAccountsAsync(UserContextResult ctx, string? customerId, string? dateRangeCode)
-    {
-        // TODO: query invoiced accounts via _sales
-        await Task.CompletedTask;
-    }
-
-    private async Task SendMonthlySalesAsync(UserContextResult ctx, string? customerId)
-    {
-        // TODO: query monthly sales via _sales
-        await Task.CompletedTask;
-    }
-
-    private async Task SendMonthlySalesByItemAsync(UserContextResult ctx, string? customerId)
-    {
-        // TODO: query monthly sales by item via _sales
-        await Task.CompletedTask;
-    }
-
-    private async Task SendPivotSalesByItemAsync(UserContextResult ctx, string? customerId)
-    {
-        // TODO: query pivot sales by item via _sales
-        await Task.CompletedTask;
-    }
-    private static (DateTime Start, DateTime End) MonthRange(int year, int month)
-    {
-        var start = new DateTime(year, month, 1);
-        var end = start.AddMonths(1); // [start, end)
-        return (start, end);
-    }
-
-    // TODO: Replace the SQL with your actual schema/logic
-    private async Task<DataTable> GetMonthlyItemSalesAsync(DateTime start, DateTime end)
-    {
-        const string sql = @"
-SELECT i.ItemNumber, i.ItemName,
-       SUM(s.Quantity) AS Quantity,
-       SUM(s.ExtendedPrice) AS Amount
-FROM dbo.Sales s
-JOIN dbo.Items i ON i.ItemId = s.ItemId
-WHERE s.InvoiceDate >= @start AND s.InvoiceDate < @end
-GROUP BY i.ItemNumber, i.ItemName
-ORDER BY i.ItemNumber;";
-
-        var dt = new DataTable("MonthlyItemSales");
-        await using var conn = new SqlConnection(_connString);
-        await conn.OpenAsync();
-        await using var cmd = new SqlCommand(sql, conn);
-        cmd.Parameters.AddWithValue("@start", start);
-        cmd.Parameters.AddWithValue("@end", end);
-        await using var rdr = await cmd.ExecuteReaderAsync();
-        dt.Load(rdr);
-        return dt;
-    }
-
-    // Uses Syncfusion.XlsIO to build an .xlsx byte[]
-    private static byte[] BuildExcel(DataTable dt, string sheetName)
-    {
-        using var engine = new ExcelEngine();
-        var app = engine.Excel;
-        app.DefaultVersion = ExcelVersion.Xlsx;
-
-        IWorkbook wb = app.Workbooks.Create(1);
-        IWorksheet ws = wb.Worksheets[0];
-        ws.Name = sheetName;
-
-        ws.ImportDataTable(dt, true, 1, 1);
-        ws.UsedRange.AutofitColumns();
-
-        using var ms = new MemoryStream();
-        wb.SaveAs(ms);
-        return ms.ToArray();
-    }
-
-    public static DataTable ToDataTable(
-        IEnumerable<IDictionary<string, object?>> rows,
-        string? tableName = null)
-    {
-        var table = new DataTable(tableName ?? "Table");
-
-        // Build columns dynamically as we encounter new keys
-        foreach (var dict in rows)
-        {
-            if (dict == null) continue;
-
-            // Ensure all columns for this row exist
-            foreach (var key in dict.Keys)
-            {
-                if (key == null) throw new ArgumentException("Dictionary contains a null key.");
-                if (!table.Columns.Contains(key))
+                case ReportType.InvoicedAccounts:
                 {
-                    // Use object to allow mixed types across rows (e.g., int in one row, double in another)
-                    table.Columns.Add(key, typeof(object));
+                    var tz = TimeZoneInfo.FindSystemTimeZoneById("America/New_York"); // or from subscription
+                    await RunInvoicedAccountsAsync(req, tz);
+                    break;
                 }
+
+                case ReportType.Shipments:
+                    data = await _shipments.GetAsync(repCode, regions, cust, start, end);
+                    await EmailAsync(req.Email, "Shipments", data, start, end);
+                    break;
+
+                // TODO: other reports that don’t need customer/dateRange can have simpler calls
+                default:
+                    throw new NotSupportedException($"Report type not implemented: {req.ReportType}");
             }
         }
-        return table;
-    }
-}
 
-public sealed record ReportSub
-{
-    public long SubscriptionId { get; init; }
-    public int ReportId { get; init; }
-    public string StoredProc { get; init; } = "";
-    public string TimeZoneId { get; init; } = "America/New_York";
-    public string Format { get; init; } = "xlsx";
-    public string Recipients { get; init; } = "";
-    public bool IsActive { get; init; }
+        private async Task EmailAsync(string to, string title, List<Dictionary<string, object>> rows,
+            DateTime start, DateTime end)
+        {
+            var dt = ToDataTable(rows);
+            var xlsx = BuildExcel(dt, $"{title} {start:yyyy-MM-dd}–{end.AddDays(-1):yyyy-MM-dd}");
+
+            var subject = $"{title} ({start:yyyy-MM-dd}..{end.AddDays(-1):yyyy-MM-dd})";
+            var body = $"<p>Attached: {title} from {start:yyyy-MM-dd} to {end.AddDays(-1):yyyy-MM-dd}.</p>";
+
+            await _email.SendAsync(
+                to, subject, body,
+                new[]
+                {
+                    (FileName: $"{title.Replace(' ', '_')}_{start:yyyy-MM-dd}_{end.AddDays(-1):yyyy-MM-dd}.xlsx",
+                        Bytes: xlsx,
+                        ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                });
+        }
+
+        // ——— helpers ———
+
+        private static (DateTime StartUtc, DateTime EndUtcExclusive) ToDateRange(string? code, TimeZoneInfo tz)
+        {
+            // interpret in local TZ, then convert to UTC for the DB if needed
+            var nowLocal = TimeZoneInfo.ConvertTime(DateTime.UtcNow, tz);
+
+            var firstThis = new DateTime(nowLocal.Year, nowLocal.Month, 1);
+            var firstNext = firstThis.AddMonths(1);
+            var firstPrev = firstThis.AddMonths(-1);
+
+            (DateTime lStart, DateTime lEnd) = code switch
+            {
+                nameof(DateRangeCodeType.PriorMonth) => (firstPrev, firstThis),
+                nameof(DateRangeCodeType.CurrentMonth) => (firstThis, nowLocal.Date.AddDays(1)),
+                nameof(DateRangeCodeType.PriorAndCurrentMonth) => (firstPrev, nowLocal.Date.AddDays(1)),
+                nameof(DateRangeCodeType.AllDates) => (DateTime.MinValue, DateTime.MaxValue),
+                _ => (firstThis, nowLocal.Date.AddDays(1))
+            };
+
+            var sUtc = TimeZoneInfo.ConvertTimeToUtc(lStart, tz);
+            var eUtc = lEnd == DateTime.MaxValue ? DateTime.MaxValue : TimeZoneInfo.ConvertTimeToUtc(lEnd, tz);
+            return (sUtc, eUtc);
+        }
+
+        private static void Normalize(ReportType type, string? customerId, string? dateRangeCode,
+            out string? cust, out string? range)
+        {
+            bool scoped = type is ReportType.InvoicedAccounts or ReportType.Shipments;
+
+            cust = scoped && !string.IsNullOrWhiteSpace(customerId) ? customerId.Trim() : null;
+
+            range = scoped && !string.IsNullOrWhiteSpace(dateRangeCode)
+                           && Enum.TryParse<DateRangeCodeType>(dateRangeCode, true, out _)
+                ? dateRangeCode
+                : null;
+        }
+
+        // reuse your existing helpers
+        private static System.Data.DataTable ToDataTable(List<Dictionary<string, object>> data)
+            => throw new NotImplementedException();
+
+        private static byte[] BuildExcel(System.Data.DataTable dt, string sheetName)
+            => throw new NotImplementedException();
+
+        // SQL datetime bounds
+        // private static readonly DateTime SqlMin = SqlDateTime.MinValue.Value; // 1753-01-01 00:00:00
+        // private static readonly DateTime SqlMax = SqlDateTime.MaxValue.Value; // 9999-12-31 23:59:59.997
+        private static readonly DateTime BusinessMinLocal = new DateTime(2022, 9, 1, 0, 0, 0, DateTimeKind.Unspecified);
+
+        private static readonly DateTime SqlMin = SqlDateTime.MinValue.Value; // 1753-01-01 00:00:00
+        private static readonly DateTime SqlMax = SqlDateTime.MaxValue.Value; // 9999-12-31 23:59:59.997
+
+        private static DateTime ClampToSqlDateTime(DateTime dt)
+        {
+            // First clamp to SQL's valid range, then to your business min
+            if (dt < SqlMin) dt = SqlMin;
+            if (dt > SqlMax) dt = SqlMax;
+            if (dt < BusinessMinLocal) dt = BusinessMinLocal;
+            return dt;
+        }
+
+        private static (DateTime BeginLocal, DateTime EndLocalExclusive)
+            ToDateRangeLocal(DateRangeCodeType code, TimeZoneInfo tz)
+        {
+            var nowLocal = TimeZoneInfo.ConvertTime(DateTime.UtcNow, tz);
+            var firstThis = new DateTime(nowLocal.Year, nowLocal.Month, 1);
+            var firstNext = firstThis.AddMonths(1);
+            var firstPrev = firstThis.AddMonths(-1);
+
+            return code switch
+            {
+                DateRangeCodeType.PriorMonth => (firstPrev, firstThis),
+                DateRangeCodeType.CurrentMonth => (firstThis, nowLocal.Date.AddDays(1)),
+                DateRangeCodeType.PriorAndCurrentMonth => (firstPrev, nowLocal.Date.AddDays(1)),
+                DateRangeCodeType.AllDates => (DateTime.MinValue, DateTime.MaxValue),
+                _ => (firstThis, nowLocal.Date.AddDays(1))
+            };
+        }
+        private async Task RunInvoicedAccountsAsync(ReportRequest req, TimeZoneInfo tz)
+        {
+            var ctx = await _userCtx.ResolveByEmailAsync(req.Email)
+                      ?? throw new InvalidOperationException($"No user context for {req.Email}");
+
+            // Date range
+            var code = Enum.TryParse<DateRangeCodeType>(req.DateRangeCode ?? "", true, out var parsed)
+                ? parsed
+                : DateRangeCodeType.CurrentMonth;
+            var (beginLocal, endLocalExclusive) = ToDateRangeLocal(code, tz);
+
+            // Fetch data
+            var rows = await _invoicedAccounts.GetAsync(
+                repCode: ctx.RepCode,
+                allowedRegions: ctx.AllowedRegions?.ToList(),
+                customerId: req.CustomerId,
+                beginLocal: ClampToSqlDateTime(beginLocal),
+                endLocalExclusive: endLocalExclusive);
+
+            // Build Excel
+            var title = "Invoiced Accounts";
+            var subtitle = $"{beginLocal:yyyy-MM-dd} – {endLocalExclusive.AddDays(-1):yyyy-MM-dd}";
+            var bytes = _excel.Export(rows, new ExcelExportOptions(
+                WorksheetName: "InvoicedAccounts",
+                Title: title,
+                Subtitle: subtitle,
+                DateColumns: new[] { "InvoiceDate" }, // <- adjust to your InvoiceRptDetail props
+                CurrencyColumns: new[] { "Amount" } // <- adjust to your InvoiceRptDetail props
+            ));
+
+            // Send email
+            var subject = $"{title} ({subtitle})";
+            var body = $"<p>Attached: {title} for {subtitle}.</p>";
+
+            await _email.SendAsync(
+                toEmail: req.Email,
+                subject: subject,
+                htmlBody: body,
+                attachments: new[]
+                {
+                    (FileName: $"Invoiced_Accounts_{ClampToSqlDateTime(beginLocal):yyyy-MM-dd}_{endLocalExclusive.AddDays(-1):yyyy-MM-dd}.xlsx",
+                        Bytes: bytes,
+                        ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                });
+        }
+    }
 }

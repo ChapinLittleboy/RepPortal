@@ -79,7 +79,7 @@ JOIN custaddr_mst ca ON cu.cust_num = ca.cust_num AND cu.cust_seq = ca.cust_seq 
 left JOIN reason_mst r ON ca.credit_hold_reason = r.reason_code and r.reason_class = 'CRED HOLD'
 LEFT JOIN Chap_SalesManagers sm ON cu.uf_c_slsmgr = sm.SalesManagerInitials
 WHERE  1=1
-AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
+AND (ISNULL(ca.credit_hold_reason,'') = '' OR ca.credit_hold_reason NOT IN (
     SELECT Code FROM RepPortal.dbo.CreditHoldReasonCodeExclusions))
 AND (
         -- Admin gets everything
