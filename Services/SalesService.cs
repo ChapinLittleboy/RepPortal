@@ -876,15 +876,15 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_Sal
         OR (
                 @RepCode = 'DAL'
                 AND (
-                        co.slsman = @RepCode
-                        OR co.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                        cu.slsman = @RepCode
+                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
                    )
            )
 
         -- All other reps get only customers matching their rep code
         OR (
                 @RepCode NOT IN ('Admin', 'DAL')
-                AND co.slsman = @RepCode
+                AND cu.slsman = @RepCode
            )
     )";
 

@@ -106,7 +106,7 @@ builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 
 
 
-
+builder.Services.AddScoped<PcfPdfAssetResolver>();
 builder.Services.AddScoped<PcfService>();
 builder.Services.AddScoped<TitleService>();
 builder.Services.AddScoped<ExportService>();
@@ -127,11 +127,13 @@ builder.Services.AddScoped<IPriceBookService, PriceBookService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<PackingListService>();
 
+// These 3 were already commented out.
 // Hangfire storage + server
 //var repPortalConn = builder.Configuration.GetConnectionString("RepPortalConnection");
 //EnsureHangfireSchema(repPortalConn, "HangFire");
 
-builder.Services.AddHangfire(cfg => cfg
+//  Not ready for Hangfire yet.  
+ builder.Services.AddHangfire(cfg => cfg
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
@@ -147,6 +149,7 @@ builder.Services.AddHangfireServer(options =>
 {
     options.Queues = new[] { "reports", "default" };   // dedicate a queue for report jobs
 });
+//  end of Hangfire commented out section
 
 builder.Services.AddAuthorization(options =>
 {
@@ -228,6 +231,8 @@ builder.Services.AddControllers()
 builder.Services.AddScoped<IInsuranceRequestService, InsuranceRequestService>();
 builder.Services.AddSingleton<IExcelReportExporter, ExcelReportExporter>();
 
+builder.Services.AddScoped<IPcfNotificationLogRepository, PcfNotificationLogRepository>();
+builder.Services.AddScoped<IExpiringPcfNotificationsJob, ExpiringPcfNotificationsJob>();
 
 var app = builder.Build();
 
@@ -295,11 +300,13 @@ app.UseEndpoints(endpoints =>
     endpoints.MapControllers();
 });
 
+//  Not ready for Hangfire yet.
 app.MapHangfireDashboard("/hangfire", new DashboardOptions
 {
     AppPath = "https://ChapinPortal.com",
     Authorization = new[] { new HangfireAuthorizationFilter("HangfireAdmins") }
 });
+//
 
 
 //app.MapControllers();

@@ -20,15 +20,19 @@ public class ExportService
     private readonly IWebHostEnvironment _hostingEnvironment;
     private readonly IConfiguration _configuration;
     private readonly ILogger<ExportService> _logger;
+    private readonly PcfPdfAssetResolver _assetResolver;
 
 
 
     public ExportService(IWebHostEnvironment hostingEnvironment, IConfiguration configuration,
-        ILogger<ExportService> logger)
+        ILogger<ExportService> logger, PcfPdfAssetResolver assetResolver)
+
     {
         _hostingEnvironment = hostingEnvironment;
         _configuration = configuration;
         _logger = logger;
+        _assetResolver = assetResolver;
+
     }
 
 
@@ -612,7 +616,12 @@ Prices and product availability are also subject to change at any time due to ma
     public byte[] ExportPcfHeaderToPdf2(PCFHeader pcfHeader)
     {
         var wwwrootpath = _hostingEnvironment?.WebRootPath ?? string.Empty;
-        var _pdfHeaderImagePath = Path.Combine(wwwrootpath, "images", "pdfheader.png");
+        //var _pdfHeaderImagePath = Path.Combine(wwwrootpath, "images", "pdfheader.png");
+
+
+        //var logoPath = _assetResolver.GetAssetPath("logo.png");
+        var _pdfHeaderImagePath = _assetResolver.GetAssetPath("pdfheader.png");
+
 
         using (PdfDocument pdfDocument = new PdfDocument())
         {

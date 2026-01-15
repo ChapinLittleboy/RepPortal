@@ -102,8 +102,26 @@ public class PcfService
              AND progcontrol.ProgSDate is not null)        -- Ensure program start date is present
         AND ProgControl.CustNum not in @ExcludedCustomerList  -- Filter out excluded customers
         AND progcontrol.ProgSDate > '2019-12-31'           -- Only include programs starting after 2019
-        AND (@RepCode = 'Admin'                            -- Allow admin to see all records,
-             OR SRNum = @RepCode)                          -- otherwise filter by sales rep code
+
+AND (
+        -- Admin gets everything
+        @RepCode = 'AdminXXX'
+
+        -- DAL gets their normal customers + special customer list
+        OR (
+                @RepCode = 'DAL'
+                AND (
+                        SRNum = @RepCode
+                        OR CustNum IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+
+        -- All other reps get only customers matching their rep code
+        OR (
+                @RepCode NOT IN ('AdminXXX', 'DAL')
+                AND SRNum = @RepCode
+           )
+    )
       ORDER BY PCFNum DESC"; // Order results by the most recent PCF number
 
         // Log the query for debugging or informational purposes
@@ -141,10 +159,31 @@ public class PcfService
             @"SELECT DISTINCT LTRIM(RTRIM(Cust_Num)) as CustNum
               FROM Customer_mst
               WHERE  
-        cust_num not in @ExcludedCustomerList AND
-        (
-        @RepCode = 'Admin'    
-        OR slsman = @RepCode) ",
+        cust_num not in @ExcludedCustomerList 
+
+
+AND (
+        -- Admin gets everything
+        @RepCode = 'Admin'
+
+        -- DAL gets their normal customers + special customer list
+        OR (
+                @RepCode = 'DAL'
+                AND (
+                        slsman = @RepCode
+                        OR Cust_Num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+
+        -- All other reps get only customers matching their rep code
+        OR (
+                @RepCode NOT IN ('Admin', 'DAL')
+                AND slsman = @RepCode
+           )
+    )
+
+
+",
             new { RepCode = _repCodeContext.CurrentRepCode, ExcludedCustomerList = excludedCustomerList });
 
         _logger.LogInformation("Selected customers");
@@ -183,7 +222,26 @@ public class PcfService
                 WHERE (1 = 1 AND  ProgControl.CustNum is not null AND ProgControl.ProgSDate is not null)
                 AND ProgControl.ProgSDate > '2019-12-31'
                 AND ProgControl.CustNum in @CustNumList
-                AND PCFNum >0 and SRNum = @RepCode 
+                AND PCFNum >0 
+AND (
+        -- Admin gets everything
+        @RepCode = 'AdminXXX'
+
+        -- DAL gets their normal customers + special customer list
+        OR (
+                @RepCode = 'DAL'
+                AND (
+                        SRNum = @RepCode
+                        OR ProgControl.CustNum IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                   )
+           )
+
+        -- All other reps get only customers matching their rep code
+        OR (
+                @RepCode NOT IN ('AdminXXX', 'DAL')
+                AND SRNum = @RepCode
+           )
+    )
                ORDER BY ProgControl.PCFStatus, CustName DESC";
 
 
@@ -250,13 +308,8 @@ public class PcfService
         LEFT JOIN CIISQL10.Bat_App.dbo.Item_mst it on i.ItemNum = it.Item
       left join CIISQL10.Bat_App.dbo.Customer_mst cu on ltrim(rtrim(cu.cust_num)) = h.CustNum and cu.cust_seq = 0
       left join CIISQL10.BAT_App.dbo.terms_mst terms on cu.terms_code = terms.terms_code
-        WHERE h.PCFNum = @PcfNum and (h.SRNum = @RepCode OR @RepCode = 'Admin' OR (
-                @RepCode = 'DAL'
-                AND (
-                        h.SRNum = @RepCode
-                        OR h.CustNum IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
-                   )
-           )) ";
+        WHERE h.PCFNum = @PcfNum and (h.SRNum = @RepCode OR @RepCode = 'Admin' )
+            ";
 
         _logger.LogInformation($"GetPCFHeaderWithItemsAsync: {sql}");
         using var connection = _dbConnectionFactory.CreatePcfConnection();
@@ -306,8 +359,125 @@ public class PcfService
         return headerResult;
     }
 
+    public async Task<PCFHeader> GetPCFHeaderWithItemsNoRepAsync(int pcfNum)
+    {
+        // This query retrieves header fields as well as the associated PCF items.
+        // Note: The CAST converts PCFNum (int) to varchar so it can be compared to PCItems.PCFNumber.
+        string sql = @"
+        SELECT 
+            h.PCFNum, 
+            h.CustNum as CustomerNumber, 
+            h.CustName as CustomerName, 
+            h.ProgSDate as StartDate, 
+            h.ProgEDate as EndDate, 
+            h.PCFStatus, 
+            h.PcfType, 
+            h.VPSalesDate,
+            h.BuyingGroup, 
+            h.SubmittedBy,
+            h.GenNotes as GeneralNotes,
+            h.Promo_Terms_Text as PromoPaymentTermsText,
+            h.Standard_Freight_Terms as PromoFreightTerms,
+            h.Freight_Minimums as FreightMinimums,
+            cc.SalesManager,
+            cc.AddressLine1 as BillToAddress,
+            cc.City as BillToCity,
+            cc.State as BTState,
+            cc.Zip as BTZip,
+            cc.Salesman as RepCode,
+            cc.Salesman as Salesman,
+          cu.terms_code as StandardPaymentTerms,
+          terms.Description as StandardPaymentTermsText,
+            i.PCFNumber,
+            i.ItemNum,
+            it.Stat as ItemStatus, 
+            i.CustNum,
+            i.ItemDesc,
+            i.ProposedPrice as ApprovedPrice
+
+  
+           
+        FROM ProgControl h 
+        LEFT JOIN PCItems i 
+            ON CAST(h.PCFNum AS varchar(50)) = i.PCFNumber
+        LEFT JOIN ConsolidatedCustomers cc 
+            ON h.CustNum = cc.CustNum and cc.custseq = 0
+        LEFT JOIN CIISQL10.Bat_App.dbo.Item_mst it on i.ItemNum = it.Item
+      left join CIISQL10.Bat_App.dbo.Customer_mst cu on ltrim(rtrim(cu.cust_num)) = h.CustNum and cu.cust_seq = 0
+      left join CIISQL10.BAT_App.dbo.terms_mst terms on cu.terms_code = terms.terms_code
+        WHERE h.PCFNum = @PcfNum 
+            ";
+
+        _logger.LogInformation($"GetPCFHeaderWithItemsNoRepAsync: {sql}");
+        using var connection = _dbConnectionFactory.CreatePcfConnection();
+        var headerDict = new Dictionary<int, PCFHeader>();
+
+        // Use Dapper's multi-mapping to group PCFHeader with its PCFItem(s)
+        var result = await connection.QueryAsync<PCFHeader, PCFItem, PCFHeader>(
+            sql,
+            (header, item) =>
+            {
+                if (!headerDict.TryGetValue(header.PcfNum, out var currentHeader))
+                {
+                    currentHeader = header;
+                    currentHeader.PCFLines = new List<PCFItem>();
+                    headerDict.Add(currentHeader.PcfNum, currentHeader);
+                }
+                // Only add the item if it's not null
+                if (item != null)
+                {
+                    currentHeader.PCFLines.Add(item);
+                }
+                return currentHeader;
+            },
+            new { PcfNum = pcfNum },
+            splitOn: "PCFNumber"  // Dapper will treat PCFNumber as the start of the PCFItem mapping.
+        );
+
+        // Return the unique header (or null if not found)
+        var headerResult = headerDict.Values.FirstOrDefault();
+        if (headerResult != null)
+        {
+            var agency = await connection.QueryFirstOrDefaultAsync<string>(
+                "Select name from CIISQL10.BAT_App.dbo.Chap_SlsmanNameV where slsman = @RepCode",
+                new { RepCode = headerResult.RepCode });
+
+            headerResult.RepAgency = agency;
+            //headerResult.RepCode = headerResult.RepCode;
+           
+            if (_repCodeContext.CurrentRepCode == "Admin")
+            {
+                headerResult.RepAgency = "Chapin Administrator";
+            }
+            var repEmail = await connection.QueryFirstOrDefaultAsync<string>(
+                "Select top 1 EmailList from CIISQL10.BAT_App.dbo.Chap_SalesRepEmail where  RepCode = @RepCode",
+                new { RepCode = headerResult.Salesman });
+            headerResult.RepName = repEmail;
+            headerResult.RepEmail = repEmail;
+
+            var salesMgrEmail = await connection.QueryFirstOrDefaultAsync<string>(
+                "Select top 1 SalesManagerEmail from CIISQL10.BAT_App.dbo.Chap_SalesManagers where  SalesManagerInitials = @SMI",
+                new { SMI = headerResult.SalesManager });
+
+            headerResult.SalesMgrEmail = salesMgrEmail;
+
+        }
 
 
+        return headerResult;
+    }
+
+    public async Task<List<int>> GetExpiringInDays(int daysOut)
+    {
+       string query =
+            @"Select PcfNum from progcontrol where  cast(progedate as Date) = cast(DATEADD(day, @DaysOut, getdate()) as Date)
+and pcfType not in ('PL', 'PW', 'PD') and pcfnum > 0 and pcfStatus = 3
+";
+        using var connection = _dbConnectionFactory.CreatePcfConnection();
+
+        var result = await connection.QueryAsync<int>(query, new { DaysOut = daysOut });
+        return result.ToList();
+    }
 
 
 }

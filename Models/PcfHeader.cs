@@ -117,6 +117,8 @@ public class PCFHeader : INotifyPropertyChanged
     public string? RepEmail { get; set; } = string.Empty;
     public string? RepAgency { get; set; } = string.Empty;
     public string? RepPhone { get; set; } = string.Empty;
+    public string? SalesMgrEmail { get; set; } = string.Empty;
+   
     #endregion
 
     #region User and Buyer Information
@@ -153,7 +155,7 @@ public class PCFHeader : INotifyPropertyChanged
 
     public int? Approved { get; set; }
     public string? Salesman { get; set; }
-    public string? SalesManager { get; set; }
+    public string? SalesManager { get; set; } = string.Empty;
     public DateTime? VPSalesDate { get; set; }
     #endregion
 

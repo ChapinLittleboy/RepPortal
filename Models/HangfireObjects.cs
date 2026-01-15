@@ -10,11 +10,14 @@ public enum ReportType
 {
     MonthlyInvoicedSales,  //no parameters
     OpenOrders,            //no parameters
-    Shipments,             // customer, daterange
+    Shipments,
+    ShipmentsNotImplemented,             // customer, daterange
     InvoicedAccounts,      // customer, daterange
     MonthlySales,          //no parameters (Historic territory)
     MonthlySalesByItem,    //no parameters (Historic territory)
-    PivotSalesByItem       //no parameters (Historic territory)
+    PivotSalesByItem,       //no parameters (Historic territory)
+    ExpiringPCFNotications
+
 }
 
 public enum DateRangeCodeType

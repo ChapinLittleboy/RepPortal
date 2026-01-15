@@ -167,15 +167,10 @@ else
     private SfComboBox<string, Customer>? WantedCust;
     private NewSubVm _newSub = new();
 
-    private List<ReportTypeOption> ReportTypeOptions { get; set; } =
-        Enum.GetValues<ReportType>()
-            .Select(rt => new ReportTypeOption
-            {
-                Text = GetReportDisplay(rt), // customize display if you want
-                Value = rt
-            })
-            .ToList(); 
+
     
+
+    private List<ReportTypeOption> ReportTypeOptions { get; set; } = new();
     private List<DateRangeTypeOption> DateRangeOptions { get; set; } =
         DateRangeOrder
             .Select(dt => new DateRangeTypeOption
@@ -199,6 +194,19 @@ else
 
         AllowCustSelection = _newSub.ReportType is ReportType.InvoicedAccounts or ReportType.Shipments;
         AllowDateRangeSelection = AllowCustSelection;
+
+        ReportTypeOptions = Enum.GetValues<ReportType>()
+            .Where(rt =>
+                rt != ReportType.ExpiringPCFNotications
+                || _currentUserEmail.Equals(
+                    "wlittleboy@chapinmfg.com",
+                    StringComparison.OrdinalIgnoreCase))
+            .Select(rt => new ReportTypeOption
+            {
+                Text = GetReportDisplay(rt),
+                Value = rt
+            })
+            .ToList();
 
         Load();
     }

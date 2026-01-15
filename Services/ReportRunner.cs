@@ -20,6 +20,8 @@ namespace RepPortal.Services
         private readonly IInvoicedAccountsReport _invoicedAccounts;
         private readonly IShipmentsReport _shipments;
         private readonly IExcelReportExporter _excel;
+        private readonly IExpiringPcfNotificationsJob _expiringPcfNotificationsJob;
+
         // inject others as you implement…
 
         private readonly ILogger<ReportRunner> _logger;
@@ -30,7 +32,8 @@ namespace RepPortal.Services
             IInvoicedAccountsReport invoicedAccounts,
             IShipmentsReport shipments,
             IExcelReportExporter excel,
-            ILogger<ReportRunner> logger)
+            ILogger<ReportRunner> logger,
+            IExpiringPcfNotificationsJob expiringPcfNotificationsJob)
         {
             _userCtx = userCtx;
             _email = email;
@@ -38,6 +41,7 @@ namespace RepPortal.Services
             _shipments = shipments;
             _logger = logger;
             _excel = excel;
+            _expiringPcfNotificationsJob = expiringPcfNotificationsJob;
         }
 
         [DisableConcurrentExecution(timeoutInSeconds: 3600)]
@@ -65,9 +69,14 @@ namespace RepPortal.Services
                     break;
                 }
 
-                case ReportType.Shipments:
+                case ReportType.ShipmentsNotImplemented:
                     data = await _shipments.GetAsync(repCode, regions, cust, start, end);
                     await EmailAsync(req.Email, "Shipments", data, start, end);
+                    break;
+
+                case ReportType.ExpiringPCFNotications:
+                    await _expiringPcfNotificationsJob.RunAsync();
+                    
                     break;
 
                 // TODO: other reports that don’t need customer/dateRange can have simpler calls

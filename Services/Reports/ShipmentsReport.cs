@@ -4,6 +4,16 @@ using Dapper;
 using RepPortal.Data;
 namespace RepPortal.Services.Reports
 {
+    public interface IShipmentsReport
+    {
+        Task<List<Dictionary<string, object>>> GetAsync(
+            string repCode,
+            IEnumerable<string>? allowedRegions,
+            string? customerId,
+            DateTime startUtc,
+            DateTime endUtcExclusive);
+    }
+
     public sealed class ShipmentsReport : IShipmentsReport
     {
         private readonly IDbConnectionFactory _dbFactory;
@@ -16,12 +26,39 @@ namespace RepPortal.Services.Reports
         }
 
         public async Task<List<Dictionary<string, object>>> GetAsync(
-            string repCode,
+            string repCode, 
             IEnumerable<string>? allowedRegions,
             string? customerId,
-            DateTime startUtc,
-            DateTime endUtcExclusive)
+            DateTime startDate,
+            DateTime endDate)
+
         {
+            var minStart= new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Local);
+            var maxEnd = DateTime.Now.Date.AddDays(60);
+
+
+            // Clamp startUtc
+            if (startDate < minStart)
+            {
+                startDate = minStart;
+            }
+
+            // Clamp endUtcExclusive
+            if (endDate >= maxEnd)
+            {
+                endDate = maxEnd;
+            }
+
+            // Final sanity check
+            if (startDate >= endDate)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(startDate),
+                    "The date range is invalid after applying limits."
+                );
+            }
+
+
             using var conn = _dbFactory.CreateRepConnection();
             conn.Open();
 
@@ -31,8 +68,8 @@ namespace RepPortal.Services.Reports
             {
                 RepCode = repCode,
                 CustomerId = customerId,
-                StartUtc = startUtc,
-                EndUtc = endUtcExclusive
+                StartUtc = startDate,
+                EndUtc = endDate
             });
 
             return InvoicedAccountsReport.Materialize(rows); // reuse helper if you like
@@ -44,20 +81,22 @@ namespace RepPortal.Services.Reports
                 : "AND s.Region IN @AllowedRegions";
 
             return $@"
-SELECT
-    s.ShipmentNo,
-    s.ShipDate,
-    s.Cust_Num,
-    s.Cust_Name,
-    s.Qty,
-    s.Item_No
-FROM dbo.Shipments s
-WHERE s.RepCode = @RepCode
-  AND (@CustomerId IS NULL OR s.Cust_Num = @CustomerId)
-  AND s.ShipDate >= @StartUtc
-  AND s.ShipDate <  @EndUtc
+SELECT top 100 
+    s.co_num,
+    s.Ship_Date,
+    co.Cust_Num,
+    
+    s.Qty_Shipped,
+    ci.Item
+FROM BAT_App.dbo.co_ship_mst s
+join Bat_App.dbo.co_mst co on s.Co_num  = co.co_num
+join Bat_App.dbo.coitem_mst ci on  co.co_num = ci.co_num 
+WHERE 1 = 1 --s.RepCode = @RepCode
+  AND (@CustomerId IS NULL OR co.Cust_Num = @CustomerId)
+  AND s.Ship_Date >= @StartUtc
+  AND s.Ship_Date <  @EndUtc
   {regionFilter}
-ORDER BY s.ShipDate DESC";
+ORDER BY s.Ship_Date DESC";
         }
     }
 }
