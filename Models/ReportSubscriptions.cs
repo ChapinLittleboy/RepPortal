@@ -1,4 +1,5 @@
-﻿using Hangfire;
+﻿using System.Runtime.InteropServices;
+using Hangfire;
 using RepPortal.Services;
 
 namespace RepPortal.Models;
@@ -39,7 +40,7 @@ public static class ReportSubscriptions
         string? customerId,
         string? dateRangeCode,
         string cron,
-        string timeZoneId = "America/New_York",
+        string timeZoneId = "Eastern Standard Time",
         string queue = "reports",
         ILogger? logger = null)
     {
@@ -55,7 +56,14 @@ public static class ReportSubscriptions
         }
 
         var tz = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            tz = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+        }
+        else
+        {
+            tz = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+        }
         RecurringJob.AddOrUpdate<ReportRunner>(
             recurringJobId: id,
             queue: queue,
