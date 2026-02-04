@@ -41,25 +41,46 @@ public sealed class ExpiringPcfNotificationsJob : IExpiringPcfNotificationsJob
 
     private async Task RunNoticeAsync(PcfNoticeType noticeType, int daysOut)
     {
+        var startTime = DateTime.Now;
+        var expirationDate = DateTime.Today.AddDays(daysOut);
+
         _logger.LogInformation(
-            "Running PCF {NoticeType} expiration notices ({Days} days)",
-            noticeType, daysOut);
+            "RunNoticeAsync STARTED at {StartTime} — NoticeType={NoticeType}, DaysOut={Days}, ExpirationDate={ExpirationDate}",
+            startTime, noticeType, daysOut, expirationDate.ToString("yyyy-MM-dd"));
 
-        PCFHeader pcfHeader;
-
-        var pcfs = await _pcfService.GetExpiringInDays(daysOut);
-
-        foreach (var pcf in pcfs)
+        try
         {
-            
-           
+            var pcfs = await _pcfService.GetExpiringInDays(daysOut);
 
-            pcfHeader = await _pcfService.GetPCFHeaderWithItemsNoRepAsync(pcf);
+            _logger.LogInformation(
+                "Found {Count} expiring PCF(s) for {ExpirationDate}: [{PcfNumbers}]",
+                pcfs.Count,
+                expirationDate.ToString("yyyy-MM-dd"),
+                pcfs.Count > 0 ? string.Join(", ", pcfs) : "none");
 
-            if (await _notificationLog.ExistsAsync(pcf, noticeType,pcfHeader.EndDate))
-                continue;
+            PCFHeader pcfHeader;
 
-            await SendNoticeAsync(pcfHeader, noticeType);
+            foreach (var pcf in pcfs)
+            {
+                pcfHeader = await _pcfService.GetPCFHeaderWithItemsNoRepAsync(pcf);
+
+                if (await _notificationLog.ExistsAsync(pcf, noticeType, pcfHeader.EndDate))
+                    continue;
+
+                await SendNoticeAsync(pcfHeader, noticeType);
+            }
+
+            var endTime = DateTime.Now;
+            _logger.LogInformation(
+                "RunNoticeAsync FINISHED at {EndTime} — NoticeType={NoticeType}, Duration={Duration}ms",
+                endTime, noticeType, (endTime - startTime).TotalMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "RunNoticeAsync FAILED for NoticeType={NoticeType}, DaysOut={Days}, ExpirationDate={ExpirationDate}",
+                noticeType, daysOut, expirationDate.ToString("yyyy-MM-dd"));
+            throw;
         }
     }
 
