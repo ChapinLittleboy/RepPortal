@@ -112,7 +112,7 @@ AND (
                 @RepCode = 'DAL'
                 AND (
                         SRNum = @RepCode
-                        OR CustNum IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                        --OR CustNum IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
                    )
            )
 
@@ -171,7 +171,7 @@ AND (
                 @RepCode = 'DAL'
                 AND (
                         slsman = @RepCode
-                        OR Cust_Num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                        --OR Cust_Num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
                    )
            )
 
@@ -232,7 +232,7 @@ AND (
                 @RepCode = 'DAL'
                 AND (
                         SRNum = @RepCode
-                        OR ProgControl.CustNum IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+                        --OR ProgControl.CustNum IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
                    )
            )
 
