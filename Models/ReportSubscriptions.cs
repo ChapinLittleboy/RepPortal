@@ -62,7 +62,7 @@ public static class ReportSubscriptions
         }
         else
         {
-            tz = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+            tz = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");  //America/New_York
         }
         RecurringJob.AddOrUpdate<ReportRunner>(
             recurringJobId: id,

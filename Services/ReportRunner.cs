@@ -56,7 +56,7 @@ namespace RepPortal.Services
             var (repCode, regions) = (userCtx.RepCode, (IReadOnlyList<string>?)userCtx.AllowedRegions);
 
             // Translate DateRangeCodeType -> concrete range (use user's timezone if applicable)
-            var (start, end) = ToDateRange(rangeCode, TimeZoneInfo.FindSystemTimeZoneById("America/New_York"));
+            var (start, end) = ToDateRange(rangeCode, TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time"));
 
             List<Dictionary<string, object>> data;
             List<InvoiceRptDetail> invData;
@@ -64,7 +64,7 @@ namespace RepPortal.Services
             {
                 case ReportType.InvoicedAccounts:
                 {
-                    var tz = TimeZoneInfo.FindSystemTimeZoneById("America/New_York"); // or from subscription
+                    var tz = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time"); // or from subscription
                     await RunInvoicedAccountsAsync(req, tz);
                     break;
                 }

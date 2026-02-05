@@ -87,7 +87,7 @@ namespace RepPortal.Services
             try { return TimeZoneInfo.FindSystemTimeZoneById(tzId); }
             catch
             {
-                try { return TimeZoneInfo.FindSystemTimeZoneById("America/New_York"); }
+                try { return TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time"); }
                 catch { return TimeZoneInfo.Utc; }
             }
         }
