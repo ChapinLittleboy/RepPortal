@@ -791,12 +791,18 @@ Prices and product availability are also subject to change at any time due to ma
                     row.Cells[2].Value = item.ApprovedPrice.ToString("C2");
                 }
 
-                int yPosition = 320;
                 // grid.ApplyBuiltinStyle(PdfGridBuiltinStyle.GridTable4Accent1);
                 grid.ApplyBuiltinStyle(PdfGridBuiltinStyle.PlainTable3);
 
                 grid.RepeatHeader = true;
-                grid.Draw(page, new PointF(0, yPosition + 20));
+                float availableHeight = clientSize.Height - currentY - (pdfDocument.Template.Bottom?.Height ?? 0) - margin;
+                RectangleF gridBounds = new RectangleF(margin, currentY, contentWidth, Math.Max(0, availableHeight));
+                PdfGridLayoutFormat gridLayout = new PdfGridLayoutFormat
+                {
+                    Layout = PdfLayoutType.Paginate,
+                    Break = PdfLayoutBreakType.FitPage
+                };
+                grid.Draw(page, gridBounds, gridLayout);
 
 
             }
