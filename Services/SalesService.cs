@@ -1,24 +1,31 @@
 ﻿using System.Data;
+using System.Globalization;
+using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using System.Text.Json;
 using Dapper;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Options;
 using Org.BouncyCastle.Tls.Crypto;
 using RepPortal.Data;
 using RepPortal.Models;
 using static RepPortal.Pages.MonthlyItemSalesPivot;
+using RegionInfo = RepPortal.Models.RegionInfo;
 
 namespace RepPortal.Services;
 
-public class SalesService
+public class SalesService : ISalesService
 {
     private readonly string _connectionString;
     private readonly AuthenticationStateProvider? _authenticationStateProvider;
     private readonly IRepCodeContext? _repCodeContext;
     private readonly IDbConnectionFactory? _dbConnectionFactory;
     private readonly ILogger<SalesService>? _logger;
-    private readonly ISalesDataService _core;
+    private readonly ISalesDataService? _core;
+    private readonly ICsiRestClient? _csiRestClient;
+    private readonly CsiOptions _csiOptions;
 
     // Primary DI ctor
     public SalesService(
@@ -27,7 +34,9 @@ public class SalesService
         IRepCodeContext repCodeContext,
         IDbConnectionFactory dbConnectionFactory,
         ILogger<SalesService> logger,
-        ISalesDataService core)
+        ISalesDataService core,
+        ICsiRestClient csiRestClient,
+        IOptions<CsiOptions> csiOptions)
     {
         _connectionString = configuration.GetConnectionString("BatAppConnection")
                             ?? throw new InvalidOperationException("Missing BatAppConnection connection string.");
@@ -36,9 +45,12 @@ public class SalesService
         _dbConnectionFactory = dbConnectionFactory;
         _logger = logger;
         _core = core;
+        _csiRestClient = csiRestClient;
+        _csiOptions = csiOptions.Value;
     }
 
     // Convenience ctor (tests/console). Only methods that use the raw connection string will work.
+
     public SalesService(string connectionString)
     {
         _connectionString = string.IsNullOrWhiteSpace(connectionString)
@@ -281,15 +293,7 @@ public class SalesService
         LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
         LEFT JOIN Bat_App.dbo.Item_mst im WITH (NOLOCK) ON ii.item = im.item
         WHERE ih.inv_date BETWEEN '{fyMinus3Start:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}'
-                AND ( cu.slsman = @RepCode{regionFilter} 
-OR         (
-                @RepCode = 'DAL'
-                AND (
-                        cu.slsman = @RepCode
-                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
-                   )
-           )
-          )";
+          AND cu.slsman = @RepCode{regionFilter}";
 
         var sql = $@"
     WITH InvoiceData AS (
@@ -441,15 +445,7 @@ OR         (
         LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
         LEFT JOIN Bat_App.dbo.Item_mst im WITH (NOLOCK) ON ii.item = im.item
         WHERE ih.inv_date BETWEEN '{fyPriorStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}'
-                AND ( cu.slsman = @RepCode{regionFilter} 
-OR         (
-                @RepCode = 'DAL'
-                AND (
-                        cu.slsman = @RepCode
-                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
-                   )
-           )
-          )";
+          AND cu.slsman = @RepCode{regionFilter}";
 
         return $@"
     WITH InvoiceData AS (
@@ -654,13 +650,7 @@ OR         (
             FROM CIISQL10.INTRANET.DBO.Cust Cust
             INNER JOIN CIISQL10.INTRANET.DBO.OpenOrders OpenOrders
                 ON Cust.CustSeq = OpenOrders.CustSeq AND Cust.Cust = OpenOrders.Cust
-            WHERE Cust.slsman = @RepCode OR (
-                @RepCode = 'DAL'
-                AND (
-                        Cust.slsman = @RepCode
-                        OR Cust.cust IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
-                   )
-           )
+            WHERE Cust.slsman = @RepCode
             ORDER BY Cust.CorpName;";
 
         using var connection = new SqlConnection(_connectionString);
@@ -703,7 +693,17 @@ OR         (
         var repCode = _repCodeContext!.CurrentRepCode;
         var allowedRegions = _repCodeContext.CurrentRegions;
 
-        var sql = @"
+        _logger?.LogInformation(
+            "GetAllOpenOrderDetailsAsync started. Rep={RepCode}, UseApi={UseApi}, RegionCount={RegionCount}",
+            repCode,
+            _csiOptions.UseApi,
+            allowedRegions?.Count ?? 0
+        );
+
+        if (!_csiOptions.UseApi)
+        {
+
+            var sql = @"
         SELECT
               co.Cust_Num AS Cust
             , cc.Name AS CustName
@@ -727,39 +727,146 @@ OR         (
         LEFT JOIN CIISQL10.BAT_App.DBO.Item_mst Item ON Item.Item = ci.Item
         LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc ON cu.cust_num = cc.cust_num
         WHERE ci.STAT = 'O'
-          AND (
-        -- Admin gets everything
-        @RepCode = 'Admin'
-
-        -- DAL gets their normal customers + special customer list
-        OR (
-                @RepCode = 'DAL'
-                AND (
-                        co.slsman = @RepCode
-                        OR co.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
-                   )
-           )
-
-        -- All other reps get only customers matching their rep code
-        OR (
-                @RepCode NOT IN ('Admin', 'DAL')
-                AND co.slsman = @RepCode
-           )
-    )
+          AND co.slsman = @RepCode
           AND ci.qty_ordered - ci.qty_shipped > 0";
 
-        if (allowedRegions != null && allowedRegions.Any())
-            sql += " AND cu.Uf_SalesRegion IN @AllowedRegions";
+            if (allowedRegions != null && allowedRegions.Any())
+                sql += " AND cu.Uf_SalesRegion IN @AllowedRegions";
 
-        sql += " ORDER BY cc.Name, co.cust_seq;";
+            sql += " ORDER BY cc.Name, co.cust_seq;";
 
-        using var connection = new SqlConnection(_connectionString);
-        _logger?.LogInformation("Executing SQL: {Sql}", sql);
+            using var connection = new SqlConnection(_connectionString);
+            _logger?.LogInformation("Executing SQL: {Sql}", sql);
 
-        var parameters = new { RepCode = repCode, AllowedRegions = allowedRegions?.ToArray() };
-        var allDetails = await connection.QueryAsync<OrderDetail>(sql, parameters);
-        return allDetails.ToList();
+            var parameters = new { RepCode = repCode, AllowedRegions = allowedRegions?.ToArray() };
+            var allDetails = await connection.QueryAsync<OrderDetail>(sql, parameters);
+            return allDetails.ToList();
+        }
+        else
+        {
+            return await GetAllOpenOrderDetailsApiAsync();
+        }
     }
+
+
+    public async Task<List<OrderDetail>> GetAllOpenOrderDetailsApiAsync()
+    {
+        string repCode = _repCodeContext.CurrentRepCode;
+        List<string> salesRegions = _repCodeContext.CurrentRegions;
+
+        await LogReportUsageAsync(repCode, "GetAllOpenOrderDetailsAsync");
+        var filters = new List<string>
+        {
+            "QtyOrdered > QtyShipped",
+            Eq("CoSlsman", repCode)
+        };
+        if (_csiOptions.OpenOrderCutoffDate.HasValue)
+        {
+            filters.Add(DateGt("DerDueDate", _csiOptions.OpenOrderCutoffDate.Value));
+        }
+        // Apply SalesRegion filter ONLY for LAW
+        if (salesRegions is { Count: > 0 })  // Not limited to LAW for future use
+        {
+            filters.Add(In("SalesRegion", salesRegions));
+        }
+
+        var filterClause = string.Join(" AND ", filters);
+        var query = new Dictionary<string, string>
+        {
+            ["props"] =
+                "CoCustNum,Adr0Name,CoOrderDate,CoCustPo,CoNum,DerDueDate,SalesRegion," +
+                "Item,Description,Price,QtyOrdered,QtyShipped,AdrName,CoCustSeq",
+
+            ["filter"] = filterClause,
+
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var json = await _csiRestClient.GetAsync("json/SLCoitems/adv", query);
+
+        var response = JsonSerializer.Deserialize<MgRestAdvResponse>(json,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        if (response.MessageCode != 0)
+            throw new InvalidOperationException(response.Message);
+
+        return response.Items
+            .Select(row => MapRow<OrderDetail>(row))
+            .ToList();
+    }
+
+    private static T MapRow<T>(List<MgNameValue> row)
+        where T : new()
+    {
+        var obj = new T();
+        var props = typeof(T).GetProperties();
+
+        foreach (var prop in props)
+        {
+            var attr = prop.GetCustomAttribute<CsiFieldAttribute>();
+            if (attr == null)
+                continue;
+
+            var cell = row.FirstOrDefault(c =>
+                string.Equals(c.Name, attr.FieldName, StringComparison.OrdinalIgnoreCase));
+
+            if (cell?.Value == null)
+                continue;
+
+            var targetType = Nullable.GetUnderlyingType(prop.PropertyType)
+                             ?? prop.PropertyType;
+
+            object? value = ConvertTo(cell.Value, targetType);
+            prop.SetValue(obj, value);
+        }
+
+        return obj;
+    }
+
+
+
+    private static object ConvertTo(string raw, Type targetType)
+    {
+        if (targetType == typeof(DateTime))
+            return DateTime.ParseExact(
+                raw,
+                "yyyyMMdd HH:mm:ss.fff",
+                CultureInfo.InvariantCulture);
+
+        if (targetType == typeof(decimal))
+            return decimal.Parse(raw, CultureInfo.InvariantCulture);
+
+        if (targetType == typeof(int))
+            return int.Parse(raw, CultureInfo.InvariantCulture);
+
+        return Convert.ChangeType(raw, targetType, CultureInfo.InvariantCulture);
+    }
+    // Other ISalesService methods remain NotImplemented for now
+
+    private static string Eq(string field, string value) =>
+        $"{field} = '{value.Replace("'", "''")}'";
+
+    private static string In(string field, IEnumerable<string> values)
+    {
+        var safeValues = values
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Select(v => $"'{v.Replace("'", "''")}'");
+
+        return $"{field} IN ({string.Join(",", safeValues)})";
+    }
+
+    private static string DateGt(string field, DateTime date) =>
+        $"{field} > '{date:yyyyMMdd}'";
+
+
+
+
+
+
+
 
     public async Task LogReportUsageAsync(string repCode, string reportName)
     {
@@ -868,42 +975,33 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_Sal
   Join tempwork.dbo.FiscalCalendarVw fc on Cast(ih.inv_date as date)=fc.[Date]
             WHERE 1 = 1 
               AND ih.inv_date > dbo.midnightof('9/1/2022')
-              AND (
-        -- Admin gets everything
-        @RepCode = 'Admin'
-
-        -- DAL gets their normal customers + special customer list
-        OR (
-                @RepCode = 'DAL'
-                AND (
-                        cu.slsman = @RepCode
-                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
-                   )
-           )
-
-        -- All other reps get only customers matching their rep code
-        OR (
-                @RepCode NOT IN ('Admin', 'DAL')
-                AND cu.slsman = @RepCode
-           )
-    )";
+              AND cu.slsman = @RepCode";
 
 
         if (allowedRegions != null && allowedRegions.Any())
             sql += " AND cu.Uf_SalesRegion IN @AllowedRegions";
-     
 
 
-        
+
+
 
         using var connection = new SqlConnection(_connectionString);
         _logger?.LogInformation("Executing SQL: {Sql}", sql);
 
         var parameters = new { RepCode = repCode, AllowedRegions = allowedRegions?.ToArray() };
 
-        
+
         var rows = await connection.QueryAsync<SaleRow>(sql, parameters);
         return rows.ToList();
+
+
+
+    }
+
+    public async Task<List<CustType>> GetCustomerTypesListAsync()
+    {
+        var x = new List<CustType>();
+        return x;
     }
 
     public class InvoiceRptParameters
@@ -943,7 +1041,7 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_Sal
             .Select(d => d.ToString("MMM") + d.Year)
             .ToList();
 
-        var fyMinus3Months = allMonths.Take(12).ToList(); 
+        var fyMinus3Months = allMonths.Take(12).ToList();
         var fyMinus2Months = allMonths.Skip(12).Take(12).ToList();
         var fyMinus1Months = allMonths.Skip(24).Take(12).ToList();
         var currentFYMonths = allMonths.Skip(36).Take(currentFiscalMonth).ToList();
@@ -983,15 +1081,7 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_Sal
     JOIN Bat_App.dbo.customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
     LEFT JOIN Bat_App.dbo.Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
     WHERE ih.inv_date >= '{fyMinus3Start:yyyy-MM-dd}'
-      AND ( cu.slsman = @RepCode{regionFilter} 
-OR         (
-                @RepCode = 'DAL'
-                AND (
-                        cu.slsman = @RepCode
-                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
-                   )
-           )
-          )
+      AND cu.slsman = @RepCode{regionFilter}
     GROUP BY 
         ih.cust_num, ca0.Name, ih.cust_seq, ca.City, ca.State,
         ca0.name, ca0.state, cu.Uf_SalesRegion, rn.RegionName,
@@ -1080,15 +1170,7 @@ ORDER BY FY{fiscalYear - 1} DESC;";
         LEFT JOIN Bat_App.dbo.Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
         LEFT JOIN Bat_App.dbo.Item_mst im ON ii.item = im.item
         WHERE ih.inv_date >= '{fyPriorStart:yyyy-MM-dd}'
-                AND ( cu.slsman = @RepCode{regionFilter} 
-OR         (
-                @RepCode = 'DAL'
-                AND (
-                        cu.slsman = @RepCode
-                        OR cu.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
-                   )
-           )
-          )
+          AND cu.slsman = @RepCode{regionFilter}
         GROUP BY 
             ih.cust_num, ca0.Name, ih.cust_seq, ca.City, ca.State,
             ca0.name, ca0.state, cu.Uf_SalesRegion, rn.RegionName,
@@ -1148,4 +1230,6 @@ OR         (
         if (_repCodeContext == null)
             throw new InvalidOperationException("IRepCodeContext is required for this operation.");
     }
+
+
 }

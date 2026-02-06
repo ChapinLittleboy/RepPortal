@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using RepPortal.Areas.Identity;
 using RepPortal.Data;
+using RepPortal.Models;
 using RepPortal.Services;
 using RepPortal.Services.ReportExport;
 using RepPortal.Services.Reports;
@@ -36,17 +37,52 @@ SqlMapper.Settings.CommandTimeout = 60; // Timeout set to 60 seconds
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
+    .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("RepPortal.Services.CsiLoggingHandler", LogEventLevel.Information)
     .Enrich.FromLogContext()
+
+    // Console gets everything
     .WriteTo.Console()
-    .WriteTo.File(
-        "Logs/RepPortal-log-.txt",
-        rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 14,  // Keep 14 days of logs
-        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
-    )
+
+    // Main application log (EXCLUDES CSI handler)
+    .WriteTo.Logger(lc => lc
+        .Filter.ByExcluding(e =>
+            e.Properties.TryGetValue("SourceContext", out var sc) &&
+            sc.ToString().Contains("RepPortal.Services.CsiLoggingHandler"))
+        .WriteTo.File(
+            "Logs/RepPortal-log-.txt",
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 14,
+            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+        ))
+
+    // CSI HTTP log ONLY
+    .WriteTo.Logger(lc => lc
+        .Filter.ByIncludingOnly(e =>
+            e.Properties.TryGetValue("SourceContext", out var sc) &&
+            sc.ToString().Contains("RepPortal.Services.CsiLoggingHandler"))
+        .WriteTo.File(
+            "Logs/RepPortal-csi-http-.txt",
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 14,
+            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+        ))
+    .WriteTo.Logger(lc => lc
+        .Filter.ByIncludingOnly(e =>
+            e.Properties.TryGetValue("SourceContext", out var sc) &&
+            sc.ToString().Contains("ExpiringPcfNotificationsJob"))
+        .WriteTo.File(
+            "Logs/RepPortal-expiring-pcf-job-.txt",
+            rollingInterval: RollingInterval.Month,
+            retainedFileCountLimit: 14,
+            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+        ))
+
     .CreateLogger();
+    
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSyncfusionBlazor();
@@ -87,13 +123,16 @@ builder.Services.AddSignalR(o =>
     o.KeepAliveInterval = TimeSpan.FromSeconds(10);   // default 15s
     o.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // default 30s
 });
+builder.Services.Configure<CsiOptions>(
+    builder.Configuration.GetSection("CSI"));
+
 builder.Services.AddScoped<CreditHoldExclusionService>();
 builder.Services.AddScoped<UserManager<ApplicationUser>>();
 builder.Services.AddScoped<CustomerService>();
 // Core: auth-free — used by both pages and jobs
 builder.Services.AddScoped<ISalesDataService, SalesDataService>();
-builder.Services.AddScoped<SalesService>();
-
+//builder.Services.AddScoped<SalesService>();
+builder.Services.AddScoped<ISalesService, SalesService>();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRepCodeContext, RepCodeContext>();
@@ -103,6 +142,8 @@ builder.Services.AddScoped<SignInManager<ApplicationUser>, CustomSignInManager>(
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 
+builder.Services.AddHttpClient<ICsiRestClient, CsiRestClient>()
+    .AddHttpMessageHandler<CsiLoggingHandler>();
 
 
 
@@ -156,7 +197,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("HangfireAdmins", policy =>
         policy.RequireRole("HangfireAdmin")); // policy name matches what your filter expects
 });
-
+builder.Services.AddTransient<CsiLoggingHandler>();
 builder.Services.AddTransient<RepPortal.Services.SmtpEmailSender>();      // concrete
 builder.Services.AddTransient<IEmailSender, RepPortal.Services.SmtpEmailSender>();
 builder.Services.AddTransient<IAttachmentEmailSender, RepPortal.Services.SmtpEmailSender>();

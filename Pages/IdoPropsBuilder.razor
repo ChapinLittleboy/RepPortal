@@ -1,0 +1,477 @@
+﻿@page "/ido-props-builder"
+
+@using Microsoft.Data.SqlClient
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.XlsIO;
+@using Syncfusion.Blazor.Inputs
+
+@using FilterType = Syncfusion.Blazor.DropDowns.FilterType
+@using TextAlign = Syncfusion.Blazor.Grids.TextAlign
+
+@inject IConfiguration Configuration
+@inject IJSRuntime JS
+
+<h3>IDO Property Builder</h3>
+
+<div class="row g-3 align-items-end">
+    <div class="col-12 col-md-4">
+        <label class="form-label">IDO (SL*)</label>
+
+        <SfDropDownList TValue="string" TItem="IdoCollectionRow"
+                        DataSource="@IdoList"
+                        Placeholder="Select an IDO..."
+                        @bind-Value="SelectedIdo"
+                        AllowFiltering="true"
+                        FilterType="FilterType.Contains">
+            <DropDownListFieldSettings Text="CollectionName" Value="CollectionName"></DropDownListFieldSettings>
+        </SfDropDownList>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <SfButton CssClass="e-primary" Disabled="@string.IsNullOrWhiteSpace(SelectedIdo)" OnClick="LoadProperties">
+            Load Properties
+        </SfButton>
+    </div>
+
+    <div class="col-12 col-md-5">
+        <label class="form-label">Search Properties</label>
+        <SfTextBox Placeholder="Type to filter grid..." @bind-Value="PropertySearch"></SfTextBox>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(StatusMessage))
+{
+    <div class="mt-3 alert alert-info">
+        @StatusMessage
+    </div>
+}
+
+@if (Rows?.Count > 0)
+{
+    <div class="mt-4">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <SfButton CssClass="e-success" OnClick="CopySelectedProps">Copy props string</SfButton>
+            <SfButton CssClass="e-info" OnClick="SelectAllVisible">Select All (Visible)</SfButton>
+            <SfButton CssClass="e-warning" OnClick="ClearAll">Clear All</SfButton>
+
+            <div class="ms-auto">
+                <b>Total:</b> @Rows.Count |
+                <b>Selected:</b> @Rows.Count(r => r.IsSelected)
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <label class="form-label">Selected props (comma delimited, alphabetical)</label>
+            <textarea class="form-control" rows="3" readonly>@SelectedPropsCsv</textarea>
+        </div>
+
+        <div class="mt-3">
+            <SfGrid @ref="GridRef"
+                    ID="Grid"
+                    DataSource="@FilteredRows"
+                    AllowSorting="true"
+                    AllowPaging="false"
+                    AllowExcelExport="true"
+                    Toolbar="@(new List<string>() { "ExcelExport" })"
+                    Height="550">
+
+                
+                
+
+                <GridColumns>
+                    <GridColumn HeaderText="Use" Width="80" TextAlign="TextAlign.Center">
+                        <Template Context="rowObj">
+                            @{
+                                var row = (IdoPropertyRow)rowObj;
+                            }
+                            <input type="checkbox"
+                                   checked="@row.IsSelected"
+                                   @onchange="(args) => OnRowSelectionChanged(row, args)"/>
+
+                        </Template>
+                    </GridColumn>
+
+                    <GridColumn Field=@nameof(IdoPropertyRow.PropertyName)
+                                HeaderText="PropertyName"
+                                Width="120"
+                                IsPrimaryKey="true"/>
+
+                    <GridColumn Field=@nameof(IdoPropertyRow.DefinedInCollection)
+                                HeaderText="Defined In"
+                                Width="100"/>
+
+                    <GridColumn Field=@nameof(IdoPropertyRow.Depth)
+                                HeaderText="Depth"
+                                Width="60"
+                                TextAlign="TextAlign.Right"/>
+
+                    <GridColumn Field=@nameof(IdoPropertyRow.ColumnName)
+                                HeaderText="Column"
+                                Width="180"/>
+
+                    
+
+                    <GridColumn Field=@nameof(IdoPropertyRow.EffectiveDataType)
+                                HeaderText="Eff Type"
+                                Width="90"/>
+
+                    <GridColumn Field=@nameof(IdoPropertyRow.SubCollectionName)
+                                HeaderText="SubCollection"
+                                Width="160" />
+                    <GridColumn Field=@nameof(IdoPropertyRow.PropertyValue)
+                                HeaderText="DerivedCode"
+                                Width="250">
+                      
+                    
+                    </GridColumn>
+                </GridColumns>
+                <GridEvents OnToolbarClick="OnToolbarClickHandler" 
+                            TValue="IdoPropertyRow" 
+                            ExcelHeaderQueryCellInfoEvent="ExcelHeaderQueryCellInfoHandler"
+                            ExcelQueryCellInfoEvent="ExcelQueryCellInfoHandler"/>
+            </SfGrid>
+        </div>
+    </div>
+}
+
+@code
+{
+    private string _connectionString = "";
+    private SfGrid<IdoPropertyRow>? Grid;
+
+    private List<IdoCollectionRow> IdoList = new();
+    private string? SelectedIdo;
+
+    private List<IdoPropertyRow> Rows = new();
+
+    private string PropertySearch = "";
+    private string StatusMessage = "";
+    private int _nextSelectedOrder = 1;
+
+    private SfGrid<IdoPropertyRow> GridRef;
+
+    //private PageSettings PageSettings = new PageSettings { PageSize = 25 };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _connectionString = Configuration.GetConnectionString("BatAppConnection") ?? "";
+
+        if (string.IsNullOrWhiteSpace(_connectionString))
+        {
+            StatusMessage = "Missing connection string: BatAppConnection";
+            return;
+        }
+
+        StatusMessage = "Loading IDO list...";
+        IdoList = await GetSlIdoListAsync();
+        StatusMessage = $"Loaded {IdoList.Count} SL* IDOs.";
+    }
+
+    private IEnumerable<IdoPropertyRow> FilteredRows =>
+        string.IsNullOrWhiteSpace(PropertySearch)
+            ? Rows
+            : Rows.Where(r =>
+                r.PropertyName.Contains(PropertySearch, StringComparison.OrdinalIgnoreCase) ||
+                (r.DefinedInCollection?.Contains(PropertySearch, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (r.ColumnName?.Contains(PropertySearch, StringComparison.OrdinalIgnoreCase) ?? false)
+            );
+
+
+    private string SelectedPropsCsv =>
+        string.Join(",",
+            Rows
+                .Where(r => r.IsSelected)
+                .OrderBy(r => r.SelectedOrder ?? int.MaxValue)
+                .Select(r => r.PropertyName)
+        );
+
+    private async Task LoadProperties()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedIdo))
+            return;
+
+        StatusMessage = $"Loading properties for {SelectedIdo}...";
+        Rows = await GetFinalIdoPropertiesAsync(SelectedIdo);
+        StatusMessage = $"Loaded {Rows.Count} final properties for {SelectedIdo}.";
+        _nextSelectedOrder = 1;
+    }
+
+    private void SelectAllVisible()
+    {
+        foreach (var r in FilteredRows)
+        {
+            if (!r.IsSelected)
+            {
+                r.IsSelected = true;
+                r.SelectedOrder ??= _nextSelectedOrder++;
+            }
+        }
+    }
+
+    private void ClearAll()
+    {
+        foreach (var r in Rows)
+        {
+            r.IsSelected = false;
+            r.SelectedOrder = null;
+        }
+
+        _nextSelectedOrder = 1;
+    }
+
+    private void OnRowSelectionChanged(IdoPropertyRow row, Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        var isChecked = args?.Value is bool b && b;
+
+        if (isChecked)
+        {
+            row.IsSelected = true;
+
+            if (row.SelectedOrder == null)
+                row.SelectedOrder = _nextSelectedOrder++;
+        }
+        else
+        {
+            row.IsSelected = false;
+            row.SelectedOrder = null;
+        }
+    }
+
+    private async Task CopySelectedProps()
+    {
+        await JS.InvokeVoidAsync("copyToClipboard", SelectedPropsCsv);
+        StatusMessage = $"Copied {Rows.Count(r => r.IsSelected)} properties to clipboard.";
+    }
+
+    // -------------------------
+    // SQL DATA ACCESS
+    // -------------------------
+
+    private async Task<List<IdoCollectionRow>> GetSlIdoListAsync()
+    {
+        var results = new List<IdoCollectionRow>();
+
+        var sql = @"
+DECLARE @SetSite SiteType;
+SELECT @SetSite = site FROM parms_mst WITH (READUNCOMMITTED);
+EXEC dbo.SetSiteSp @SetSite, NULL;
+
+SELECT
+    CollectionName
+FROM BAT_App.dbo.IdoCollectionsView
+WHERE CollectionName LIKE 'SL%' or CollectionName Like 'AIT%'
+ORDER BY CollectionName;
+";
+
+        using var conn = new SqlConnection(_connectionString);
+        await conn.OpenAsync();
+
+        using var cmd = new SqlCommand(sql, conn);
+        using var rdr = await cmd.ExecuteReaderAsync();
+
+        while (await rdr.ReadAsync())
+        {
+            results.Add(new IdoCollectionRow
+            {
+                CollectionName = rdr.GetString(0)
+            });
+        }
+
+        return results;
+    }
+
+    private async Task<List<IdoPropertyRow>> GetFinalIdoPropertiesAsync(string rootIdo)
+    {
+        var results = new List<IdoPropertyRow>();
+
+        var sql = @"
+DECLARE @RootCollection SYSNAME = @IDO;
+
+DECLARE @SetSite SiteType;
+SELECT @SetSite = site FROM parms_mst WITH (READUNCOMMITTED);
+EXEC dbo.SetSiteSp @SetSite, NULL;
+
+;WITH ExtTree AS
+(
+    SELECT
+        Coll.CollectionName,
+        Coll.Extends,
+        0 AS Depth
+    FROM BAT_App.dbo.IdoCollectionsView Coll
+    WHERE Coll.CollectionName = @RootCollection
+
+    UNION ALL
+
+    SELECT
+        Child.CollectionName,
+        Child.Extends,
+        ExtTree.Depth + 1 AS Depth
+    FROM BAT_App.dbo.IdoCollectionsView Child
+    INNER JOIN ExtTree
+        ON Child.Extends = ExtTree.CollectionName
+),
+Props AS
+(
+    SELECT
+        p.PropertyName,
+        p.CollectionName,
+        t.Depth,
+        p.ColumnName,
+        p.SubCollectionName,
+        p.DataType,
+        p.EffectiveDataType,
+        p.PropertyValue
+    FROM BAT_App.dbo.IdoPropertiesView p
+    INNER JOIN ExtTree t
+        ON p.CollectionName = t.CollectionName
+),
+FinalProps AS
+(
+    SELECT
+        PropertyName,
+        CollectionName,
+        Depth,
+        ColumnName,
+        SubCollectionName,
+        DataType,
+        EffectiveDataType,
+PropertyValue,
+        ROW_NUMBER() OVER
+        (
+            PARTITION BY PropertyName
+            ORDER BY Depth DESC, CollectionName DESC
+        ) AS rn
+    FROM Props
+)
+SELECT
+    PropertyName,
+    CollectionName AS DefinedInCollection,
+    Depth,
+    ColumnName,
+    SubCollectionName,
+    DataType,
+    EffectiveDataType,
+    PropertyValue
+FROM FinalProps
+WHERE rn = 1
+ORDER BY PropertyName;
+";
+
+        using var conn = new SqlConnection(_connectionString);
+        await conn.OpenAsync();
+
+        using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@IDO", rootIdo);
+
+        using var rdr = await cmd.ExecuteReaderAsync();
+
+        while (await rdr.ReadAsync())
+        {
+            results.Add(new IdoPropertyRow
+            {
+                IsSelected = false,
+                PropertyName = rdr.GetString(0),
+                DefinedInCollection = rdr.GetString(1),
+                Depth = rdr.GetInt32(2),
+                ColumnName = rdr.IsDBNull(3) ? null : rdr.GetString(3),
+                SubCollectionName = rdr.IsDBNull(4) ? null : rdr.GetString(4),
+                DataType = rdr.IsDBNull(5) ? null : rdr.GetString(5),
+                EffectiveDataType = rdr.IsDBNull(6) ? null : rdr.GetString(6),
+                PropertyValue = rdr.IsDBNull(7) ? null : rdr.GetString(7),
+            });
+        }
+
+        return results;
+    }
+
+    // -------------------------
+    // DTOs
+    // -------------------------
+    private async Task OnToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        // The ID is "GridID_excelexport" — grid ID + "_excelexport"
+        if (args.Item.Id == "Grid_excelexport")
+        {
+            var fileName = $"{SelectedIdo}_Properties.xlsx";
+
+            var exportProps = new ExcelExportProperties
+            {
+                FileName = fileName,
+                IncludeTemplateColumn = true,
+                Header = new ExcelHeader
+                {
+                    HeaderRows = 2,
+                    Rows = new List<ExcelRow>
+                    {
+                        // Row 1: filename
+                        new ExcelRow
+                        {
+                            Cells = new List<ExcelCell>
+                            {
+                                new ExcelCell
+                                {
+                                    ColSpan = 5, // adjust to your column count
+                                    Value = fileName,
+                                    Style = new ExcelStyle { Bold = true, FontSize = 14 }
+                                }
+                            }
+                        },
+
+                        // Row 2: page numbering
+                   
+
+                    }
+                }
+            };
+            
+
+            await GridRef.ExportToExcelAsync(exportProps);
+        }
+    }
+    private void ExcelHeaderQueryCellInfoHandler(ExcelHeaderQueryCellInfoEventArgs args)
+    {
+        if (args.Column.HeaderText == "DerivedCode")
+        {
+            args.Style.WrapText = true;
+        }
+    }
+    
+    private void ExcelQueryCellInfoHandler(ExcelQueryCellInfoEventArgs<IdoPropertyRow> args)
+    {
+        if (args.Column.Field == "PropertyValue")
+        {
+            args.Style.WrapText = true;
+        }
+    }
+    public void OnExcelQueryCellInfo(Syncfusion.Blazor.Grids.ExcelQueryCellInfoEventArgs<IdoPropertyRow> args)
+    {
+        if (args.Column.Field == "DerivedCode")
+        {
+            args.Style.WrapText = true; // enable wrap
+        }
+    }
+
+    private class IdoCollectionRow
+    {
+        public string CollectionName { get; set; } = "";
+    }
+
+    public class IdoPropertyRow
+    {
+        public bool IsSelected { get; set; }
+        public string PropertyName { get; set; } = "";
+
+        public string? DefinedInCollection { get; set; }
+        public int Depth { get; set; }
+
+        public string? ColumnName { get; set; }
+        public string? SubCollectionName { get; set; }
+        public string? DataType { get; set; }
+        public string? EffectiveDataType { get; set; }
+        public int? SelectedOrder { get; set; }
+        public string? PropertyValue { get; set; }
+
+    }
+}

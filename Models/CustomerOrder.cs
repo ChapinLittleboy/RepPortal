@@ -17,7 +17,7 @@ public class CustomerOrderSummary
 }
 
 // In your Models folder (e.g., Models/OrderDetail.cs)
-public class OrderDetail
+public class OrderDetailxx
 {
     public string Cust { get; set; }
     public string CustName { get; set; }

@@ -10,7 +10,7 @@
 
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject SalesService SalesService
+@inject ISalesService SalesService
 @inject IRepCodeContext RepCodeContext
 @inject TitleService TitleService
 @inject IJSRuntime JS
@@ -160,7 +160,8 @@
 		new DropDownMenuItem { Text = "Manage Marketing Files", Id = "managemarketingfiles" },
 		new DropDownMenuItem { Text = "Manage Page Help Text", Id = "pagehelp" },
 		new DropDownMenuItem { Text = "Connected Users", Id = "connectedusers" },
-		new DropDownMenuItem { Text = "Manage Excluded Hold Code", Id = "manageexcludedholdcodes" }
+		new DropDownMenuItem { Text = "Manage Excluded Hold Code", Id = "manageexcludedholdcodes" },
+        new DropDownMenuItem { Text = "IDO Props builder", Id = "idopropsbuilder" }
 	};
 
 	private void itemSelectedxxx(Syncfusion.Blazor.Navigations.MenuEventArgs<DropDownMenuItem> args)
@@ -444,6 +445,9 @@
 				break;
             case "coirequest":
                 Navigation.NavigateTo("/COIRequest");
+                break;
+            case "idopropsbuilder":
+                Navigation.NavigateTo("/ido-props-builder");
                 break;
 		}
 	}

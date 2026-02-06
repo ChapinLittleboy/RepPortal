@@ -10,7 +10,7 @@
 
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject SalesService SalesService
+@inject ISalesService SalesService
 @inject IRepCodeContext RepCodeContext
 @inject TitleService TitleService
 
