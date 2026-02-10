@@ -239,7 +239,10 @@
 
 		ShipmentsData = await SalesService.GetShipmentsData(parameters);
 		isLoading = false;
-	}
+
+        var X = await SalesService.GetShipmentsDataApiAsync(parameters); //.GetShipmentsData(parameters);)
+        Console.WriteLine("Hey");
+    }
 
 	public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
 	{

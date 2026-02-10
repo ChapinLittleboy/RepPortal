@@ -31,6 +31,7 @@ Task<string?> GetRepIDAsync();
 Task<List<Dictionary<string, object>>> GetSalesReportData();
 Task<List<Dictionary<string, object>>> GetSalesReportDataUsingInvRep();
 Task<List<CustomerShipment>> GetShipmentsData(SalesService.ShipmentsParameters parameters);
+    Task<List<CustomerShipment>> GetShipmentsDataApiAsync(SalesService.ShipmentsParameters parameters);
 Task LogReportUsageAsync(string repCode, string reportName);
 Task<List<Dictionary<string, object>>> RunDynamicQueryAsync(string sql);
 

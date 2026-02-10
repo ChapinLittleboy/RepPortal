@@ -11,9 +11,7 @@ public class CustomerShipment
     [CsiField("CoCustNum")]
     public string CustNum { get; set; } = "";
 
-    // Customer name (Bill-To name in your old SQL)
-    // SLCoShips has Cus0Name and also CadrName/HcadrName – Cus0Name is the most direct match to your SP.
-    [CsiField("Cus0Name")]
+    [CsiField("CadrName")]
     public string CustName { get; set; } = "";
 
     [CsiField("CoCustPo")]
@@ -27,9 +25,7 @@ public class CustomerShipment
     [CsiField("CoLine")]
     public int CoLine { get; set; }
 
-    // Item number
-    // CoiItem is available (and CoihItem for history). CoiOrCoihItem is the safest.
-    [CsiField("CoiOrCoihItem")]
+    [CsiField("CoiItem")]
     public string ItemNum { get; set; } = "";
 
     [CsiField("CoiDescription")]
@@ -53,9 +49,7 @@ public class CustomerShipment
     [CsiField("QtyShipped")]
     public int ShipQty { get; set; }
 
-    // Price
-    // SLCoShips has Price (unit price) and also CoiPrice and DerPriceConv.
-    [CsiField("Price")]
+    [CsiField("DerNetPrice")]
     public decimal Price { get; set; }
 
     // Option A: Map ExtLinePrice to DerTotPrice (already calculated total)
@@ -106,6 +100,9 @@ public class CustomerShipment
     [CsiField("ShipmentId")]
     [Column("shipment_id")]
     public int ShipmentID { get; set; }
+
+    [CsiField("BolNumber")]
+    public int? BolNumber { get; set; }
 
     // ===== Unused / not in SLCoShips list =====
     public string? ShipToSalesRegion { get; set; } // (you have ShipToRegion already)

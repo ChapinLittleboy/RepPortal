@@ -539,6 +539,176 @@ public class SalesService : ISalesService
         return results.ToList();
     }
 
+    /// <summary>
+    /// Fetches shipments from Syteline APIs (SLCoShips + AitSsBOLs) and merges BOL details
+    /// onto the shipment records. Link: SLCoShips.BolNumber = AitSsBOLs.ShipmentId.
+    /// </summary>
+    public async Task<List<CustomerShipment>> GetShipmentsDataApiAsync(ShipmentsParameters parameters)
+    {
+        EnsureAuth();
+        EnsureRepContext();
+
+        if (_csiRestClient == null)
+            throw new InvalidOperationException("CSI REST client is not available.");
+
+        var authState = await _authenticationStateProvider!.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var repCode = _repCodeContext!.CurrentRepCode;
+
+        IEnumerable<string>? allowedRegions = null;
+        if (repCode == "LAWxxx")
+        {
+            allowedRegions = user.Claims
+                .Where(c => c.Type == "Region")
+                .Select(c => c.Value)
+                .Distinct()
+                .ToList();
+        }
+        else if (repCode == "LAW")
+        {
+            allowedRegions = _repCodeContext.CurrentRegions;
+        }
+
+        // ── SLCoShips call ──
+        var slFilters = new List<string> { Eq("CoSlsman", repCode) };
+        if (parameters.BeginShipDate != default)
+            slFilters.Add($"ShipDate >= '{parameters.BeginShipDate:yyyyMMdd}'");
+        if (parameters.EndShipDate != default)
+            slFilters.Add($"ShipDate <= '{parameters.EndShipDate:yyyyMMdd}'");
+        if (allowedRegions != null && allowedRegions.Any())
+            slFilters.Add(In("SalesRegion", allowedRegions));
+
+        var slProps = string.Join(",", new[]
+        {
+            "CoCustNum", "CadrName", "CoCustPo", "CoNum", "CoLine",
+            "CoiItem", "CoiDescription", "CoiDueDate", "ShipDate",
+            "QtyShipped", "DerNetPrice", "BolNumber"
+        });
+
+        var slQuery = new Dictionary<string, string>
+        {
+            ["props"] = slProps,
+            ["filter"] = string.Join(" AND ", slFilters),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var slJson = await _csiRestClient.GetAsync("json/SLCoShips/adv", slQuery);
+        var slResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(slJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        if (slResponse.MessageCode != 0)
+            throw new InvalidOperationException(slResponse.Message);
+
+        var shipments = slResponse.Items
+            .Select(row => MapRow<CustomerShipment>(row))
+            .ToList();
+
+        // Collect BolNumbers from SLCoShips to filter the AitSsBOLs call
+        var bolNumbers = shipments
+            .Where(s => s.BolNumber.HasValue && s.BolNumber.Value != 0)
+            .Select(s => s.BolNumber!.Value)
+            .Distinct()
+            .ToList();
+
+        if (bolNumbers.Count == 0)
+        {
+            await LogReportUsageAsync(repCode, "GetShipmentsDataApi");
+            return shipments;
+        }
+
+        // ── AitSsBOLs call ──
+        var bolFilters = new List<string>
+        {
+            In("ShipmentId", bolNumbers.Select(n => n.ToString()))
+        };
+
+        var bolProps = string.Join(",", new[]
+        {
+            "ShipmentId", "InvoiceeState", "ConsigneeState", "Whse",
+            "CarrierCode", "ShipCode", "ShipCodeDesc", "ShipDate",
+            "BillTransportationTo", "TrackingNumber",
+            "InvoiceeName", "CustNum", "CustSeq"
+        });
+
+        var bolQuery = new Dictionary<string, string>
+        {
+            ["props"] = bolProps,
+            ["filter"] = string.Join(" AND ", bolFilters),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var bolJson = await _csiRestClient.GetAsync("json/ait_ss_bols/adv", bolQuery);
+        var bolResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(bolJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        if (bolResponse.MessageCode != 0)
+            throw new InvalidOperationException(bolResponse.Message);
+
+        var bolsByShipmentId = bolResponse.Items
+            .Select(row => MapRow<BolInfo>(row))
+            .Where(b => b.ShipmentId.HasValue)
+            .GroupBy(b => b.ShipmentId!.Value)
+            .ToDictionary(g => g.Key, g => g.First());
+        try
+        {
+            // ── Merge BOL info onto shipment rows ──
+            foreach (var shipment in shipments)
+            {
+                if (!shipment.BolNumber.HasValue
+                    || !bolsByShipmentId.TryGetValue(shipment.BolNumber.Value, out BolInfo? bol))
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(bol.InvoiceeState))
+                    shipment.BillToState = bol.InvoiceeState;
+                if (!string.IsNullOrWhiteSpace(bol.ConsigneeState))
+                    shipment.ShipToState = bol.ConsigneeState;
+                if (!string.IsNullOrWhiteSpace(bol.Whse))
+                    shipment.Whse = bol.Whse;
+                if (!string.IsNullOrWhiteSpace(bol.CarrierCode))
+                    shipment.CarrierCode = bol.CarrierCode;
+                if (!string.IsNullOrWhiteSpace(bol.ShipCode))
+                    shipment.ShipCode = bol.ShipCode;
+                else if (!string.IsNullOrWhiteSpace(bol.ShipCodeDesc))
+                    shipment.ShipCode = bol.ShipCodeDesc;
+                if (!string.IsNullOrWhiteSpace(bol.BillTransportationTo))
+                    shipment.FreightTerms = bol.BillTransportationTo;
+                if (!string.IsNullOrWhiteSpace(bol.TrackingNumber))
+                    shipment.TrackingNumber = bol.TrackingNumber;
+            }
+
+            await LogReportUsageAsync(repCode, "GetShipmentsDataApi");
+            return shipments;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error mapping shipment data");
+            return new List<CustomerShipment>(); // or partial results
+        }
+    }
+
+    private class BolInfo
+    {
+        [CsiField("ShipmentId")] public int? ShipmentId { get; set; }
+        [CsiField("InvoiceeState")] public string? InvoiceeState { get; set; }
+        [CsiField("ConsigneeState")] public string? ConsigneeState { get; set; }
+        [CsiField("Whse")] public string? Whse { get; set; }
+        [CsiField("CarrierCode")] public string? CarrierCode { get; set; }
+        [CsiField("ShipCode")] public string? ShipCode { get; set; }
+        [CsiField("ShipCodeDesc")] public string? ShipCodeDesc { get; set; }
+        [CsiField("ShipDate")] public DateTime? ShipDate { get; set; }
+        [CsiField("BillTransportationTo")] public string? BillTransportationTo { get; set; }
+        [CsiField("TrackingNumber")] public string? TrackingNumber { get; set; }
+        [CsiField("InvoiceeName")] public string? InvoiceeName { get; set; }
+        [CsiField("CustNum")] public string? CustNum { get; set; }
+        [CsiField("CustSeq")] public int? CustSeq { get; set; }
+    }
+
     public class ShipmentsParameters
     {
         public DateTime BeginShipDate { get; set; }
@@ -840,7 +1010,15 @@ public class SalesService : ISalesService
             return decimal.Parse(raw, CultureInfo.InvariantCulture);
 
         if (targetType == typeof(int))
-            return int.Parse(raw, CultureInfo.InvariantCulture);
+        {
+            if (int.TryParse(raw, out var i))
+                return i;
+
+            if (decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
+                return (int)d;
+
+            throw new FormatException($"Cannot convert '{raw}' to int.");
+        }
 
         return Convert.ChangeType(raw, targetType, CultureInfo.InvariantCulture);
     }
