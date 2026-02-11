@@ -6,7 +6,8 @@
       "Bash(git -C \"C:\\\\Users\\\\willit2\\\\Documents\\\\GitHub\\\\RepPortal\" log --oneline -5)",
       "Bash(git -C \"C:\\\\Users\\\\willit2\\\\Documents\\\\GitHub\\\\RepPortal\" add Services/Reports/ExpiringPcfNotificationsJob.cs)",
       "Bash(git -C \"C:\\\\Users\\\\willit2\\\\Documents\\\\GitHub\\\\RepPortal\" commit -m \"$\\(cat <<''EOF''\nAdd detailed logging to RunNoticeAsync for PCF expiration notices\n\nLog start/finish timestamps, target expiration date, record count,\nPCF numbers found, and any errors encountered during processing.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(findstr:*)"
     ]
   }
 }

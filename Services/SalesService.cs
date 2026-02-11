@@ -488,33 +488,36 @@ public class SalesService : ISalesService
         EnsureAuth();
         EnsureRepContext();
 
-        using var connection = new SqlConnection(_connectionString);
-
-        var authState = await _authenticationStateProvider!.GetAuthenticationStateAsync();
-        var user = authState.User;
-        var repCode = _repCodeContext!.CurrentRepCode;
-
-        IEnumerable<string>? allowedRegions = null;
-        if (repCode == "LAWxxx")
+        if (!_csiOptions.UseApi)
         {
-            allowedRegions = user.Claims
-                .Where(c => c.Type == "Region")
-                .Select(c => c.Value)
-                .Distinct()
-                .ToList();
-        }
-        else if (repCode == "LAW")
-        {
-            allowedRegions = _repCodeContext.CurrentRegions;
-        }
 
-        parameters.ShipToRegion = (allowedRegions != null && allowedRegions.Any())
-            ? string.Join(",", allowedRegions)
-            : null;
+            using var connection = new SqlConnection(_connectionString);
 
-        await connection.OpenAsync();
+            var authState = await _authenticationStateProvider!.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var repCode = _repCodeContext!.CurrentRepCode;
 
-        var results = await connection.QueryAsync<CustomerShipment>(@"
+            IEnumerable<string>? allowedRegions = null;
+            if (repCode == "LAWxxx")
+            {
+                allowedRegions = user.Claims
+                    .Where(c => c.Type == "Region")
+                    .Select(c => c.Value)
+                    .Distinct()
+                    .ToList();
+            }
+            else if (repCode == "LAW")
+            {
+                allowedRegions = _repCodeContext.CurrentRegions;
+            }
+
+            parameters.ShipToRegion = (allowedRegions != null && allowedRegions.Any())
+                ? string.Join(",", allowedRegions)
+                : null;
+
+            await connection.OpenAsync();
+
+            var results = await connection.QueryAsync<CustomerShipment>(@"
             EXEC RepPortal_GetShipmentsSp 
                 @BeginShipDate, 
                 @EndShipDate, 
@@ -524,19 +527,24 @@ public class SalesService : ISalesService
                 @CustType, 
                 @EndUserType,
                 @AllowedRegions;",
-            new
-            {
-                parameters.BeginShipDate,
-                parameters.EndShipDate,
-                RepCode = repCode,
-                parameters.CustNum,
-                parameters.CorpNum,
-                parameters.CustType,
-                parameters.EndUserType,
-                AllowedRegions = parameters.ShipToRegion
-            });
+                new
+                {
+                    parameters.BeginShipDate,
+                    parameters.EndShipDate,
+                    RepCode = repCode,
+                    parameters.CustNum,
+                    parameters.CorpNum,
+                    parameters.CustType,
+                    parameters.EndUserType,
+                    AllowedRegions = parameters.ShipToRegion
+                });
 
-        return results.ToList();
+            return results.ToList();
+        }
+        else 
+        {
+            return await GetShipmentsDataApiAsync(parameters);
+        }
     }
 
     /// <summary>
@@ -556,17 +564,51 @@ public class SalesService : ISalesService
         var repCode = _repCodeContext!.CurrentRepCode;
 
         IEnumerable<string>? allowedRegions = null;
-        if (repCode == "LAWxxx")
-        {
-            allowedRegions = user.Claims
-                .Where(c => c.Type == "Region")
-                .Select(c => c.Value)
-                .Distinct()
-                .ToList();
-        }
-        else if (repCode == "LAW")
+        if (repCode == "LAW")
         {
             allowedRegions = _repCodeContext.CurrentRegions;
+        }
+
+        // ── Get allowed CustNum+CustSeq pairs from SLCustomers when region filtering is active ──
+        HashSet<string>? allowedCustKeys = null;
+        Dictionary<string, string>? custRegionLookup = null;
+        if (allowedRegions != null && allowedRegions.Any())
+        {
+            var custQuery = new Dictionary<string, string>
+            {
+                ["props"] = "CustNum,CustSeq,Uf_SalesRegion",
+                ["filter"] = In("Uf_SalesRegion", allowedRegions),
+                ["rowcap"] = "0",
+                ["loadtype"] = "FIRST",
+                ["bookmark"] = "0",
+                ["readonly"] = "1"
+            };
+
+            var custJson = await _csiRestClient.GetAsync("json/SLCustomers/adv", custQuery);
+            var custResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(custJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+            if (custResponse.MessageCode == 0)
+            {
+                allowedCustKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                custRegionLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var row in custResponse.Items)
+                {
+                    var cn = row.FirstOrDefault(c =>
+                        string.Equals(c.Name, "CustNum", StringComparison.OrdinalIgnoreCase))?.Value?.Trim();
+                    var cs = row.FirstOrDefault(c =>
+                        string.Equals(c.Name, "CustSeq", StringComparison.OrdinalIgnoreCase))?.Value?.Trim() ?? "0";
+                    var region = row.FirstOrDefault(c =>
+                        string.Equals(c.Name, "Uf_SalesRegion", StringComparison.OrdinalIgnoreCase))?.Value?.Trim();
+                    if (!string.IsNullOrWhiteSpace(cn))
+                    {
+                        var key = $"{cn}|{cs}";
+                        allowedCustKeys.Add(key);
+                        if (!string.IsNullOrWhiteSpace(region))
+                            custRegionLookup[key] = region;
+                    }
+                }
+            }
         }
 
         // ── SLCoShips call ──
@@ -575,12 +617,10 @@ public class SalesService : ISalesService
             slFilters.Add($"ShipDate >= '{parameters.BeginShipDate:yyyyMMdd}'");
         if (parameters.EndShipDate != default)
             slFilters.Add($"ShipDate <= '{parameters.EndShipDate:yyyyMMdd}'");
-        if (allowedRegions != null && allowedRegions.Any())
-            slFilters.Add(In("SalesRegion", allowedRegions));
 
         var slProps = string.Join(",", new[]
         {
-            "CoCustNum", "CadrName", "CoCustPo", "CoNum", "CoLine",
+            "CoCustNum", "CoCustSeq", "CadrName", "CoCustPo", "CoNum", "CoLine",
             "CoiItem", "CoiDescription", "CoiDueDate", "ShipDate",
             "QtyShipped", "DerNetPrice", "BolNumber"
         });
@@ -602,9 +642,41 @@ public class SalesService : ISalesService
         if (slResponse.MessageCode != 0)
             throw new InvalidOperationException(slResponse.Message);
 
-        var shipments = slResponse.Items
+        // ── Filter by allowed CustNum+CustSeq when region filtering is active ──
+        var filteredItems = slResponse.Items;
+        if (allowedCustKeys != null && allowedCustKeys.Count > 0)
+        {
+            filteredItems = slResponse.Items.Where(row =>
+            {
+                var cn = row.FirstOrDefault(c =>
+                    string.Equals(c.Name, "CoCustNum", StringComparison.OrdinalIgnoreCase))?.Value?.Trim();
+                var cs = row.FirstOrDefault(c =>
+                    string.Equals(c.Name, "CoCustSeq", StringComparison.OrdinalIgnoreCase))?.Value?.Trim() ?? "0";
+                return !string.IsNullOrWhiteSpace(cn) && allowedCustKeys.Contains($"{cn}|{cs}");
+            }).ToList();
+        }
+
+        var shipments = filteredItems
             .Select(row => MapRow<CustomerShipment>(row))
             .ToList();
+
+        // ── Populate ShipToRegion from SLCustomers lookup ──
+        if (custRegionLookup != null && custRegionLookup.Count > 0)
+        {
+            for (int i = 0; i < filteredItems.Count && i < shipments.Count; i++)
+            {
+                var row = filteredItems[i];
+                var cn = row.FirstOrDefault(c =>
+                    string.Equals(c.Name, "CoCustNum", StringComparison.OrdinalIgnoreCase))?.Value?.Trim();
+                var cs = row.FirstOrDefault(c =>
+                    string.Equals(c.Name, "CoCustSeq", StringComparison.OrdinalIgnoreCase))?.Value?.Trim() ?? "0";
+                if (!string.IsNullOrWhiteSpace(cn)
+                    && custRegionLookup.TryGetValue($"{cn}|{cs}", out string? region))
+                {
+                    shipments[i].ShipToRegion = region;
+                }
+            }
+        }
 
         // Collect BolNumbers from SLCoShips to filter the AitSsBOLs call
         var bolNumbers = shipments
@@ -997,8 +1069,125 @@ public class SalesService : ISalesService
     }
 
 
+    private static object? ConvertTo(string? raw, Type targetType)
+    {
+        if (targetType == null)
+            throw new ArgumentNullException(nameof(targetType));
 
-    private static object ConvertTo(string raw, Type targetType)
+        // Handle nullable<T>
+        var underlyingType = Nullable.GetUnderlyingType(targetType);
+        var isNullable = underlyingType != null;
+        var effectiveType = underlyingType ?? targetType;
+
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            if (isNullable || !effectiveType.IsValueType)
+                return null;
+
+            throw new FormatException($"Cannot convert null/empty value to non-nullable type '{effectiveType.Name}'.");
+        }
+
+        try
+        {
+            if (effectiveType == typeof(string))
+                return raw;
+
+            if (effectiveType == typeof(DateTime))
+            {
+                string[] formats =
+                {
+                "yyyyMMdd HH:mm:ss.fff",
+                "yyyyMMdd",
+                "yyyy-MM-dd",
+                "yyyy-MM-dd HH:mm:ss",
+                "o" // ISO 8601
+            };
+
+                if (DateTime.TryParseExact(
+                        raw,
+                        formats,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None,
+                        out var dt))
+                    return dt;
+
+                if (DateTime.TryParse(raw, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeLocal, out dt))
+                    return dt;
+
+                throw new FormatException($"Cannot convert '{raw}' to DateTime.");
+            }
+
+            if (effectiveType == typeof(decimal))
+            {
+                if (decimal.TryParse(raw, NumberStyles.Any,
+                        CultureInfo.InvariantCulture, out var dec))
+                    return dec;
+
+                throw new FormatException($"Cannot convert '{raw}' to decimal.");
+            }
+
+            if (effectiveType == typeof(int))
+            {
+                if (int.TryParse(raw, NumberStyles.Integer,
+                        CultureInfo.InvariantCulture, out var i))
+                    return i;
+
+                if (decimal.TryParse(raw, NumberStyles.Any,
+                        CultureInfo.InvariantCulture, out var d))
+                {
+                    if (d % 1 != 0)
+                        throw new FormatException(
+                            $"Value '{raw}' is not a whole number and cannot be converted to int.");
+
+                    if (d > int.MaxValue || d < int.MinValue)
+                        throw new OverflowException(
+                            $"Value '{raw}' is outside the range of Int32.");
+
+                    return (int)d;
+                }
+
+                throw new FormatException($"Cannot convert '{raw}' to int.");
+            }
+
+            if (effectiveType == typeof(bool))
+            {
+                if (bool.TryParse(raw, out var b))
+                    return b;
+
+                if (raw == "0") return false;
+                if (raw == "1") return true;
+
+                throw new FormatException($"Cannot convert '{raw}' to bool.");
+            }
+
+            if (effectiveType == typeof(Guid))
+            {
+                if (Guid.TryParse(raw, out var g))
+                    return g;
+
+                throw new FormatException($"Cannot convert '{raw}' to Guid.");
+            }
+
+            if (effectiveType.IsEnum)
+            {
+                if (Enum.TryParse(effectiveType, raw, true, out var enumValue))
+                    return enumValue;
+
+                throw new FormatException(
+                    $"Cannot convert '{raw}' to enum '{effectiveType.Name}'.");
+            }
+
+            return Convert.ChangeType(raw, effectiveType, CultureInfo.InvariantCulture);
+        }
+        catch (Exception ex) when (ex is InvalidCastException or FormatException or OverflowException)
+        {
+            throw new FormatException(
+                $"Failed to convert '{raw}' to type '{effectiveType.Name}'.", ex);
+        }
+    }
+
+    private static object ConvertToOLD(string raw, Type targetType)
     {
         if (targetType == typeof(DateTime))
             return DateTime.ParseExact(
@@ -1077,12 +1266,17 @@ public class SalesService : ISalesService
     {
         EnsureRepContext();
 
-        using var connection = new SqlConnection(_connectionString);
-
         parameters.RepCode = _repCodeContext!.CurrentRepCode;
         parameters.AllowedRegions = parameters.RepCode == "LAW"
             ? _repCodeContext.CurrentRegions?.ToList() ?? new List<string>()
             : new List<string>();
+
+        if (_csiOptions.UseApi)
+        {
+            return await GetInvoiceRptDataApiAsync(parameters);
+        }
+
+        using var connection = new SqlConnection(_connectionString);
 
         var allowedRegionsCsv = parameters.AllowedRegions.Any()
             ? string.Join(",", parameters.AllowedRegions)
@@ -1091,13 +1285,13 @@ public class SalesService : ISalesService
         await connection.OpenAsync();
 
         var results = await connection.QueryAsync<InvoiceRptDetail>(@"
-            EXEC RepPortal.dbo.sp_GetInvoices 
-                @BeginInvoiceDate, 
-                @EndInvoiceDate, 
-                @RepCode, 
-                @CustNum, 
-                @CorpNum, 
-                @CustType, 
+            EXEC RepPortal.dbo.sp_GetInvoices
+                @BeginInvoiceDate,
+                @EndInvoiceDate,
+                @RepCode,
+                @CustNum,
+                @CorpNum,
+                @CustType,
                 @EndUserType,
                 @AllowedRegions;",
             new
@@ -1120,6 +1314,250 @@ public class SalesService : ISalesService
         }
 
         return results.ToList();
+    }
+
+    /// <summary>
+    /// Fetches invoice data from Syteline APIs (SLInvHdrs + SLInvItemAlls + SLCoitems)
+    /// and merges the results into InvoiceRptDetail records.
+    /// </summary>
+    ///
+    ///
+    /// 
+   
+    
+    
+    
+    
+    public async Task<List<InvoiceRptDetail>> GetInvoiceRptDataApiAsync(InvoiceRptParameters parameters)
+    {
+        EnsureRepContext();
+
+        if (_csiRestClient == null)
+            throw new InvalidOperationException("CSI REST client is not available.");
+
+        string repCode = parameters.RepCode ?? _repCodeContext!.CurrentRepCode;
+
+        // ── 1. SLInvHdrs (invoice headers) ──
+        var hdrFilters = new List<string>
+        {
+            Eq("Slsman", repCode),
+            $"InvDate >= '{parameters.BeginInvoiceDate:yyyyMMdd}'",
+            $"InvDate <= '{parameters.EndInvoiceDate:yyyyMMdd}'"
+        };
+        if (!string.IsNullOrWhiteSpace(parameters.CustNum))
+            hdrFilters.Add(Eq("CustNum", parameters.CustNum));
+
+        var hdrProps = string.Join(",", new[]
+        {
+            "InvNum", "InvSeq", "CustNum", "CustSeq", "AddrName",
+            "State", "ShipDate", "CustPo", "InvDate"
+        });
+
+        var hdrQuery = new Dictionary<string, string>
+        {
+            ["props"] = hdrProps,
+            ["filter"] = string.Join(" AND ", hdrFilters),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var hdrJson = await _csiRestClient.GetAsync("json/SLInvHdrs/adv", hdrQuery);
+        var hdrResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(hdrJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        if (hdrResponse.MessageCode != 0)
+            throw new InvalidOperationException(hdrResponse.Message);
+
+        var headers = hdrResponse.Items
+            .Select(row => MapRow<InvHdrInfo>(row))
+            .ToList();
+
+        if (headers.Count == 0)
+        {
+            await LogReportUsageAsync(repCode, "GetInvoiceRptDataApi");
+            return new List<InvoiceRptDetail>();
+        }
+
+        // Build lookup: (InvNum, InvSeq) → header
+        var hdrLookup = headers
+            .Where(h => !string.IsNullOrWhiteSpace(h.InvNum))
+            .GroupBy(h => (h.InvNum!, h.InvSeq))
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // ── 2. SLInvItemAlls (invoice line items) ──
+        var invNums = headers
+            .Where(h => !string.IsNullOrWhiteSpace(h.InvNum))
+            .Select(h => h.InvNum!)
+            .Distinct()
+            .ToList();
+
+        var itemFilters = new List<string>
+        {
+            In("InvNum", invNums)
+        };
+
+        var itemProps = string.Join(",", new[]
+        {
+            "InvNum", "InvSeq", "Item", "QtyInvoiced", "Price", "CoNum", "CoLine", "SiteRef"
+        });
+
+        var itemQuery = new Dictionary<string, string>
+        {
+            ["props"] = itemProps,
+            ["filter"] = string.Join(" AND ", itemFilters),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var itemJson = await _csiRestClient.GetAsync("json/SLInvItemAlls/adv", itemQuery);
+        var itemResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(itemJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        if (itemResponse.MessageCode != 0)
+            throw new InvalidOperationException(itemResponse.Message);
+
+        var invoiceItems = itemResponse.Items
+            .Select(row => MapRow<InvoiceRptDetail>(row))
+            .ToList();
+
+        // Merge header data into items by (InvNum, InvSeq)
+        foreach (var item in invoiceItems)
+        {
+            // Try to find InvSeq from the raw row for matching
+            var rawRow = itemResponse.Items[invoiceItems.IndexOf(item)];
+            var invSeqCell = rawRow.FirstOrDefault(c =>
+                string.Equals(c.Name, "InvSeq", StringComparison.OrdinalIgnoreCase));
+            int invSeq = 0;
+            if (invSeqCell?.Value != null)
+                int.TryParse(invSeqCell.Value, out invSeq);
+
+            var key = (item.InvNum ?? "", invSeq);
+            if (hdrLookup.TryGetValue(key, out InvHdrInfo? hdr))
+            {
+                item.Cust = hdr.CustNum ?? "";
+                item.CustSeq = hdr.CustSeq;
+                item.Name = hdr.AddrName ?? "";
+                item.State = hdr.State ?? "";
+                item.Ship_Date = hdr.ShipDate;
+                item.CustPO = hdr.CustPo ?? "";
+                item.InvDate = hdr.InvDate ?? DateTime.MinValue;
+            }
+        }
+
+        // ── 3. SLCoitems (CO enrichment) ──
+        var coNums = invoiceItems
+            .Where(i => !string.IsNullOrWhiteSpace(i.CoNum))
+            .Select(i => i.CoNum!)
+            .Distinct()
+            .ToList();
+
+        if (coNums.Count > 0)
+        {
+            var coFilters = new List<string>
+            {
+                In("CoNum", coNums)
+            };
+
+            var coProps = string.Join(",", new[]
+            {
+                "CoNum", "CoLine", "Adr0Name", "DueDate", "CoOrderDate"
+            });
+
+            var coQuery = new Dictionary<string, string>
+            {
+                ["props"] = coProps,
+                ["filter"] = string.Join(" AND ", coFilters),
+                ["rowcap"] = "0",
+                ["loadtype"] = "FIRST",
+                ["bookmark"] = "0",
+                ["readonly"] = "1"
+            };
+
+            var coJson = await _csiRestClient.GetAsync("json/SLCoitems/adv", coQuery);
+            var coResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(coJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+            if (coResponse.MessageCode == 0)
+            {
+                var coItems = coResponse.Items
+                    .Select(row => MapRow<CoItemInfo>(row))
+                    .ToList();
+
+                // Build lookup: (CoNum, CoLine) → CO item
+                var coLookup = coItems
+                    .Where(c => !string.IsNullOrWhiteSpace(c.CoNum))
+                    .GroupBy(c => (c.CoNum!, c.CoLine))
+                    .ToDictionary(g => g.Key, g => g.First());
+
+                foreach (var item in invoiceItems)
+                {
+                    if (string.IsNullOrWhiteSpace(item.CoNum))
+                        continue;
+
+                    // Try to find CoLine from the raw item row
+                    int itemIndex = invoiceItems.IndexOf(item);
+                    var rawRow = itemResponse.Items[itemIndex];
+                    var coLineCell = rawRow.FirstOrDefault(c =>
+                        string.Equals(c.Name, "CoLine", StringComparison.OrdinalIgnoreCase));
+                    int coLine = 0;
+                    if (coLineCell?.Value != null)
+                        int.TryParse(coLineCell.Value, out coLine);
+
+                    var coKey = (item.CoNum!, coLine);
+                    if (coLookup.TryGetValue(coKey, out CoItemInfo? co))
+                    {
+                        item.B2Name = co.Adr0Name ?? "";
+                        item.DueDate = co.DueDate;
+                        item.OrdDate = co.CoOrderDate;
+                    }
+                }
+            }
+        }
+
+        // ── Calculate ExtPrice and set Slsman ──
+        foreach (var item in invoiceItems)
+        {
+            item.ExtPrice = item.InvQty * item.Price;
+            item.Slsman = repCode;
+        }
+
+        // ── Apply optional CoNum client-side filter ──
+        IEnumerable<InvoiceRptDetail> results = invoiceItems;
+        if (!string.IsNullOrWhiteSpace(parameters.CoNum))
+        {
+            var match = parameters.CoNum.Trim().ToUpperInvariant();
+            results = results.Where(r => !string.IsNullOrWhiteSpace(r.CoNum) &&
+                                         r.CoNum.Trim().ToUpperInvariant() == match);
+        }
+
+        await LogReportUsageAsync(repCode, "GetInvoiceRptDataApi");
+        return results.ToList();
+    }
+
+    private class InvHdrInfo
+    {
+        [CsiField("InvNum")] public string? InvNum { get; set; }
+        [CsiField("InvSeq")] public int InvSeq { get; set; }
+        [CsiField("CustNum")] public string? CustNum { get; set; }
+        [CsiField("CustSeq")] public int CustSeq { get; set; }
+        [CsiField("AddrName")] public string? AddrName { get; set; }
+        [CsiField("State")] public string? State { get; set; }
+        [CsiField("ShipDate")] public DateTime? ShipDate { get; set; }
+        [CsiField("CustPo")] public string? CustPo { get; set; }
+        [CsiField("InvDate")] public DateTime? InvDate { get; set; }
+    }
+
+    private class CoItemInfo
+    {
+        [CsiField("CoNum")] public string? CoNum { get; set; }
+        [CsiField("CoLine")] public int CoLine { get; set; }
+        [CsiField("Adr0Name")] public string? Adr0Name { get; set; }
+        [CsiField("DueDate")] public DateTime? DueDate { get; set; }
+        [CsiField("CoOrderDate")] public DateTime? CoOrderDate { get; set; }
     }
 
     // Fixed: instance method; corrected aliases; Dapper mapping; no conn/connection mixup

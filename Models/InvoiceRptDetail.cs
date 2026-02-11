@@ -8,17 +8,17 @@ public class InvoiceRptDetail
     public string B2Name { get; set; }
     public string Name { get; set; }
     public string State { get; set; }
-    public string Site { get; set; }
-    public string CoNum { get; set; }
+    [CsiField("SiteRef")] public string Site { get; set; }
+    [CsiField("CoNum")] public string CoNum { get; set; }
     public string CustPO { get; set; }
-    public string Item { get; set; }
-    public decimal InvQty { get; set; }
+    [CsiField("Item")] public string Item { get; set; }
+    [CsiField("QtyInvoiced")] public decimal InvQty { get; set; }
     public decimal? OrdQty { get; set; }  // Nullable in case not all rows have an order quantity
-    public decimal Price { get; set; }
+    [CsiField("Price")] public decimal Price { get; set; }
     public DateTime? DueDate { get; set; }
     public DateTime? OrdDate { get; set; }
     public DateTime InvDate { get; set; }
-    public string InvNum { get; set; }
+    [CsiField("InvNum")] public string InvNum { get; set; }
     public decimal ExtPrice { get; set; }
     public DateTime? Ship_Date { get; set; }
     public string? ShipToRegion { get; set; }

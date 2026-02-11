@@ -67,7 +67,7 @@ public class CustomerShipment
     // Leaving it unmapped for now.
     public string? ShipToState { get; set; }
 
-    [CsiField("DerShipToSalesRegion")]
+    [CsiField("Uf_SalesRegion")]
     public string? ShipToRegion { get; set; }
 
     // ===== Shipping / Logistics =====
