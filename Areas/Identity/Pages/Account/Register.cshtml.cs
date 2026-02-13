@@ -26,7 +26,7 @@ namespace RepPortal.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<ApplicationUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
-        private readonly SalesService _salesService;
+        private readonly ISalesService _salesService;
         private readonly IDbConnectionFactory _dbConnectionFactory;
 
         public RegisterModel(
@@ -35,7 +35,7 @@ namespace RepPortal.Areas.Identity.Pages.Account
             SignInManager<ApplicationUser> signInManager,
             ILogger<RegisterModel> logger,
             IEmailSender emailSender,
-            SalesService salesService,
+            ISalesService salesService,
             IDbConnectionFactory dbConnectionFactory)
         {
             _userManager = userManager;
