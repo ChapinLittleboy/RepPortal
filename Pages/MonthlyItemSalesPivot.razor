@@ -73,10 +73,24 @@
                                 }
                             </CellTemplate>
                         </PivotViewTemplates>
+                        <PivotViewFieldMappings>
+
+                        <!-- Hide raw fields -->
+                            <PivotViewFieldOptions Name="ItemNum" ShowInFieldList="false" />
+                            <PivotViewFieldOptions Name="ProductName" ShowInFieldList="false" />
+                            <PivotViewFieldOptions Name="CustomerName" ShowInFieldList="false" />
+                            <PivotViewFieldOptions Name="ShipToName" ShowInFieldList="false" />
+                            <PivotViewFieldOptions Name="CustNum" ShowInFieldList="false" />
+                            <PivotViewFieldOptions Name="CustomerNameWithNum" Caption="ShipTo-CustNum" />
+                       
+                        </PivotViewFieldMappings>
 
                         <PivotViewRows>
-                            <PivotViewRow Name="CorpNumWithName" Caption="Customer" ExpandAll="true" AllowDragAndDrop=true/>
-                            <PivotViewRow Name="ItemNumWithProduct" Caption="Item" />
+                            <PivotViewRow Name="CorpNumWithName" Caption="CorpNum-Name" ExpandAll="true" AllowDragAndDrop=true/>
+                            
+                            <PivotViewRow Name="ItemNumWithProduct" Caption="Item-Description" />
+                            <PivotViewRow Name="CustomerNameWithNum" Caption="ShipTo-CustNum" ExpandAll="false" />
+
                         </PivotViewRows>
 
                         <PivotViewColumns>
@@ -86,12 +100,13 @@
                         </PivotViewColumns>
 
                         <PivotViewValues>
-                            <PivotViewValue Name="Quantity" Type="SummaryTypes.Sum" Caption="Qty" ShowValueTypeIcon="false" />
-                            <PivotViewValue Name="SalesAmount" Type="SummaryTypes.Sum" Caption="Amount" />
+                            <PivotViewValue Name="Quantity" Type="SummaryTypes.Sum" Caption="Qty"  ShowValueTypeIcon="false"  />
+                            <PivotViewValue Name="SalesAmount" Type="SummaryTypes.Sum"  Caption="Amount" />
                         </PivotViewValues>
 
                         <PivotViewFormatSettings>
-                            <PivotViewFormatSetting Name="SalesAmount" Format="C" />
+                            <PivotViewFormatSetting Name="SalesAmount" Format="C0" />
+                            <PivotViewFormatSetting Name="Quantity" Format="N0" />
                         </PivotViewFormatSettings>
                     </PivotViewDataSourceSettings>
 
