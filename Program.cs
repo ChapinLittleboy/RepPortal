@@ -167,6 +167,7 @@ builder.Services.AddScoped<IUsageAnalyticsService, UsageAnalyticsService>();
 builder.Services.AddScoped<IPriceBookService, PriceBookService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<PackingListService>();
+builder.Services.AddScoped<IPivotLayoutService, PivotLayoutService>();
 
 // These 3 were already commented out.
 // Hangfire storage + server

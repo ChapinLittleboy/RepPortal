@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pivot Table - Save &amp; Load Layouts</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a5276, #2e86c1);
+            color: #fff;
+            padding: 32px 40px;
+        }
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .header p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .content { padding: 32px 40px 40px; }
+
+        /* Intro */
+        .intro {
+            background: #eaf2f8;
+            border-left: 4px solid #2e86c1;
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin-bottom: 28px;
+            font-size: 0.93rem;
+        }
+
+        /* Section headings */
+        h2 {
+            font-size: 1.2rem;
+            color: #1a5276;
+            margin: 28px 0 14px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #d5e8f0;
+        }
+        h2 i { margin-right: 8px; opacity: 0.8; }
+
+        /* Toolbar buttons table */
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .btn-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 14px 16px;
+        }
+        .btn-icon {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            color: #fff;
+        }
+        .btn-icon.new      { background: #27ae60; }
+        .btn-icon.save      { background: #2e86c1; }
+        .btn-icon.saveas    { background: #8e44ad; }
+        .btn-icon.rename    { background: #e67e22; }
+        .btn-icon.remove    { background: #c0392b; }
+        .btn-icon.load      { background: #16a085; }
+        .btn-label { font-weight: 600; font-size: 0.9rem; margin-bottom: 2px; }
+        .btn-desc  { font-size: 0.82rem; color: #666; }
+
+        /* How-to cards */
+        .howto-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            transition: box-shadow 0.15s;
+        }
+        .howto-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        .howto-card h3 {
+            font-size: 1rem;
+            color: #1a5276;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .howto-card h3 .step-badge {
+            background: #2e86c1;
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .howto-card ol {
+            padding-left: 22px;
+            font-size: 0.9rem;
+        }
+        .howto-card ol li {
+            margin-bottom: 6px;
+            padding-left: 4px;
+        }
+        .howto-card ol li::marker { color: #2e86c1; font-weight: 600; }
+        .howto-card .toolbar-ref {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #eaf2f8;
+            border: 1px solid #bdd7ea;
+            border-radius: 4px;
+            padding: 1px 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #1a5276;
+            white-space: nowrap;
+        }
+
+        /* Notes */
+        .notes {
+            background: #fef9e7;
+            border: 1px solid #f9e79f;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-top: 24px;
+        }
+        .notes h3 {
+            font-size: 0.9rem;
+            color: #7d6608;
+            margin-bottom: 8px;
+        }
+        .notes h3 i { margin-right: 6px; }
+        .notes ul {
+            list-style: none;
+            padding: 0;
+            font-size: 0.88rem;
+        }
+        .notes ul li {
+            padding: 4px 0 4px 20px;
+            position: relative;
+            color: #555;
+        }
+        .notes ul li::before {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            color: #27ae60;
+            font-size: 0.75rem;
+            top: 7px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 16px;
+            font-size: 0.78rem;
+            color: #999;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-table-columns"></i> Pivot Table - Save &amp; Load Layouts</h1>
+            <p>Customize your pivot table and save different views for quick access</p>
+        </div>
+
+        <div class="content">
+            <div class="intro">
+                The <strong>Pivot Table Sales by Item</strong> page now supports saving, loading, and managing
+                custom layouts. Configure the pivot table the way you need it, save that configuration with a
+                name, and quickly switch between different views.
+            </div>
+
+            <h2><i class="fas fa-toolbox"></i> Toolbar Buttons</h2>
+
+            <div class="btn-grid">
+                <div class="btn-card">
+                    <div class="btn-icon new"><i class="fas fa-file"></i></div>
+                    <div>
+                        <div class="btn-label">New</div>
+                        <div class="btn-desc">Resets the pivot table back to the default layout</div>
+                    </div>
+                </div>
+                <div class="btn-card">
+                    <div class="btn-icon save"><i class="fas fa-floppy-disk"></i></div>
+                    <div>
+                        <div class="btn-label">Save</div>
+                        <div class="btn-desc">Saves changes to the currently loaded layout</div>
+                    </div>
+                </div>
+                <div class="btn-card">
+                    <div class="btn-icon saveas"><i class="fas fa-copy"></i></div>
+                    <div>
+                        <div class="btn-label">Save As</div>
+                        <div class="btn-desc">Saves the current layout with a new name</div>
+                    </div>
+                </div>
+                <div class="btn-card">
+                    <div class="btn-icon rename"><i class="fas fa-pen"></i></div>
+                    <div>
+                        <div class="btn-label">Rename</div>
+                        <div class="btn-desc">Renames the currently loaded layout</div>
+                    </div>
+                </div>
+                <div class="btn-card">
+                    <div class="btn-icon remove"><i class="fas fa-trash-can"></i></div>
+                    <div>
+                        <div class="btn-label">Remove</div>
+                        <div class="btn-desc">Deletes the currently loaded layout</div>
+                    </div>
+                </div>
+                <div class="btn-card">
+                    <div class="btn-icon load"><i class="fas fa-folder-open"></i></div>
+                    <div>
+                        <div class="btn-label">Load</div>
+                        <div class="btn-desc">Opens a dropdown to select a previously saved layout</div>
+                    </div>
+                </div>
+            </div>
+
+            <h2><i class="fas fa-list-check"></i> How To Use</h2>
+
+            <div class="howto-card">
+                <h3><i class="fas fa-plus-circle" style="color:#8e44ad"></i> Save a New Layout</h3>
+                <ol>
+                    <li>Configure the pivot table the way you want it (drag fields, expand/collapse rows, adjust filters, etc.)</li>
+                    <li>Click <span class="toolbar-ref"><i class="fas fa-copy"></i> Save As</span> in the toolbar</li>
+                    <li>Enter a name for your layout (e.g., "By Quarter - Top Customers")</li>
+                    <li>Click <strong>OK</strong></li>
+                </ol>
+            </div>
+
+            <div class="howto-card">
+                <h3><i class="fas fa-folder-open" style="color:#16a085"></i> Load a Saved Layout</h3>
+                <ol>
+                    <li>Click the <span class="toolbar-ref"><i class="fas fa-folder-open"></i> Load</span> dropdown in the toolbar</li>
+                    <li>Select the layout name from the list</li>
+                    <li>The pivot table will update to match that saved configuration</li>
+                </ol>
+            </div>
+
+            <div class="howto-card">
+                <h3><i class="fas fa-floppy-disk" style="color:#2e86c1"></i> Update an Existing Layout</h3>
+                <ol>
+                    <li>Load the layout you want to update</li>
+                    <li>Make your changes to the pivot table</li>
+                    <li>Click <span class="toolbar-ref"><i class="fas fa-floppy-disk"></i> Save</span> to overwrite the layout with your current configuration</li>
+                </ol>
+            </div>
+
+            <div class="howto-card">
+                <h3><i class="fas fa-pen" style="color:#e67e22"></i> Rename a Layout</h3>
+                <ol>
+                    <li>Load the layout you want to rename</li>
+                    <li>Click <span class="toolbar-ref"><i class="fas fa-pen"></i> Rename</span> in the toolbar</li>
+                    <li>Enter the new name and click <strong>OK</strong></li>
+                </ol>
+            </div>
+
+            <div class="howto-card">
+                <h3><i class="fas fa-trash-can" style="color:#c0392b"></i> Delete a Layout</h3>
+                <ol>
+                    <li>Load the layout you want to delete</li>
+                    <li>Click <span class="toolbar-ref"><i class="fas fa-trash-can"></i> Remove</span> in the toolbar</li>
+                    <li>Confirm the deletion</li>
+                </ol>
+            </div>
+
+            <div class="howto-card">
+                <h3><i class="fas fa-rotate-left" style="color:#27ae60"></i> Reset to Default</h3>
+                <ol>
+                    <li>Click <span class="toolbar-ref"><i class="fas fa-file"></i> New</span> in the toolbar to return to the original default pivot table configuration</li>
+                    <li>If you want to keep this as a named layout, use <span class="toolbar-ref"><i class="fas fa-copy"></i> Save As</span></li>
+                </ol>
+            </div>
+
+            <div class="notes">
+                <h3><i class="fas fa-lightbulb"></i> Good to Know</h3>
+                <ul>
+                    <li>Layouts are saved per user, so each rep has their own set of saved layouts</li>
+                    <li>Layouts are stored on the server and available from any device or browser you log in from</li>
+                    <li>The Field List and Export buttons continue to work as before</li>
+                    <li>You can create as many saved layouts as you need</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer">
+            Chapin Manufacturing &middot; Rep Portal &middot; Pivot Layout Guide
+        </div>
+    </div>
+</body>
+</html>

@@ -12,6 +12,8 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
 @inject RepPortal.Services.IActivityLogService ActivityLogService
+@inject IPivotLayoutService PivotLayoutService
+@inject IConfiguration Configuration
 
 <PageTitle>Pivot Table Sales by Item</PageTitle>
 <meta name="referrer" content="never" />
@@ -31,7 +33,7 @@
             <!-- Option B: pivot appears only once data is ready -->
 
             <div class="pivot-wrap">
-                <SfPivotView ID="PivotView" TValue="SaleRow" Height="600"
+                <SfPivotView @ref="PivotRef" ID="PivotView" TValue="SaleRow" Height="600"
                              AllowCalculatedField="true"
                              ShowFieldList="true"
                              ShowGroupingBar="true"
@@ -118,7 +120,14 @@
                                                   ShowSortIcon="false"
                                                   ShowRemoveIcon="true"
                                                   ShowValueTypeIcon="false" />
-                    <PivotViewEvents TValue="SaleRow" BeforeExport="beforeExport" ></PivotViewEvents>
+                    <PivotViewEvents TValue="SaleRow"
+                                     BeforeExport="beforeExport"
+                                     SaveReport="OnSaveReport"
+                                     LoadReport="OnLoadReport"
+                                     FetchReport="OnFetchReport"
+                                     RenameReport="OnRenameReport"
+                                     RemoveReport="OnRemoveReport"
+                                     NewReport="OnNewReport" />
                 </SfPivotView>
             </div>
         }
@@ -235,35 +244,61 @@
 </style>
 
 @code {
-        // Make Sales nullable so we can gate rendering clearly
+    private const string PageKey = "MonthlyItemSalesPivot";
+    private SfPivotView<SaleRow> PivotRef { get; set; } = default!;
     public List<SaleRow>? Sales { get; set; }
     private bool isLoading = true;
+    private bool _pivotLayoutsEnabled;
+    private List<string> _cachedReportNames = new();
 
-    public List<Syncfusion.Blazor.PivotView.ToolbarItems> PivotToolbar = new()
+    public List<Syncfusion.Blazor.PivotView.ToolbarItems> PivotToolbar = new();
+
+    protected override void OnInitialized()
     {
-        Syncfusion.Blazor.PivotView.ToolbarItems.FieldList,
-        Syncfusion.Blazor.PivotView.ToolbarItems.Export
+        _pivotLayoutsEnabled = Configuration.GetValue<bool>("Features:PivotLayouts");
 
+        if (_pivotLayoutsEnabled)
+        {
+            PivotToolbar.AddRange(new[]
+            {
+                Syncfusion.Blazor.PivotView.ToolbarItems.New,
+                Syncfusion.Blazor.PivotView.ToolbarItems.Save,
+                Syncfusion.Blazor.PivotView.ToolbarItems.SaveAs,
+                Syncfusion.Blazor.PivotView.ToolbarItems.Rename,
+                Syncfusion.Blazor.PivotView.ToolbarItems.Remove,
+                Syncfusion.Blazor.PivotView.ToolbarItems.Load,
+            });
+        }
 
-    };
+        PivotToolbar.Add(Syncfusion.Blazor.PivotView.ToolbarItems.FieldList);
+        PivotToolbar.Add(Syncfusion.Blazor.PivotView.ToolbarItems.Export);
+    }
 
     // IMPORTANT: Let the page render first, then fetch.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Log report usage (no parameters for listing page)
-
         if (!firstRender) return;
         await ActivityLogService.LogReportUsageActivityAsync("Monthly Sales Pivot", "");
 
         try
         {
-            // Trigger the initial render (spinner is visible), then fetch
-            Sales = await SalesService.GetRecentSalesAsync();
+            var salesTask = SalesService.GetRecentSalesAsync();
+
+            if (_pivotLayoutsEnabled)
+            {
+                var reportNamesTask = PivotLayoutService.GetReportNamesAsync(PageKey);
+                await Task.WhenAll(salesTask, reportNamesTask);
+                Sales = salesTask.Result;
+                _cachedReportNames = reportNamesTask.Result;
+            }
+            else
+            {
+                Sales = await salesTask;
+            }
         }
         finally
         {
             isLoading = false;
-            // After async work, request a re-render
             StateHasChanged();
         }
     }
@@ -279,8 +314,51 @@
         args.FileName = ExcelProperties.FileName;
     }
 
+    public async void OnSaveReport(SaveReportArgs args)
+    {
+        if (!_pivotLayoutsEnabled) return;
+        if (string.IsNullOrWhiteSpace(args.ReportName)) return;
+        if (args.ReportName == "Sample Report") return; // ignore Syncfusion's auto-generated default
+        await PivotLayoutService.SaveReportAsync(PageKey, args.ReportName, args.Report);
+        _cachedReportNames = await PivotLayoutService.GetReportNamesAsync(PageKey);
+    }
 
+    public void OnFetchReport(FetchReportArgs args)
+    {
+        if (!_pivotLayoutsEnabled) return;
+        args.ReportName = _cachedReportNames.ToArray();
+    }
 
+    public async void OnLoadReport(LoadReportArgs args)
+    {
+        if (!_pivotLayoutsEnabled) return;
+        string? report = await PivotLayoutService.GetReportAsync(PageKey, args.ReportName);
+        if (!string.IsNullOrEmpty(report))
+        {
+            await PivotRef.LoadPersistDataAsync(report);
+        }
+    }
+
+    public async void OnRenameReport(RenameReportArgs args)
+    {
+        if (!_pivotLayoutsEnabled) return;
+        if (string.IsNullOrWhiteSpace(args.Rename)) return;
+        await PivotLayoutService.RenameReportAsync(PageKey, args.ReportName, args.Rename);
+        _cachedReportNames = await PivotLayoutService.GetReportNamesAsync(PageKey);
+    }
+
+    public async void OnRemoveReport(RemoveReportArgs args)
+    {
+        if (!_pivotLayoutsEnabled) return;
+        await PivotLayoutService.RemoveReportAsync(PageKey, args.ReportName);
+        _cachedReportNames = await PivotLayoutService.GetReportNamesAsync(PageKey);
+    }
+
+    public void OnNewReport(NewReportArgs args)
+    {
+        // PivotView handles resetting to default internally.
+        // User can use SaveAs to persist the new layout.
+    }
 
 
 
