@@ -7,6 +7,7 @@ namespace RepPortal.Services;
 public interface ICsiRestClient
 {
     Task<string> GetAsync(string relativeUrl, IDictionary<string, string>? query = null);
+    Task<string> GetAsync(string relativeUrl, IDictionary<string, string>? query, string authorizationOverride);
 }
 
 public class CsiRestClient : ICsiRestClient
@@ -25,9 +26,21 @@ public class CsiRestClient : ICsiRestClient
             options.Value.Authorization);
     }
 
-    public async Task<string> GetAsync(
+    public Task<string> GetAsync(
         string relativeUrl,
         IDictionary<string, string>? query = null)
+        => GetAsyncCore(relativeUrl, query, authorizationOverride: null);
+
+    public Task<string> GetAsync(
+        string relativeUrl,
+        IDictionary<string, string>? query,
+        string authorizationOverride)
+        => GetAsyncCore(relativeUrl, query, authorizationOverride);
+
+    private async Task<string> GetAsyncCore(
+        string relativeUrl,
+        IDictionary<string, string>? query,
+        string? authorizationOverride)
     {
         var baseUrl = _httpClient.BaseAddress!.ToString().TrimEnd('/');
         var relUrl = relativeUrl.TrimStart('/');
@@ -41,6 +54,20 @@ public class CsiRestClient : ICsiRestClient
                     $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value.Trim())}"));
 
             url = $"{url}?{qs}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(authorizationOverride))
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.TryAddWithoutValidation("Authorization", authorizationOverride);
+            using var overrideResponse = await _httpClient.SendAsync(request);
+            var overrideContent = await overrideResponse.Content.ReadAsStringAsync();
+
+            if (overrideContent.StartsWith("<", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"MGRest returned HTML. URL: {url}");
+
+            overrideResponse.EnsureSuccessStatusCode();
+            return overrideContent;
         }
 
         using var response = await _httpClient.GetAsync(url);

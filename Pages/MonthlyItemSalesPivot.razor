@@ -41,6 +41,7 @@
                              EnableVirtualization="true"
                              AllowExcelExport="true"
                              ExportAllPages="false"
+                             
                              >
 
                     <PivotViewDataSourceSettings DataSource="@Sales"
@@ -81,15 +82,16 @@
                             <PivotViewFieldOptions Name="CustomerName" ShowInFieldList="false" />
                             <PivotViewFieldOptions Name="ShipToName" ShowInFieldList="false" />
                             <PivotViewFieldOptions Name="CustNum" ShowInFieldList="false" />
-                            <PivotViewFieldOptions Name="CustomerNameWithNum" Caption="ShipTo-CustNum" />
-                       
+                            <PivotViewFieldOptions Name="CustomerNameAddr" Caption="ShipTo-CustNum" />
+                            <PivotViewFieldOptions Name="CityStateZip" Caption="ShipTo" />
+
                         </PivotViewFieldMappings>
 
                         <PivotViewRows>
                             <PivotViewRow Name="CorpNumWithName" Caption="CorpNum-Name" ExpandAll="true" AllowDragAndDrop=true/>
                             
                             <PivotViewRow Name="ItemNumWithProduct" Caption="Item-Description" />
-                            <PivotViewRow Name="CustomerNameWithNum" Caption="ShipTo-CustNum" ExpandAll="false" />
+                            <PivotViewRow Name="CustomerNameAddr" Caption="ShipTo" ExpandAll="false" />
 
                         </PivotViewRows>
 
@@ -109,6 +111,8 @@
                             <PivotViewFormatSetting Name="Quantity" Format="N0" />
                         </PivotViewFormatSettings>
                     </PivotViewDataSourceSettings>
+
+                    <PivotViewGridSettings RowHeight="24" ColumnWidth="80" />
 
                     <PivotViewGroupingBarSettings ShowFilterIcon="true"
                                                   ShowSortIcon="false"
@@ -140,6 +144,35 @@
         position: relative;
     }
 
+    /* Compact font and row height for header + data cells */
+    #PivotView td,
+    #PivotView th,
+    #PivotView .e-cellvalue,
+    #PivotView .e-headertext,
+    #PivotView .e-stackedheadercelldiv,
+    #PivotView .e-pivotcell-container,
+    #PivotView .e-frozenheader td,
+    #PivotView .e-frozenheader th,
+    #PivotView .e-columnsheader,
+    #PivotView .e-headercell,
+    #PivotView .e-headercelldiv,
+    #PivotView .e-frozen-left-header td,
+    #PivotView .e-frozen-left-header th {
+        font-size: 0.6rem !important;
+        padding: 2px 4px !important;
+        line-height: 1.2 !important;
+    }
+
+    #PivotView tr {
+        height: 24px !important;
+    }
+
+    /* Wider minimum for value (Qty / Amount) columns */
+    #PivotView .e-valuescontent,
+    #PivotView .e-valuesheader {
+        min-width: 70px !important;
+    }
+
     /* Your existing styling */
     .e-pivotview {
         min-height: 200px;
@@ -158,7 +191,7 @@
                 padding: 4px 0px;
                 visibility: hidden;
                 margin: 4px 6px;
-                min-height: 10px;
+                min-height: 8px;
                 transition: background .15s ease, border-color .15s ease;
             }
 
@@ -202,7 +235,7 @@
 </style>
 
 @code {
-    // Make Sales nullable so we can gate rendering clearly
+        // Make Sales nullable so we can gate rendering clearly
     public List<SaleRow>? Sales { get; set; }
     private bool isLoading = true;
 
@@ -210,7 +243,7 @@
     {
         Syncfusion.Blazor.PivotView.ToolbarItems.FieldList,
         Syncfusion.Blazor.PivotView.ToolbarItems.Export
-        
+
 
     };
 
@@ -218,7 +251,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         // Log report usage (no parameters for listing page)
-       
+
         if (!firstRender) return;
         await ActivityLogService.LogReportUsageActivityAsync("Monthly Sales Pivot", "");
 
@@ -271,12 +304,21 @@
         public int MonthOfFiscalYear { get; set; }
         public int QuarterOfFiscalYear { get; set; }
         public string RegionName { get; set; } = "";
+        public string City { get; set; } = "";
+        public string State { get; set; } = "";
+        public string Zip { get; set; } = "";
 
-        public string ItemNumWithProduct => $"{ItemNum} - {ProductName}";
-        public string CustomerNameWithNum => $"{ShipToName} ({CustNum.Trim()})";
+
+   
+
+    public string ItemNumWithProduct => $"{ItemNum} - {ProductName}";
+    public string CustomerNameWithNum => $"{ShipToName} ({CustNum.Trim()})";
+    public string CustomerNameAddr => $"{ShipToName} ({CityStateZip})";
         public string NumberedMonthShort => $"{MonthOfFiscalYear} - {MonthShort}";
         public string QuarterOfFiscalYearLabel => $"Fiscal Q{QuarterOfFiscalYear}";
         public string CorpNumWithName => $"{CustNum} - {CustomerName}";
         public string FiscalYearLabel => $"FY{FiscalYear}";
+    public string CityStateZip => $"{City}, {State} {Zip}";
+
     }
 }

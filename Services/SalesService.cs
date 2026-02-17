@@ -112,8 +112,12 @@ public class SalesService : ISalesService
 
     public async Task<List<Dictionary<string, object>>> GetSalesReportDataUsingInvRep()
     {
-        EnsureAuth();
         EnsureRepContext();
+
+        if (_csiOptions.UseApi)
+            return await GetSalesReportDataUsingInvRepApiAsync();
+
+        EnsureAuth();
 
         var authState = await _authenticationStateProvider!.GetAuthenticationStateAsync();
         var user = authState.User;
@@ -151,8 +155,12 @@ public class SalesService : ISalesService
 
     public async Task<List<Dictionary<string, object>>> GetSalesReportData()
     {
-        EnsureAuth();
         EnsureRepContext();
+
+        if (_csiOptions.UseApi)
+            return await GetSalesReportDataApiAsync();
+
+        EnsureAuth();
 
         var authState = await _authenticationStateProvider!.GetAuthenticationStateAsync();
         var user = authState.User;
@@ -1544,6 +1552,7 @@ public class SalesService : ISalesService
         [CsiField("InvSeq")] public int InvSeq { get; set; }
         [CsiField("CustNum")] public string? CustNum { get; set; }
         [CsiField("CustSeq")] public int CustSeq { get; set; }
+        [CsiField("Slsman")] public string? Slsman { get; set; }
         [CsiField("AddrName")] public string? AddrName { get; set; }
         [CsiField("State")] public string? State { get; set; }
         [CsiField("ShipDate")] public DateTime? ShipDate { get; set; }
@@ -1558,6 +1567,23 @@ public class SalesService : ISalesService
         [CsiField("Adr0Name")] public string? Adr0Name { get; set; }
         [CsiField("DueDate")] public DateTime? DueDate { get; set; }
         [CsiField("CoOrderDate")] public DateTime? CoOrderDate { get; set; }
+    }
+
+    private class InvItemInfo
+    {
+        [CsiField("InvNum")] public string? InvNum { get; set; }
+        [CsiField("InvSeq")] public int InvSeq { get; set; }
+        [CsiField("QtyInvoiced")] public decimal QtyInvoiced { get; set; }
+        [CsiField("Price")] public decimal Price { get; set; }
+    }
+
+    private class CustAddrInfo
+    {
+        [CsiField("CustNum")] public string? CustNum { get; set; }
+        [CsiField("CustSeq")] public int CustSeq { get; set; }
+        [CsiField("Name")] public string? Name { get; set; }
+        [CsiField("City")] public string? City { get; set; }
+        [CsiField("State")] public string? State { get; set; }
     }
 
     // Fixed: instance method; corrected aliases; Dapper mapping; no conn/connection mixup
@@ -1579,6 +1605,7 @@ public class SalesService : ISalesService
       (ii.qty_invoiced * ii.price) AS SalesAmount,
       fc.MonthShort, fc.DayOfMonth, fc.DayShort, fc.FiscalYear, fc.QuarterOfFiscalYear, fc.MonthOfFiscalYear
       ,rn.RegionName
+      ,ca.City, ca.State, ca.Zip
   FROM inv_hdr_mst_all ih
   JOIN inv_item_mst_all ii ON ih.inv_num = ii.inv_num AND ih.inv_seq = ii.inv_seq
   --JOIN co_mst co        ON ih.co_num = co.co_num
@@ -1631,6 +1658,719 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_Sal
         public string? EndUserType { get; set; }
         public List<string> AllowedRegions { get; set; } = new();
         public string? CoNum { get; set; }
+    }
+
+    public async Task<List<Dictionary<string, object>>> GetSalesReportDataUsingInvRepApiAsync()
+    {
+        EnsureRepContext();
+
+        if (_csiRestClient == null)
+            throw new InvalidOperationException("CSI REST client is not available.");
+
+        string repCode = _repCodeContext!.CurrentRepCode;
+        IEnumerable<string>? allowedRegions = repCode == "LAW"
+            ? _repCodeContext.CurrentRegions
+            : null;
+
+        // ── Fiscal year boundaries ──
+        var today = DateTime.Today;
+        int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+        var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
+        var fyMinus3Start = new DateTime(fiscalYear - 4, 9, 1);
+
+        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
+
+        var allMonths = Enumerable.Range(0, 36 + currentFiscalMonth)
+            .Select(i => fyMinus3Start.AddMonths(i))
+            .Select(d => d.ToString("MMM") + d.Year)
+            .ToList();
+
+        var fyMinus3Months = allMonths.Take(12).ToList();
+        var fyMinus2Months = allMonths.Skip(12).Take(12).ToList();
+        var fyMinus1Months = allMonths.Skip(24).Take(12).ToList();
+        var currentFYMonths = allMonths.Skip(36).Take(currentFiscalMonth).ToList();
+
+        // ── 1. SLInvHdrs ──
+        var hdrFilters = new List<string>
+        {
+            Eq("Slsman", repCode),
+            $"InvDate >= '{fyMinus3Start:yyyyMMdd}'"
+        };
+
+        var hdrProps = string.Join(",", new[]
+        {
+            "InvNum", "InvSeq", "CustNum", "CustSeq", "Slsman",
+            "InvDate", "AddrName", "State"
+        });
+
+        var hdrQuery = new Dictionary<string, string>
+        {
+            ["props"] = hdrProps,
+            ["filter"] = string.Join(" AND ", hdrFilters),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var hdrJson = await _csiRestClient.GetAsync("json/SLInvHdrs/adv", hdrQuery);
+        var hdrResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(hdrJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        if (hdrResponse.MessageCode != 0)
+            throw new InvalidOperationException(hdrResponse.Message);
+
+        var headers = hdrResponse.Items
+            .Select(row => MapRow<InvHdrInfo>(row))
+            .ToList();
+
+        if (headers.Count == 0)
+        {
+            await LogReportUsageAsync(repCode, "GetSalesReportDataUsingInvRepApi");
+            return new List<Dictionary<string, object>>();
+        }
+
+        // ── 2. SLInvItemAlls (batched to avoid URL length limits) ──
+        var invNums = headers
+            .Where(h => !string.IsNullOrWhiteSpace(h.InvNum))
+            .Select(h => h.InvNum!)
+            .Distinct()
+            .ToList();
+
+        var itemProps = string.Join(",", new[] { "InvNum", "InvSeq", "QtyInvoiced", "Price" });
+        const int batchSize = 30;
+        var invoiceItems = new List<InvItemInfo>();
+
+        foreach (var batch in invNums.Chunk(batchSize))
+        {
+            var itemQuery = new Dictionary<string, string>
+            {
+                ["props"] = itemProps,
+                ["filter"] = In("InvNum", batch),
+                ["rowcap"] = "0",
+                ["loadtype"] = "FIRST",
+                ["bookmark"] = "0",
+                ["readonly"] = "1"
+            };
+
+            var itemJson = await _csiRestClient.GetAsync("json/SLInvItemAlls/adv", itemQuery);
+            var itemResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(itemJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+            if (itemResponse.MessageCode != 0)
+                throw new InvalidOperationException(itemResponse.Message);
+
+            invoiceItems.AddRange(itemResponse.Items.Select(row => MapRow<InvItemInfo>(row)));
+        }
+
+        // ── 3. SLCustAddrs (Name, City, State) ──
+        var custNums = headers
+            .Where(h => !string.IsNullOrWhiteSpace(h.CustNum))
+            .Select(h => h.CustNum!)
+            .Distinct()
+            .ToList();
+
+        var addrProps = string.Join(",", new[]
+        {
+            "CustNum", "CustSeq", "Name", "City", "State"
+        });
+
+        var addrQuery = new Dictionary<string, string>
+        {
+            ["props"] = addrProps,
+            ["filter"] = In("CustNum", custNums),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var addrJson = await _csiRestClient.GetAsync("json/SLCustAddrs/adv", addrQuery);
+        var addrResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(addrJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        var custAddrs = addrResponse.MessageCode == 0
+            ? addrResponse.Items.Select(row => MapRow<CustAddrInfo>(row)).ToList()
+            : new List<CustAddrInfo>();
+
+        // Build lookups: (CustNum, CustSeq) → CustAddrInfo
+        var custAddrLookup = custAddrs
+            .Where(c => !string.IsNullOrWhiteSpace(c.CustNum))
+            .GroupBy(c => (c.CustNum!, c.CustSeq))
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // Bill-to lookup: CustNum → CustAddrInfo where CustSeq=0
+        var billToLookup = custAddrs
+            .Where(c => !string.IsNullOrWhiteSpace(c.CustNum) && c.CustSeq == 0)
+            .GroupBy(c => c.CustNum!)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // ── 3b. SLCustomers (Uf_SalesRegion) ──
+        var custRegionProps = string.Join(",", new[] { "CustNum", "CustSeq", "Uf_SalesRegion" });
+
+        var custRegionQuery = new Dictionary<string, string>
+        {
+            ["props"] = custRegionProps,
+            ["filter"] = In("CustNum", custNums),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var custRegionJson = await _csiRestClient.GetAsync("json/SLCustomers/adv", custRegionQuery);
+        var custRegionResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(custRegionJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        // Build region lookup: (CustNum, CustSeq) → Uf_SalesRegion
+        var regionLookup = new Dictionary<(string, int), string>();
+        if (custRegionResponse.MessageCode == 0)
+        {
+            foreach (var row in custRegionResponse.Items)
+            {
+                var cn = row.FirstOrDefault(c =>
+                    string.Equals(c.Name, "CustNum", StringComparison.OrdinalIgnoreCase))?.Value?.Trim();
+                var cs = row.FirstOrDefault(c =>
+                    string.Equals(c.Name, "CustSeq", StringComparison.OrdinalIgnoreCase))?.Value?.Trim() ?? "0";
+                var region = row.FirstOrDefault(c =>
+                    string.Equals(c.Name, "Uf_SalesRegion", StringComparison.OrdinalIgnoreCase))?.Value?.Trim();
+                if (!string.IsNullOrWhiteSpace(cn) && int.TryParse(cs, out int custSeq))
+                {
+                    regionLookup[(cn, custSeq)] = region ?? "";
+                }
+            }
+        }
+
+        // ── 4. Region name lookup ──
+        using var connection = _dbConnectionFactory!.CreateBatConnection();
+        var regionRows = await connection.QueryAsync<(string Region, string RegionName)>(
+            "SELECT Region, RegionName FROM Chap_RegionNames WITH (NOLOCK)");
+        var regionNameLookup = regionRows.ToDictionary(r => r.Region ?? "", r => r.RegionName ?? "", StringComparer.OrdinalIgnoreCase);
+
+        // ── 5. LAW region filter ──
+        HashSet<string>? allowedCustKeys = null;
+        if (allowedRegions != null && allowedRegions.Any())
+        {
+            allowedCustKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var kvp in regionLookup)
+            {
+                if (!string.IsNullOrWhiteSpace(kvp.Value) && allowedRegions.Contains(kvp.Value))
+                {
+                    allowedCustKeys.Add($"{kvp.Key.Item1}|{kvp.Key.Item2}");
+                }
+            }
+        }
+
+        // ── 6. Build header lookup ──
+        var hdrLookup = headers
+            .Where(h => !string.IsNullOrWhiteSpace(h.InvNum))
+            .GroupBy(h => (h.InvNum!, h.InvSeq))
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // ── 7. Join + aggregate ──
+        var joined = new List<(string Customer, string CustomerName, int ShipToNum,
+            string ShipToCity, string ShipToState, string Slsman, string Name,
+            string BillToState, string UfSalesRegion, string RegionName, string Period,
+            decimal ExtPrice)>();
+
+        foreach (var item in invoiceItems)
+        {
+            if (string.IsNullOrWhiteSpace(item.InvNum))
+                continue;
+
+            var key = (item.InvNum!, item.InvSeq);
+            if (!hdrLookup.TryGetValue(key, out InvHdrInfo? hdr))
+                continue;
+
+            if (hdr.InvDate == null || string.IsNullOrWhiteSpace(hdr.CustNum))
+                continue;
+
+            // LAW region filter
+            if (allowedCustKeys != null)
+            {
+                var custKey = $"{hdr.CustNum}|{hdr.CustSeq}";
+                if (!allowedCustKeys.Contains(custKey))
+                    continue;
+            }
+
+            // Get customer address data from SLCustAddrs
+            var custAddrKey = (hdr.CustNum!, hdr.CustSeq);
+            custAddrLookup.TryGetValue(custAddrKey, out CustAddrInfo? shipToCust);
+            billToLookup.TryGetValue(hdr.CustNum!, out CustAddrInfo? billToCust);
+
+            // Get region from SLCustomers
+            regionLookup.TryGetValue(custAddrKey, out string? ufSalesRegion);
+            ufSalesRegion ??= "";
+            string regionName = !string.IsNullOrWhiteSpace(ufSalesRegion) && regionNameLookup.TryGetValue(ufSalesRegion, out string? rn)
+                ? rn : "";
+
+            string period = hdr.InvDate.Value.ToString("MMM") + hdr.InvDate.Value.Year;
+            decimal extPrice = item.QtyInvoiced * item.Price;
+
+            joined.Add((
+                Customer: hdr.CustNum!,
+                CustomerName: billToCust?.Name ?? hdr.AddrName ?? "",
+                ShipToNum: hdr.CustSeq,
+                ShipToCity: shipToCust?.City ?? "",
+                ShipToState: hdr.State ?? shipToCust?.State ?? "",
+                Slsman: hdr.Slsman ?? repCode,
+                Name: billToCust?.Name ?? hdr.AddrName ?? "",
+                BillToState: billToCust?.State ?? "",
+                UfSalesRegion: ufSalesRegion,
+                RegionName: regionName,
+                Period: period,
+                ExtPrice: extPrice
+            ));
+        }
+
+        // Group by fixed columns, sum ExtPrice per Period
+        var grouped = joined
+            .GroupBy(r => new
+            {
+                r.Customer, r.CustomerName, r.ShipToNum, r.ShipToCity, r.ShipToState,
+                r.Slsman, r.Name, r.BillToState, r.UfSalesRegion, r.RegionName
+            })
+            .Select(g => new
+            {
+                g.Key,
+                PeriodTotals = g.GroupBy(x => x.Period)
+                    .ToDictionary(pg => pg.Key, pg => pg.Sum(x => x.ExtPrice))
+            })
+            .ToList();
+
+        // ── 8. Build pivot dictionaries ──
+        var fyMinus3Label = $"FY{fiscalYear - 3}";
+        var fyMinus2Label = $"FY{fiscalYear - 2}";
+        var fyMinus1Label = $"FY{fiscalYear - 1}";
+        var fyCurrentLabel = $"FY{fiscalYear}";
+
+        var results = new List<Dictionary<string, object>>();
+
+        foreach (var g in grouped)
+        {
+            var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Customer"] = g.Key.Customer,
+                ["Customer Name"] = g.Key.CustomerName,
+                ["Ship To Num"] = g.Key.ShipToNum,
+                ["Ship To City"] = g.Key.ShipToCity,
+                ["Ship To State"] = g.Key.ShipToState,
+                ["slsman"] = g.Key.Slsman,
+                ["name"] = g.Key.Name,
+                ["Bill To State"] = g.Key.BillToState,
+                ["Uf_SalesRegion"] = g.Key.UfSalesRegion,
+                ["RegionName"] = g.Key.RegionName,
+            };
+
+            // FY totals
+            decimal SumFy(List<string> months) =>
+                months.Sum(m => g.PeriodTotals.TryGetValue(m, out decimal v) ? v : 0m);
+
+            dict[fyMinus3Label] = SumFy(fyMinus3Months);
+            dict[fyMinus2Label] = SumFy(fyMinus2Months);
+            dict[fyMinus1Label] = SumFy(fyMinus1Months);
+            dict[fyCurrentLabel] = SumFy(currentFYMonths);
+
+            // Monthly columns for current FY only
+            foreach (var month in currentFYMonths)
+            {
+                dict[month] = g.PeriodTotals.TryGetValue(month, out decimal v) ? v : 0m;
+            }
+
+            results.Add(dict);
+        }
+
+        // Order by FY-1 descending (matches SQL)
+        results = results
+            .OrderByDescending(d => d.TryGetValue(fyMinus1Label, out object? v) && v is decimal dec ? dec : 0m)
+            .ToList();
+
+        await LogReportUsageAsync(repCode, "GetSalesReportDataUsingInvRepApi");
+
+        _logger?.LogInformation(
+            "GetSalesReportDataUsingInvRepApiAsync returned {Count} rows for rep {RepCode}",
+            results.Count, repCode);
+
+        return results;
+    }
+
+    public async Task<List<Dictionary<string, object>>> GetSalesReportDataApiAsync()
+    {
+        EnsureRepContext();
+
+        if (_csiRestClient == null)
+            throw new InvalidOperationException("CSI REST client is not available.");
+
+        string repCode = _repCodeContext!.CurrentRepCode;
+        IEnumerable<string>? allowedRegions = repCode == "LAW"
+            ? _repCodeContext.CurrentRegions
+            : null;
+
+        // ── Fiscal year boundaries ──
+        var today = DateTime.Today;
+        int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+        var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
+        var fyMinus3Start = new DateTime(fiscalYear - 4, 9, 1);
+
+        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
+
+        var allMonths = Enumerable.Range(0, 36 + currentFiscalMonth)
+            .Select(i => fyMinus3Start.AddMonths(i))
+            .Select(d => d.ToString("MMM") + d.Year)
+            .ToList();
+
+        var fyMinus3Months = allMonths.Take(12).ToList();
+        var fyMinus2Months = allMonths.Skip(12).Take(12).ToList();
+        var fyMinus1Months = allMonths.Skip(24).Take(12).ToList();
+        var currentFYMonths = allMonths.Skip(36).Take(currentFiscalMonth).ToList();
+
+        // ── 1. SLCustomers — find customers where Slsman matches repCode (shared across sites) ──
+        var custFilters = new List<string> { Eq("Slsman", repCode) };
+        var custProps = string.Join(",", new[]
+        {
+            "CustNum", "CustSeq", "Slsman", "Uf_SalesRegion"
+        });
+
+        var custQuery = new Dictionary<string, string>
+        {
+            ["props"] = custProps,
+            ["filter"] = string.Join(" AND ", custFilters),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var custJson = await _csiRestClient.GetAsync("json/SLCustomers/adv", custQuery);
+        var custResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(custJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        if (custResponse.MessageCode != 0)
+            throw new InvalidOperationException(custResponse.Message);
+
+        // Parse customer rows to get CustNum, CustSeq, Slsman, Uf_SalesRegion
+        // Note: do NOT trim CustNum — the API requires the exact value for IN filters
+        var customers = custResponse.Items.Select(row =>
+        {
+            var cn = row.FirstOrDefault(c =>
+                string.Equals(c.Name, "CustNum", StringComparison.OrdinalIgnoreCase))?.Value;
+            var cs = row.FirstOrDefault(c =>
+                string.Equals(c.Name, "CustSeq", StringComparison.OrdinalIgnoreCase))?.Value?.Trim() ?? "0";
+            var slsman = row.FirstOrDefault(c =>
+                string.Equals(c.Name, "Slsman", StringComparison.OrdinalIgnoreCase))?.Value?.Trim();
+            var region = row.FirstOrDefault(c =>
+                string.Equals(c.Name, "Uf_SalesRegion", StringComparison.OrdinalIgnoreCase))?.Value?.Trim();
+            int.TryParse(cs, out int custSeq);
+            return new { CustNum = cn, CustSeq = custSeq, Slsman = slsman ?? repCode, UfSalesRegion = region ?? "" };
+        })
+        .Where(c => !string.IsNullOrWhiteSpace(c.CustNum))
+        .ToList();
+
+        if (customers.Count == 0)
+        {
+            await LogReportUsageAsync(repCode, "GetSalesReportDataApi");
+            return new List<Dictionary<string, object>>();
+        }
+
+        // Build lookups from customer data
+        var custSlsmanLookup = customers
+            .GroupBy(c => (c.CustNum!, c.CustSeq))
+            .ToDictionary(g => g.Key, g => g.First().Slsman);
+
+        var regionLookup = customers
+            .GroupBy(c => (c.CustNum!, c.CustSeq))
+            .ToDictionary(g => g.Key, g => g.First().UfSalesRegion);
+
+        // LAW region filter
+        HashSet<string>? allowedCustKeys = null;
+        if (allowedRegions != null && allowedRegions.Any())
+        {
+            allowedCustKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var c in customers)
+            {
+                if (!string.IsNullOrWhiteSpace(c.UfSalesRegion) && allowedRegions.Contains(c.UfSalesRegion))
+                {
+                    allowedCustKeys.Add($"{c.CustNum}|{c.CustSeq}");
+                }
+            }
+        }
+
+        var custNums = customers
+            .Select(c => c.CustNum!)
+            .Distinct()
+            .ToList();
+
+        // ── 2. SLInvHdrs — get invoices for these customers from both BAT + KENT sites ──
+        var hdrProps = string.Join(",", new[]
+        {
+            "InvNum", "InvSeq", "CustNum", "CustSeq",
+            "InvDate", "AddrName", "State"
+        });
+
+        const int custBatchSize = 30;
+
+        // Build the list of auth tokens to query: BAT (default) + KENT (if configured)
+        var siteAuths = new List<(string Site, string? AuthOverride)> { ("BAT", null) };
+        if (!string.IsNullOrWhiteSpace(_csiOptions.KentAuthorization))
+            siteAuths.Add(("KENT", _csiOptions.KentAuthorization));
+
+        // Tag each header/item with a site prefix so InvNum collisions between sites don't merge
+        var headers = new List<(string Site, InvHdrInfo Hdr)>();
+
+        foreach (var (site, authOverride) in siteAuths)
+        {
+            foreach (var batch in custNums.Chunk(custBatchSize))
+            {
+                var hdrQuery = new Dictionary<string, string>
+                {
+                    ["props"] = hdrProps,
+                    ["filter"] = In("CustNum", batch) + $" AND InvDate >= '{fyMinus3Start:yyyyMMdd}'",
+                    ["rowcap"] = "0",
+                    ["loadtype"] = "FIRST",
+                    ["bookmark"] = "0",
+                    ["readonly"] = "1"
+                };
+
+                string hdrJson = authOverride != null
+                    ? await _csiRestClient.GetAsync("json/SLInvHdrs/adv", hdrQuery, authOverride)
+                    : await _csiRestClient.GetAsync("json/SLInvHdrs/adv", hdrQuery);
+
+                var hdrResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(hdrJson,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+                if (hdrResponse.MessageCode != 0)
+                    throw new InvalidOperationException(hdrResponse.Message);
+
+                headers.AddRange(hdrResponse.Items.Select(row => (site, MapRow<InvHdrInfo>(row))));
+            }
+        }
+
+        if (headers.Count == 0)
+        {
+            await LogReportUsageAsync(repCode, "GetSalesReportDataApi");
+            return new List<Dictionary<string, object>>();
+        }
+
+        // ── 3. SLInvItems — batched, both BAT + KENT sites ──
+        var itemProps = string.Join(",", new[] { "InvNum", "InvSeq", "QtyInvoiced", "Price" });
+        const int batchSize = 30;
+        var invoiceItems = new List<(string Site, InvItemInfo Item)>();
+
+        foreach (var (site, authOverride) in siteAuths)
+        {
+            var siteInvNums = headers
+                .Where(h => h.Site == site && !string.IsNullOrWhiteSpace(h.Hdr.InvNum))
+                .Select(h => h.Hdr.InvNum!)
+                .Distinct()
+                .ToList();
+
+            foreach (var batch in siteInvNums.Chunk(batchSize))
+            {
+                var itemQuery = new Dictionary<string, string>
+                {
+                    ["props"] = itemProps,
+                    ["filter"] = In("InvNum", batch),
+                    ["rowcap"] = "0",
+                    ["loadtype"] = "FIRST",
+                    ["bookmark"] = "0",
+                    ["readonly"] = "1"
+                };
+
+                string itemJson = authOverride != null
+                    ? await _csiRestClient.GetAsync("json/SLInvItemAlls/adv", itemQuery, authOverride)
+                    : await _csiRestClient.GetAsync("json/SLInvItemAlls/adv", itemQuery);
+
+                var itemResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(itemJson,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+                if (itemResponse.MessageCode != 0)
+                    throw new InvalidOperationException(itemResponse.Message);
+
+                invoiceItems.AddRange(itemResponse.Items.Select(row => (site, MapRow<InvItemInfo>(row))));
+            }
+        }
+
+        // ── 4. SLCustAddrs (Name, City, State) — batched (shared across sites) ──
+        var addrProps = string.Join(",", new[]
+        {
+            "CustNum", "CustSeq", "Name", "City", "State"
+        });
+
+        var custAddrs = new List<CustAddrInfo>();
+
+        foreach (var batch in custNums.Chunk(custBatchSize))
+        {
+            var addrQuery = new Dictionary<string, string>
+            {
+                ["props"] = addrProps,
+                ["filter"] = In("CustNum", batch),
+                ["rowcap"] = "0",
+                ["loadtype"] = "FIRST",
+                ["bookmark"] = "0",
+                ["readonly"] = "1"
+            };
+
+            var addrJson = await _csiRestClient.GetAsync("json/SLCustAddrs/adv", addrQuery);
+            var addrResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(addrJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+            if (addrResponse.MessageCode == 0)
+                custAddrs.AddRange(addrResponse.Items.Select(row => MapRow<CustAddrInfo>(row)));
+        }
+
+        // Build lookups: (CustNum, CustSeq) → CustAddrInfo
+        var custAddrLookup = custAddrs
+            .Where(c => !string.IsNullOrWhiteSpace(c.CustNum))
+            .GroupBy(c => (c.CustNum!, c.CustSeq))
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // Bill-to lookup: CustNum → CustAddrInfo where CustSeq=0
+        var billToLookup = custAddrs
+            .Where(c => !string.IsNullOrWhiteSpace(c.CustNum) && c.CustSeq == 0)
+            .GroupBy(c => c.CustNum!)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // ── 5. Region name lookup ──
+        using var connection = _dbConnectionFactory!.CreateBatConnection();
+        var regionRows = await connection.QueryAsync<(string Region, string RegionName)>(
+            "SELECT Region, RegionName FROM Chap_RegionNames WITH (NOLOCK)");
+        var regionNameLookup = regionRows.ToDictionary(r => r.Region ?? "", r => r.RegionName ?? "", StringComparer.OrdinalIgnoreCase);
+
+        // ── 6. Build header lookup — keyed by (Site, InvNum, InvSeq) to avoid cross-site collisions ──
+        var hdrLookup = headers
+            .Where(h => !string.IsNullOrWhiteSpace(h.Hdr.InvNum))
+            .GroupBy(h => (h.Site, h.Hdr.InvNum!, h.Hdr.InvSeq))
+            .ToDictionary(g => g.Key, g => g.First().Hdr);
+
+        // ── 7. Join + aggregate ──
+        var joined = new List<(string Customer, string CustomerName, int ShipToNum,
+            string ShipToCity, string ShipToState, string Slsman, string Name,
+            string BillToState, string UfSalesRegion, string RegionName, string Period,
+            decimal ExtPrice)>();
+
+        foreach (var (site, item) in invoiceItems)
+        {
+            if (string.IsNullOrWhiteSpace(item.InvNum))
+                continue;
+
+            var key = (site, item.InvNum!, item.InvSeq);
+            if (!hdrLookup.TryGetValue(key, out InvHdrInfo? hdr))
+                continue;
+
+            if (hdr.InvDate == null || string.IsNullOrWhiteSpace(hdr.CustNum))
+                continue;
+
+            // LAW region filter
+            if (allowedCustKeys != null)
+            {
+                var custKey = $"{hdr.CustNum}|{hdr.CustSeq}";
+                if (!allowedCustKeys.Contains(custKey))
+                    continue;
+            }
+
+            // Get customer address data from SLCustAddrs
+            var custAddrKey = (hdr.CustNum!, hdr.CustSeq);
+            custAddrLookup.TryGetValue(custAddrKey, out CustAddrInfo? shipToCust);
+            billToLookup.TryGetValue(hdr.CustNum!, out CustAddrInfo? billToCust);
+
+            // Get region from SLCustomers (already fetched in step 1)
+            regionLookup.TryGetValue(custAddrKey, out string? ufSalesRegion);
+            ufSalesRegion ??= "";
+            string regionName = !string.IsNullOrWhiteSpace(ufSalesRegion) && regionNameLookup.TryGetValue(ufSalesRegion, out string? rn)
+                ? rn : "";
+
+            // Use slsman from customer record (cu.slsman), not invoice header
+            custSlsmanLookup.TryGetValue(custAddrKey, out string? slsman);
+            slsman ??= repCode;
+
+            string period = hdr.InvDate.Value.ToString("MMM") + hdr.InvDate.Value.Year;
+            decimal extPrice = item.QtyInvoiced * item.Price;
+
+            joined.Add((
+                Customer: hdr.CustNum!,
+                CustomerName: billToCust?.Name ?? hdr.AddrName ?? "",
+                ShipToNum: hdr.CustSeq,
+                ShipToCity: shipToCust?.City ?? "",
+                ShipToState: hdr.State ?? shipToCust?.State ?? "",
+                Slsman: slsman,
+                Name: billToCust?.Name ?? hdr.AddrName ?? "",
+                BillToState: billToCust?.State ?? "",
+                UfSalesRegion: ufSalesRegion,
+                RegionName: regionName,
+                Period: period,
+                ExtPrice: extPrice
+            ));
+        }
+
+        // Group by fixed columns, sum ExtPrice per Period
+        var grouped = joined
+            .GroupBy(r => new
+            {
+                r.Customer, r.CustomerName, r.ShipToNum, r.ShipToCity, r.ShipToState,
+                r.Slsman, r.Name, r.BillToState, r.UfSalesRegion, r.RegionName
+            })
+            .Select(g => new
+            {
+                g.Key,
+                PeriodTotals = g.GroupBy(x => x.Period)
+                    .ToDictionary(pg => pg.Key, pg => pg.Sum(x => x.ExtPrice))
+            })
+            .ToList();
+
+        // ── 8. Build pivot dictionaries ──
+        var fyMinus3Label = $"FY{fiscalYear - 3}";
+        var fyMinus2Label = $"FY{fiscalYear - 2}";
+        var fyMinus1Label = $"FY{fiscalYear - 1}";
+        var fyCurrentLabel = $"FY{fiscalYear}";
+
+        var results = new List<Dictionary<string, object>>();
+
+        foreach (var g in grouped)
+        {
+            var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Customer"] = g.Key.Customer,
+                ["Customer Name"] = g.Key.CustomerName,
+                ["Ship To Num"] = g.Key.ShipToNum,
+                ["Ship To City"] = g.Key.ShipToCity,
+                ["Ship To State"] = g.Key.ShipToState,
+                ["slsman"] = g.Key.Slsman,
+                ["name"] = g.Key.Name,
+                ["Bill To State"] = g.Key.BillToState,
+                ["Uf_SalesRegion"] = g.Key.UfSalesRegion,
+                ["RegionName"] = g.Key.RegionName,
+            };
+
+            // FY totals
+            decimal SumFy(List<string> months) =>
+                months.Sum(m => g.PeriodTotals.TryGetValue(m, out decimal v) ? v : 0m);
+
+            dict[fyMinus3Label] = SumFy(fyMinus3Months);
+            dict[fyMinus2Label] = SumFy(fyMinus2Months);
+            dict[fyMinus1Label] = SumFy(fyMinus1Months);
+            dict[fyCurrentLabel] = SumFy(currentFYMonths);
+
+            // Monthly columns for current FY only
+            foreach (var month in currentFYMonths)
+            {
+                dict[month] = g.PeriodTotals.TryGetValue(month, out decimal v) ? v : 0m;
+            }
+
+            results.Add(dict);
+        }
+
+        // Order by FY-1 descending (matches SQL)
+        results = results
+            .OrderByDescending(d => d.TryGetValue(fyMinus1Label, out object? v) && v is decimal dec ? dec : 0m)
+            .ToList();
+
+        await LogReportUsageAsync(repCode, "GetSalesReportDataApi");
+
+        _logger?.LogInformation(
+            "GetSalesReportDataApiAsync returned {Count} rows for rep {RepCode}",
+            results.Count, repCode);
+
+        return results;
     }
 
     // ----------------------
