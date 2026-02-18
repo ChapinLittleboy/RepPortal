@@ -1,0 +1,26 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+Active,SLItemCategories,0,active,,,Byte,,0
+BannerPicture,SLItemCategories,0,banner_picture,,,Binary,,0
+CreateDate,SLItemCategories,0,CreateDate,,,Date,,0
+CreatedBy,SLItemCategories,0,CreatedBy,,,String,,0
+DerCategoryIsInHierarchy,SLItemCategories,0,,,,Byte,dbo.IsCategoryInHierarchy(ItemCategory),0
+DerDescription,SLItemCategories,0,,,,String,"ISNULL(IclDescription, Description)",0
+Description,SLItemCategories,0,description,,,String,,0
+IclDescription,SLItemCategories,0,description,,,String,,0
+InWorkflow,SLItemCategories,0,InWorkflow,,,Byte,,0
+IsCategoryHeading,SLItemCategories,0,is_category_heading,,,Byte,,0
+Item,SLItemCategories,0,item,,String,String,,0
+ItemCategory,SLItemCategories,0,item_category,,,String,,0
+LanLocaleID,SLItemCategories,0,LocaleID,,,Long Integer,,0
+NoteExistsFlag,SLItemCategories,0,NoteExistsFlag,,,Byte,,0
+Picture,SLItemCategories,0,picture,,,Binary,,0
+PictureExistsFlag,SLItemCategories,0,,,,Byte,CASE WHEN Picture IS NULL THEN 0 ELSE 1 END,0
+RecordDate,SLItemCategories,0,RecordDate,,,Date,,0
+RowPointer,SLItemCategories,0,RowPointer,,,GUID,,0
+SLItemCategoryItems,SLItemCategories,0,,SLItemCategoryItems,,,ItemCategory=ItemCategory,0
+SLItemCategoryLangs,SLItemCategories,0,,SLItemCategoryLangs,,,ItemCategory=ItemCategory,0
+SLItemCategoryVendors,SLItemCategories,0,,SLItemCategoryVendors,,,ItemCategory=ItemCategory,0
+UbParentRowPointer,SLItemCategories,0,,,GUID,GUID,,0
+UbRank,SLItemCategories,0,,,,Short Integer,0,0
+UbSelect,SLItemCategories,0,,,,Byte,0,0
+UpdatedBy,SLItemCategories,0,UpdatedBy,,,String,,0

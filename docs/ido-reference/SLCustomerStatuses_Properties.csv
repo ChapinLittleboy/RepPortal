@@ -1,0 +1,11 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+ActiveForOrderProcessing,SLCustomerStatuses,0,active_for_order_processing,,,Byte,,0
+CreateDate,SLCustomerStatuses,0,CreateDate,,Date,Date,,0
+CreatedBy,SLCustomerStatuses,0,CreatedBy,,String,String,,0
+Description,SLCustomerStatuses,0,description,,,String,,0
+InWorkflow,SLCustomerStatuses,0,InWorkflow,,Byte,Byte,,0
+NoteExistsFlag,SLCustomerStatuses,0,NoteExistsFlag,,Byte,Byte,,0
+RecordDate,SLCustomerStatuses,0,RecordDate,,Date,Date,,0
+RowPointer,SLCustomerStatuses,0,RowPointer,,GUID,GUID,,0
+Stat,SLCustomerStatuses,0,stat,,,String,,0
+UpdatedBy,SLCustomerStatuses,0,UpdatedBy,,String,String,,0

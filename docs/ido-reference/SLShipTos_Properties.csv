@@ -1,0 +1,24 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+addr_1,SLShipTos,0,addr##1,,,String,,0
+addr_2,SLShipTos,0,addr##2,,,String,,0
+addr_3,SLShipTos,0,addr##3,,,String,,0
+addr_4,SLShipTos,0,addr##4,,,String,,0
+City,SLShipTos,0,city,,,String,,0
+Contact,SLShipTos,0,contact,,,String,,0
+Country,SLShipTos,0,country,,,String,,0
+County,SLShipTos,0,county,,,String,,0
+DropSeq,SLShipTos,0,drop_seq,,,Long Integer,,0
+DropShipNo,SLShipTos,0,drop_ship_no,,,NumSortedString,,0
+InWorkflow,SLShipTos,0,InWorkflow,,,Byte,,0
+Name,SLShipTos,0,name,,,String,,0
+NoteExistsFlag,SLShipTos,0,NoteExistsFlag,,,Byte,,0
+Phone,SLShipTos,0,phone,,,String,,0
+RecordDate,SLShipTos,0,RecordDate,,,Date,,0
+RowPointer,SLShipTos,0,RowPointer,,,GUID,,0
+SLPohs,SLShipTos,0,,SL.SLPohs,Object,Object,,0
+SLPoItems,SLShipTos,0,,SL.SLPoItems,Object,Object,,0
+SLPos,SLShipTos,0,,SL.SLPos,Object,Object,,0
+State,SLShipTos,0,state,,,String,,0
+StateCode,SLShipTos,0,state_code,,,String,,0
+StateDescription,SLShipTos,0,description,,,String,,0
+Zip,SLShipTos,0,zip,,,String,,0

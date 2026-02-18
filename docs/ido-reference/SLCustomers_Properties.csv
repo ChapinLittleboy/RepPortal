@@ -1,0 +1,332 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+AccountName,SLCustomers,0,account_name,,,String,,0
+ActiveForDataIntegration,SLCustomers,0,active_for_data_integration,,,Byte,,0
+Addr_1,SLCustomers,0,addr##1,,,String,,0
+Addr_2,SLCustomers,0,addr##2,,,String,,0
+Addr_3,SLCustomers,0,addr##3,,,String,,0
+Addr_4,SLCustomers,0,addr##4,,,String,,0
+AddrLastShipDate,Chap_SLCustomers,2,Uf_LastShipDate,,Date,Date,,0
+AdrRecordDate,SLCustomers,0,RecordDate,,,Date,,0
+AdrRowPointer,SLCustomers,0,RowPointer,,,GUID,,0
+AmtOverInvAmt,SLCustomers,0,amt_over_inv_amt,,,Decimal,,0
+ApsPullUp,SLCustomers,0,aps_pull_up,,,Byte,,0
+AUContractPriceMethod,SLCustomers,0,AU_contract_price_method,,,String,,0
+AUPriceBy,SLCustomers,0,AU_price_by,,,String,,0
+AvgBalOs,SLCustomers,0,avg_bal_os,,,Decimal,,0
+AvgDaysOs,SLCustomers,0,avg_days_os,,,Short Integer,,0
+BalMethod,SLCustomers,0,bal_method,,,String,,0
+BankAcctNo,SLCustomers,0,bank_acct_no,,,String,,0
+BankAuthorityPartyId,SLCustomers,0,bank_authority_party_id,,,String,,0
+BankCode,SLCustomers,0,bank_code,,,String,,0
+BankName,SLCustomers,0,name,,,String,,0
+BankTransitNumber,SLCustomers,0,bank_transit_num,,,String,,0
+BillToCountry,SLCustomers,0,country,,,String,,0
+BillToEmail,SLCustomers,0,bill_to_email,,,String,,0
+BranchId,SLCustomers,0,branch_id,,,String,,0
+BusinessIdentifierCode,SLCustomers,0,business_identifier_code,,,String,,0
+BusinessPhone,SLCustomers,0,business_phone,,,String,,0
+CalcDate,SLCustomers,0,calc_date,,,Date,,0
+CarrierAccount,SLCustomers,0,carrier_account,,String,String,,0
+CarrierBillToTransportation,SLCustomers,0,carrier_bill_to_transportation,,String,String,,0
+CarrierResidentialIndicator,SLCustomers,0,carrier_residential_indicator,,Byte,Byte,,0
+CarrierUpchargePct,SLCustomers,0,carrier_upcharge_pct,,Decimal,Decimal,,0
+CatalogDescription,SLCustomers,0,description,,,String,,0
+CatalogId,SLCustomers,0,catalog_id,,,String,,0
+CC1ExteranlEntity,SLCustomers,0,external_entity,,,String,,0
+CcContact_2,SLCustomers,0,contact##2,,,String,,0
+CcExportType,SLCustomers,0,export_type,,,String,,0
+CcPhone_2,SLCustomers,0,phone##2,,,String,,0
+Charfld1,SLCustomers,0,charfld1,,,String,,0
+Charfld2,SLCustomers,0,charfld2,,,String,,0
+Charfld3,SLCustomers,0,charfld3,,,String,,0
+City,SLCustomers,0,city,,,String,,0
+CNLongBankAcctNo,SLCustomers,0,CN_long_bank_acct_no,,,String,,0
+CompanyRevenue,SLCustomers,0,company_revenue,,,Decimal,,0
+Consolidate,SLCustomers,0,consolidate,,,Byte,,0
+ConstructiveSalePricePct,SLCustomers,0,constructive_sale_price_pct,,,Decimal,,0
+Contact_1,SLCustomers,0,contact##1,,,String,,0
+Contact_2,SLCustomers,0,contact##2,,,String,,0
+Contact_3,SLCustomers,0,contact##3,,,String,,0
+CorpAddress,SLCustomers,0,corp_address,,,Byte,,0
+CorpadrAddr_1,SLCustomers,0,addr##1,,,String,,0
+CorpadrAddr_2,SLCustomers,0,addr##2,,,String,,0
+CorpadrAddr_3,SLCustomers,0,addr##3,,,String,,0
+CorpadrAddr_4,SLCustomers,0,addr##4,,,String,,0
+CorpadrCity,SLCustomers,0,city,,,String,,0
+CorpadrCountry,SLCustomers,0,country,,,String,,0
+CorpadrCounty,SLCustomers,0,county,,,String,,0
+CorpadrCreditHold,SLCustomers,0,credit_hold,,,Byte,,0
+CorpadrCurrCode,SLCustomers,0,curr_code,,,String,,0
+CorpadrFaxNum,SLCustomers,0,fax_num,,,String,,0
+CorpadrName,SLCustomers,0,name,,,String,,0
+CorpadrState,SLCustomers,0,state,,,String,,0
+CorpadrZip,SLCustomers,0,zip,,,String,,0
+CorpCred,SLCustomers,0,corp_cred,,,Byte,,0
+CorpCust,SLCustomers,0,corp_cust,,,NumSortedString,,0
+CorpDisplayAddress,SLCustomers,0,,,,String,"CASE WHEN adr.corp_cust <> '' AND adr.corp_cust IS NOT NULL THEN dbo.FormatAddress(adr.corp_cust, 0) ELSE '' END",0
+CouExpDocReqd,SLCustomers,0,exp_doc_reqd,,,Byte,,0
+Country,SLCustomers,0,country,,,String,,0
+County,SLCustomers,0,county,,,String,,0
+CreateDate,SLCustomers,0,CreateDate,,,Date,,0
+CreditHold,SLCustomers,0,credit_hold,,,Byte,,0
+CreditHoldDate,SLCustomers,0,credit_hold_date,,,Date,,0
+CreditHoldDescription,SLCustomers,0,description,,,String,,0
+CreditHoldReason,SLCustomers,0,credit_hold_reason,,,String,,0
+CreditHoldUser,SLCustomers,0,credit_hold_user,,,String,,0
+CreditLimit,SLCustomers,0,credit_limit,,,Decimal,,0
+CrmGuid,SLCustomers,0,crm_guid,,,GUID,,0
+CurrAmtFormat,SLCustomers,0,amt_format,,,String,,0
+CurrAmtTotFormat,SLCustomers,0,amt_tot_format,,,String,,0
+CurrCode,SLCustomers,0,curr_code,,,String,,0
+CurrCstPrcFormat,SLCustomers,0,cst_prc_format,,,String,,0
+CusShipmentApprovalRequired,SLCustomers,0,shipment_approval_required,,,Byte,,0
+CustBank,SLCustomers,0,cust_bank,,,String,,0
+CustNum,SLCustomers,0,cust_num,,,NumSortedString,,0
+CustNum_1,SLCustomers,0,cust_num,,,NumSortedString,,0
+CustomerEmailAddr,SLCustomers,0,customer_email_addr,,,String,,0
+CustSeq,SLCustomers,0,cust_seq,,,Long Integer,,0
+CustSeq_1,SLCustomers,0,cust_seq,,,Long Integer,,0
+CustType,SLCustomers,0,cust_type,,,String,,0
+CustTypeDescription,Chap_SLCustomers,2,,,String,String,(Select description from custtype where cust_type = CustType),0
+Datefld,SLCustomers,0,datefld,,,Date,,0
+DaysOverInvDueDate,SLCustomers,0,days_over_inv_due_date,,,Short Integer,,0
+DaysShippedAfterDueDateTolerance,SLCustomers,0,days_shipped_after_due_date_tolerance,,,Short Integer,,0
+DaysShippedBeforeDueDateTolerance,SLCustomers,0,days_shipped_before_due_date_tolerance,,,Short Integer,,0
+Decifld1,SLCustomers,0,decifld1,,,Decimal,,0
+Decifld2,SLCustomers,0,decifld2,,,Decimal,,0
+Decifld3,SLCustomers,0,decifld3,,,Decimal,,0
+DefaultShipTo,SLCustomers,0,default_ship_to,,,Long Integer,,0
+Delterm,SLCustomers,0,delterm,,,String,,0
+DeltermDescription,SLCustomers,0,description,,,String,,0
+DerArtranTotalYTD,SLCustomers,0,,,,Decimal,(SELECT SUM(artran.amount) FROM dbo.artran WHERE artran.cust_num=CustNum AND artran.type='I' AND artran.inv_date >= dbo.GetPeriodStartDate(1)),0
+DerBankTransitNumMask,SLCustomers,0,DerBankTransitNumMask,,,String,,0
+DerBillToAddress,SLCustomers,0,,,,String,"CASE WHEN CustNum <> '' AND CustNum IS NOT NULL THEN dbo.FormatAddress(CustNum, 0) ELSE '' END",0
+DerConsignmentWhse,SLCustomers,0,,,,String,(select whse.whse from dbo.whse where whse.cust_num = CustNum AND whse.cust_seq = CustSeq),0
+DerContact,SLCustomers,0,,,,String,"CASE WHEN CustSeq = 0 THEN Contact_1 ELSE Contact_2 END
+",0
+DerContractsUpForRenewal,SLCustomers,0,,,,Decimal,"(SELECT SUM(fs_contract.amount)  FROM dbo.fs_contract  WHERE fs_contract.cust_num=CustNum AND fs_contract.billed_thru_date < DATEADD(day, 60, GETDATE()))",0
+DerCorpCust,SLCustomers,0,,,,NumSortedString,CorpCust,0
+DerCreditHold,SLCustomers,0,,,,Byte,Case When (CorpCust is not null and CorpCred = 1 and CreditHold <> 1) then CorpadrCreditHold else CreditHold end,0
+DerCreditHoldString,SLCustomers,0,,,,String,"CASE WHEN CreditHold = 0 THEN dbo.StringOfLanguage('@CustAddr.Credit_Good', LangCode) ELSE dbo.StringOfLanguage('@CustAddr.Credit_Hold', LangCode) END",0
+DerCustNum,SLCustomers,0,,,String,String,LTRIM(CustNum),0
+DerDefaultShipTo,SLCustomers,0,,,,Short Integer,CASE WHEN cus.cust_seq = (select customer.default_ship_to from dbo.customer where customer.cust_num = CustNum  AND customer.cust_seq = 0) THEN 1 ELSE 0 END,0
+DerDiscLstYr,SLCustomers,0,,,,Decimal,NULL,0
+DerDiscYtd,SLCustomers,0,,,,Decimal,NULL,0
+DerEmplName,SLCustomers,0,,,,String,"(case when Emplsname is null 
+then EmplName
+else EmplName + ' ' + Emplsname
+end)",0
+DerFavoriteCustomer,SLCustomers,0,,,,Byte,"CASE WHEN EXISTS (SELECT 1 FROM favorite_customer WHERE cust_num = CustNum AND username = dbo.[UserName2Sp]() ) 
+THEN 1 
+ELSE 
+     0
+END",0
+DerGlobal,SLCustomers,0,,,,Byte,(dbo.CustGlobal(CustNum)),0
+DerIncidentsOpenedThisPeriod,SLCustomers,0,,,,Decimal,(SELECT COUNT(fs_incident.inc_num) FROM dbo.fs_incident WHERE fs_incident.cust_num = CustNum AND fs_incident.inc_date >= dbo.GetPeriodStartDate(dbo.GetCurPeriod())),0
+DerLastInteractionID,SLCustomers,0,,,,Decimal,"dbo.GetLastInteractionID(CustNum, 'C')",0
+DerLastShipDateIsOld,Chap_SLCustomers,2,,,,Byte,"(CASE WHEN AddrLastShipDate < '2020-09-01' THEN 1 ELSE 0 END
+)",0
+DerLateCustomerOrders,SLCustomers,0,,,,Decimal,(SELECT COUNT(co.cust_num) FROM dbo.coitem  LEFT JOIN dbo.co ON co.co_num=coitem.co_num WHERE co.cust_num=CustNum AND coitem.stat<>'C'  AND coitem.due_date < GetDate()),0
+DerLateIncidents,SLCustomers,0,,,,Decimal,(SELECT COUNT(inc.cust_num) FROM dbo.fs_incident inc LEFT JOIN dbo.fs_stat_code stat ON stat.stat_code=inc.stat_code WHERE inc.cust_num=CustNum AND stat.closed=0  AND inc.due_date < GetDate()),0
+DerLateSROs,SLCustomers,0,,,,Decimal,(SELECT COUNT(sro.cust_num) FROM dbo.fs_sro_line line LEFT JOIN dbo.fs_sro sro ON sro.sro_num=line.sro_num WHERE sro.cust_num=CustNum AND line.stat<>'C'  AND line.due_date < GetDate()),0
+DerNameCustNum,SLCustomers,0,,,String,String,Name + ' (' + LTRIM(CustNum) + ')',0
+DerOpenIncidents,SLCustomers,0,,,,Decimal,(SELECT COUNT(fs_incident.inc_num) FROM dbo.fs_incident LEFT JOIN dbo.fs_stat_code ON fs_stat_code.stat_code = fs_incident.stat_code WHERE fs_incident.cust_num = CustNum  AND fs_stat_code.closed = 0),0
+DerOrderBal,SLCustomers,0,DerOrderBal,,,Decimal,,0
+DerOutstandingAR,SLCustomers,0,,,,Decimal,"(SELECT SUM(CASE WHEN CHARINDEX(artran.type, 'ID') > 0 THEN artran.amount + artran.sales_tax + artran.sales_tax_2 + artran.misc_charges + artran.freight ELSE ((artran.amount + artran.sales_tax + artran.sales_tax_2 + artran.misc_charges + artran.freight) *-1) END)  FROM dbo.artran WHERE artran.cust_num=CustNum)",0
+DerOverCreditLimit,SLCustomers,0,,,,Byte,(CASE WHEN (DerOrderBal > CreditLimit AND CreditLimit <>0) THEN 1 ELSE 0 END),0
+DerOverdueContracts,SLCustomers,0,,,,Decimal,"(SELECT  SUM(CASE WHEN CHARINDEX( ar.type, 'PC') > 0 THEN (ar.amount * -1) ELSE ar.amount END ) FROM dbo.fs_con_inv_hdr cinv LEFT JOIN dbo.artran ar ON ar.inv_num = cinv.inv_num WHERE cinv.cust_num = CustNum)",0
+DerPhone,SLCustomers,0,,,,String,"CASE WHEN CustSeq = 0 THEN Phone_1 ELSE Phone_2 END
+",0
+DerPostedBal,SLCustomers,0,DerPostedBal,,,Decimal,,0
+DerQCCustomerExists,SLCustomers,0,,,Byte,Byte,CASE WHEN EXISTS(SELECT 1 FROM RS_QCCust WHERE  RS_QCCust.cust_num = CustNum) THEN 1 ELSE 0 END,0
+DerSalesLstYr,SLCustomers,0,,,,Decimal,NULL,0
+DerSalesmanEmail,SLCustomers,0,,,,String,"COALESCE(VendExternalEmailAddr,SlsmanEmailAddr)",0
+DerSalesmanName,SLCustomers,0,,,,String,"COALESCE(VendName,DerEmplName)",0
+DerSalesmanPhone,SLCustomers,0,,,,String,"COALESCE(VendPhone,BusinessPhone)",0
+DerSalesPtd,SLCustomers,0,,,,Decimal,NULL,0
+DerSalesYtd,SLCustomers,0,,,,Decimal,NULL,0
+DerShipToAddress,SLCustomers,0,,,,String,"CASE WHEN CustNum <> '' AND CustNum IS NOT NULL THEN dbo.FormatAddress(CustNum, CustSeq) ELSE '' END",0
+DerTotalSalesYTD,Chap_SLCustomers,2,,,Decimal,Decimal,(select sum(cma.sales_ytd) from customer_mst_all  cma where cma.cust_num = CustNum),0
+DerUsername,SLCustomers,0,,,,String,dbo.UsernameSp(),0
+DeviceId,MobileCustomers,1,device_id,,GUID,GUID,,0
+Directions,SLCustomers,0,directions,,,String,,0
+DiscLstYr,SLCustomers,0,disc_lst_yr,,,Decimal,,0
+DiscYtd,SLCustomers,0,disc_ytd,,,Decimal,,0
+DoInvoice,SLCustomers,0,do_invoice,,,String,,0
+DraftPrintFlag,SLCustomers,0,draft_print_flag,,,Byte,,0
+DunningGroup,SLCustomers,0,dunning_group,,,String,,0
+DunningGroupDescription,SLCustomers,0,description,,,String,,0
+DunningStage,SLCustomers,0,dunning_stage,,,Long Integer,,0
+EcCode,SLCustomers,0,ec_code,,,String,,0
+EdiCust,SLCustomers,0,edi_cust,,,Byte,,0
+Einvoice,SLCustomers,0,einvoice,,,Byte,,0
+EmplName,SLCustomers,0,name,,,String,,0
+Emplsname,SLCustomers,0,sname,,,String,,0
+EndUserType,SLCustomers,0,end_user_type,,,String,,0
+EndUserTypeDesc,SLCustomers,0,description,,,String,,0
+EtpArAcct,SLCustomers,0,ar_acct,,,String,,0
+EtpArAcctUnit1,SLCustomers,0,ar_acct_unit1,,,String,,0
+EtpArAcctUnit2,SLCustomers,0,ar_acct_unit2,,,String,,0
+EtpArAcctUnit3,SLCustomers,0,ar_acct_unit3,,,String,,0
+EtpArAcctUnit4,SLCustomers,0,ar_acct_unit4,,,String,,0
+ExportType,SLCustomers,0,export_type,,,String,,0
+ExternalEmailAddr,SLCustomers,0,external_email_addr,,,String,,0
+ExternalEntity,SLCustomers,0,external_entity,,,String,,0
+FaxNum,SLCustomers,0,fax_num,,,String,,0
+FinChg,SLCustomers,0,fin_chg,,,Byte,,0
+HistDaysOs,SLCustomers,0,hist_days_os,,,Long Integer,,0
+IncludeOrdersInTaxRpt,SLCustomers,0,include_orders_in_tax_rpt,,,Byte,,0
+IncludeTaxInPrice,SLCustomers,0,include_tax_in_price,,,Byte,,0
+InternalEmailAddr,SLCustomers,0,internal_email_addr,,,String,,0
+InternationalBankAccount,SLCustomers,0,international_bank_account,,,String,,0
+InternetUrl,SLCustomers,0,internet_url,,,String,,0
+InvBatchCutoffDay,SLCustomers,0,inv_batch_cutoff_day,,,Byte,,0
+InvCategory,SLCustomers,0,inv_category,,,String,,0
+InvCategoryDescription,SLCustomers,0,description,,,String,,0
+InvFreq,SLCustomers,0,inv_freq,,,String,,0
+InWorkflow,SLCustomers,0,InWorkflow,,,Byte,,0
+JP_ConsumptionTaxHeaderLineMethod,SLCustomers,0,JP_consumption_tax_header_line_method,,,String,,0
+JP_ConsumptionTaxRoundMethod,SLCustomers,0,JP_consumption_tax_round_method,,,String,,0
+LangCode,SLCustomers,0,lang_code,,,String,,0
+LargDaysOs,SLCustomers,0,larg_days_os,,,Long Integer,,0
+LargeBalOs,SLCustomers,0,large_bal_os,,,Decimal,,0
+LastBalOs,SLCustomers,0,last_bal_os,,,Decimal,,0
+LastDaysOs,SLCustomers,0,last_days_os,,,Short Integer,,0
+LastDunningDate,SLCustomers,0,last_dunning_date,,,Date,,0
+LastFinChg,SLCustomers,0,last_fin_chg,,,Date,,0
+LastInv,SLCustomers,0,last_inv,,,Date,,0
+LastPaid,SLCustomers,0,last_paid,,,Date,,0
+LCDTCOShipTo_DTIcon,LCDTSLCustomers-COShipTo-DTIcon,4,,,String,String,"dbo.lc_dt_GetDTIconFN('ShipTos', CustNum, CustSeq, NULL, NULL, NULL, NULL)",0
+LCDTCOShipToDynamicAssociations,LCDTSLCustomers-COShipTo-DTIcon,4,,,Byte,Byte,dbo.lc_dt_GetDynamicAssociationsFn(),0
+LCDTCOShipToDynamicVirtuals,LCDTSLCustomers-COShipTo-DTIcon,4,,,Byte,Byte,dbo.lc_dt_GetDynamicVirtualFn(),0
+LCDTCOShipToRunVirtsOnClient,LCDTSLCustomers-COShipTo-DTIcon,4,,,String,String,dbo.lc_dt_GetRunVirtsOnClientFN(),0
+LCDTCustomer_DTIcon,LCDTSLCustomers-Customer-DTIcon,3,,,String,String,"dbo.lc_dt_GetDTIconFN('Customers', CustNum, NULL, NULL, NULL, NULL, NULL)",0
+LCDTCustomerDynamicAssociations,LCDTSLCustomers-Customer-DTIcon,3,,,Byte,Byte,dbo.lc_dt_GetDynamicAssociationsFn(),0
+LCDTCustomerDynamicVirtuals,LCDTSLCustomers-Customer-DTIcon,3,,,Byte,Byte,dbo.lc_dt_GetDynamicVirtualFn(),0
+LCDTCustomerRunVirtsOnClient,LCDTSLCustomers-Customer-DTIcon,3,,,String,String,dbo.lc_dt_GetRunVirtsOnClientFN(),0
+LCPFIsDOD,LCPFSLCustomersIsDOD,1,ref_num,,String,String,,0
+LcrReqd,SLCustomers,0,lcr_reqd,,,Byte,,0
+Logifld,SLCustomers,0,logifld,,,Byte,,0
+LongName,SLCustomers,0,long_name,,,String,,0
+Name,SLCustomers,0,name,,,String,,0
+NoteExistsFlag,SLCustomers,0,NoteExistsFlag,,,Byte,,0
+NumberOfEmployees,SLCustomers,0,number_of_employees,,,Long Integer,,0
+NumInvoices,SLCustomers,0,num_invoices,,,Long Integer,,0
+NumPeriods,SLCustomers,0,num_periods,,,Short Integer,,0
+OnePackInv,SLCustomers,0,one_pack_inv,,,Byte,,0
+OneShipmentInv,SLCustomers,0,one_inv_per_shipment_per_order,,,Byte,,0
+OrderCreditLimit,SLCustomers,0,order_credit_limit,,,Decimal,,0
+Outside,SLCustomers,0,outside,,,Byte,,0
+ParSite,SLCustomers,0,site,,,String,,0
+PartnerId,SLCustomers,0,partner_id,,,NumSortedString,,0
+PayDay,SLCustomers,0,pay_day,,Byte,Byte,,0
+PayDayEndTime_1,SLCustomers,0,pay_day_end_time##1,,,Date,,0
+PayDayEndTime_2,SLCustomers,0,pay_day_end_time##2,,,Date,,0
+PayDayStartTime_1,SLCustomers,0,pay_day_start_time##1,,,Date,,0
+PayDayStartTime_2,SLCustomers,0,pay_day_start_time##2,,,Date,,0
+PayType,SLCustomers,0,pay_type,,,String,,0
+Phone_1,SLCustomers,0,phone##1,,,String,,0
+Phone_2,SLCustomers,0,phone##2,,,String,,0
+Phone_3,SLCustomers,0,phone##3,,,String,,0
+Picture,SLCustomers,0,picture,,,Binary,,0
+PictureExistsFlag,SLCustomers,0,,,,Byte,CASE WHEN Picture IS NULL THEN 0 ELSE 1 END,0
+Pricecode,SLCustomers,0,pricecode,,,String,,0
+PricecodeDescription,SLCustomers,0,description,,,String,,0
+PrintPackInv,SLCustomers,0,print_pack_inv,,,Byte,,0
+ProcessInd,SLCustomers,0,process_ind,,,String,,0
+ProspectId,SLCustomers,0,prospect_id,,,NumSortedString,,0
+RcvInternalEmail,SLCustomers,0,rcv_internal_email,,,Byte,,0
+RecordDate,SLCustomers,0,RecordDate,,,Date,,0
+RefNum,SLCustomers,0,ref_num,,,NumSortedString,,0
+Region,SLCustomers,0,region,,,String,,0
+ResellerSlsman,SLCustomers,0,reseller_slsman,,,String,,0
+RevisionDay,SLCustomers,0,revision_day,,Byte,Byte,,0
+RevisionDayEndTime_1,SLCustomers,0,revision_day_end_time##1,,,Date,,0
+RevisionDayEndTime_2,SLCustomers,0,revision_day_end_time##2,,,Date,,0
+RevisionDayStartTime_1,SLCustomers,0,revision_day_start_time##1,,,Date,,0
+RevisionDayStartTime_2,SLCustomers,0,revision_day_start_time##2,,,Date,,0
+RowPointer,SLCustomers,0,RowPointer,,,GUID,,0
+SalesLstYr,SLCustomers,0,sales_lst_yr,,,Decimal,,0
+SalesPtd,SLCustomers,0,sales_ptd,,,Decimal,,0
+SalesTeamID,SLCustomers,0,sales_team_id,,,NumSortedString,,0
+SalesTeamName,SLCustomers,0,name,,,String,,0
+SalesYtd,SLCustomers,0,sales_ytd,,,Decimal,,0
+SendCustomerEmail,SLCustomers,0,send_customer_email,,,Byte,,0
+SepaCoreDirectDebit,SLCustomers,0,sepa_core_direct_debit,,,Byte,,0
+SepaMandateCreationDate,SLCustomers,0,sepa_mandate_creation_date,,,Date,,0
+SepaMandateExpirationDate,SLCustomers,0,sepa_mandate_expiration_date,,,Date,,0
+SepaMandateLastUsedDate,SLCustomers,0,sepa_mandate_last_used_date,,,Date,,0
+SepaMandateRef,SLCustomers,0,sepa_mandate_ref,,,String,,0
+SepaOneOffMandate,SLCustomers,0,sepa_one_off_mandate,,,Byte,,0
+ShipCode,SLCustomers,0,ship_code,,,String,,0
+ShipCodeDescription,SLCustomers,0,description,,,String,,0
+ShipEarly,SLCustomers,0,ship_early,,,Byte,,0
+ShipHold,SLCustomers,0,ship_hold,,,Byte,,0
+ShipMethodGroup,SLCustomers,0,ship_method_group,,,String,,0
+ShipPartial,SLCustomers,0,ship_partial,,,Byte,,0
+ShippedOverOrderedQtyTolerance,SLCustomers,0,shipped_over_ordered_qty_tolerance,,,Decimal,,0
+ShippedUnderOrderedQtyTolerance,SLCustomers,0,shipped_under_ordered_qty_tolerance,,,Decimal,,0
+ShipSite,SLCustomers,0,ship_site,,,String,,0
+ShipToEmail,SLCustomers,0,ship_to_email,,,String,,0
+ShowInDropDownList,SLCustomers,0,show_in_drop_down_list,,,Byte,,0
+ShowInShipToDropDownList,SLCustomers,0,show_in_ship_to_drop_down_list,,,Byte,,0
+SICCode,SLCustomers,0,sic_code,,,String,,0
+SLCoitems,SLCustomers,0,,SL.SLCoitems,,,,0
+SLCoitemsEstimates,SLCustomers,0,,SL.SLCoitems,,,,0
+SLCoitemsEstimatesFiltered,SLCustomers,0,,SL.SLCoitems,,,,0
+SLCoitemsFiltered,SLCustomers,0,,SL.SLCoitems,,,,0
+SLCos,SLCustomers,0,,SL.SLCos,,,,0
+SLCosEstimates,SLCustomers,0,,SL.SLCos,,,,0
+SLCustAddrs,SLCustomers,0,,SLCustAddrs,,,CustNum=CustNum,0
+SLCustlogs,SLCustomers,0,,SL.SLCustlogs,,,,0
+SLCustomerContacts,SLCustomers,0,,SLCustomerContacts,,,,0
+SLCustomerCurrency,SLCustomers,0,,SLCustomerCurrency,,,CustNum=CustNum,0
+SLCustomers,SLCustomers,0,,SL.SLCustomers,,,,0
+SLDoSeqs,SLCustomers,0,,SL.SLDoSeqs,,,,0
+SLItemcusts,SLCustomers,0,,SL.SLItemcusts,,,,0
+SLRS_QCCusts,SLCustomers,0,,RS_QCCusts,,,CustNum=CustNum,0
+Slsman,SLCustomers,0,slsman,,,String,,0
+SlsmanEmailAddr,SLCustomers,0,email_addr,,,String,,0
+SLVatProceduralMarkingDefaults,SLCustomers,0,,SLVatProceduralMarkingDefaults,,,"CustNum=RefNum,RefType='C'",0
+Stat,SLCustomers,0,stat,,,String,,0
+StatActiveForOrderProcessing,SLCustomers,0,active_for_order_processing,,,Byte,,0
+State,SLCustomers,0,state,,,String,,0
+StateCode,SLCustomers,0,state_code,,,String,,0
+StateCycle,SLCustomers,0,state_cycle,,,String,,0
+StateDescription,SLCustomers,0,description,,,String,,0
+Summarize,SLCustomers,0,summarize,,,Byte,,0
+TaxCode1,SLCustomers,0,tax_code1,,,String,,0
+TaxCode1Description,SLCustomers,0,description,,,String,,0
+TaxCode1Type,SLCustomers,0,tax_code_type,,,String,,0
+TaxCode2,SLCustomers,0,tax_code2,,,String,,0
+TaxCode2Description,SLCustomers,0,description,,,String,,0
+TaxRegNum1,SLCustomers,0,tax_reg_num1,,,String,,0
+TaxRegNum1ExpDate,SLCustomers,0,tax_reg_num1_exp_date,,,Date,,0
+TaxRegNum2,SLCustomers,0,tax_reg_num2,,,String,,0
+TelexNum,SLCustomers,0,telex_num,,,String,,0
+TermDescription,SLCustomers,0,description,,,String,,0
+TermsCode,SLCustomers,0,terms_code,,,String,,0
+TerrDescription,SLCustomers,0,territory,,,String,,0
+TerritoryCode,SLCustomers,0,territory_code,,,String,,0
+TransNat,SLCustomers,0,trans_nat,,,String,,0
+TransNat2,SLCustomers,0,trans_nat_2,,,String,,0
+TransNat2Description,SLCustomers,0,description,,,String,,0
+TransNatDescription,SLCustomers,0,description,,,String,,0
+UbAgingAmount,SLCustomers,0,,,,Decimal,,0
+UbAgingDays,SLCustomers,0,,,,String,,0
+UbAgingTitle,SLCustomers,0,,,,String,,0
+UBRowPointer,SLCustomers,0,,,,GUID,,0
+UbSelectedCustNum,SLCustomers,0,,,,Byte,,0
+UbShipTo,SLCustomers,0,,,,Long Integer,,0
+Uf_Addr_LastModified,Chap_SLCustomers,2,Uf_Addr_LastModified,,Date,Date,,0
+Uf_SalesRegion,Chap_SLCustomers,2,Uf_SalesRegion,,String,String,,0
+UseExchRate,SLCustomers,0,use_exch_rate,,,Byte,,0
+UseLongName,SLCustomers,0,use_long_name,,,Byte,,0
+UseRevisionPayDays,SLCustomers,0,use_revision_pay_days,,,Byte,,0
+VendExternalEmailAddr,SLCustomers,0,external_email_addr,,,String,,0
+VendName,SLCustomers,0,name,,,String,,0
+VendPhone,SLCustomers,0,phone,,,String,,0
+VendVendNum,SLCustomers,0,vend_num,,,NumSortedString,,0
+VrtxGeoCode,SLCustomers,0,vrtx_geocode,,,String,,0
+Whse,SLCustomers,0,whse,,,String,,0
+Zip,SLCustomers,0,zip,,,String,,0

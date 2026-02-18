@@ -1,0 +1,62 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+CadrName,SLCoShipAlls,0,name,,,String,,0
+CarrierName,SLCoShipAlls,0,carrier_name,,,String,,0
+CoCustNum,SLCoShipAlls,0,cust_num,,,NumSortedString,,0
+CoiDescription,SLCoShipAlls,0,description,,,String,,0
+CoiDueDate,SLCoShipAlls,0,due_date,,,Date,,0
+CoiItem,SLCoShipAlls,0,item,,,String,,0
+CoiQtyOrderedConv,SLCoShipAlls,0,qty_ordered_conv,,,Decimal,,0
+CoiQtyReady,SLCoShipAlls,0,qty_ready,,,Decimal,,0
+CoiReleaseDate,SLCoShipAlls,0,release_date,,,Date,,0
+CoiUM,SLCoShipAlls,0,u_m,,,String,,0
+CoLine,SLCoShipAlls,0,co_line,,,Short Integer,,0
+CoNum,SLCoShipAlls,0,co_num,,,NumSortedString,,0
+CoOrderDate,SLCoShipAlls,0,order_date,,,Date,,0
+CoRelease,SLCoShipAlls,0,co_release,,,Long Integer,,0
+CreateDate,SLCoShipAlls,0,CreateDate,,,Date,,0
+CreatedBy,SLCoShipAlls,0,CreatedBy,,,String,,0
+DateSeq,SLCoShipAlls,0,date_seq,,,Short Integer,,0
+DerCarrier,SLCoShipAlls,0,,,,String,CASE WHEN DoNum IS NOT NULL THEN DoCarrier ELSE CarrierName END,0
+DerCarrierNumber,SLCoShipAlls,0,,,,String,CASE WHEN DoNum IS NOT NULL THEN DoCarrierNum ELSE ShpCarrierCode END,0
+DerContainer,SLCoShipAlls,0,,,,String,CASE WHEN DoNum IS NOT NULL THEN DoContainer ELSE ShpContainer END,0
+DerPickupDate,SLCoShipAlls,0,,,,Date,CASE WHEN DoNum IS NOT NULL THEN DoPickupDate ELSE ShpPickupDate END,0
+DerProNumber,SLCoShipAlls,0,,,,String,CASE WHEN DoNum IS NOT NULL THEN DoProNumber ELSE ShpProNumber END,0
+DerQtyReadyConv,SLCoShipAlls,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           CoiQtyReady, 
+           ISNULL(dbo.Getumcf(CoiUM, CoiItem, CoCustNum, 'C'), 1),
+          'From Base')
+        , 0)
+",0
+DerQtyReturnedConv,SLCoShipAlls,0,,,,Decimal,"ISNULL(dbo.UomConvQty( QtyReturned, ISNULL(dbo.Getumcf(CoiUM, CoiItem, CoCustNum, 'C'), 1), 'From Base') , 0)",0
+DerQtyShippedConv,SLCoShipAlls,0,,,,Decimal,"ISNULL(dbo.UomConvQty( QtyShipped, ISNULL(dbo.Getumcf(CoiUM, CoiItem, CoCustNum, 'C'), 1), 'From Base') , 0)",0
+DerRoute,SLCoShipAlls,0,,,,String,CASE WHEN DoNum IS NOT NULL THEN DoRoute ELSE ShpRoute END,0
+DerVehicleNumber,SLCoShipAlls,0,,,,String,CASE WHEN DoNum IS NOT NULL THEN DoVehNum ELSE ShpVehNum END,0
+DoCarrier,SLCoShipAlls,0,carrier,,,String,,0
+DoCarrierNum,SLCoShipAlls,0,carrier_num,,,String,,0
+DoContainer,SLCoShipAlls,0,container,,,String,,0
+DoLine,SLCoShipAlls,0,do_line,,,Short Integer,,0
+DoNum,SLCoShipAlls,0,do_num,,,NumSortedString,,0
+DoPickupDate,SLCoShipAlls,0,pickup_date,,,Date,,0
+DoProNumber,SLCoShipAlls,0,pro_number,,,String,,0
+DoRoute,SLCoShipAlls,0,route,,,String,,0
+DoSeq,SLCoShipAlls,0,do_seq,,,Long Integer,,0
+DoVehNum,SLCoShipAlls,0,veh_num,,,String,,0
+ExternalShipmentDocId,SLCoShipAlls,0,external_shipment_doc_id,,,String,,0
+NoteExistsFlag,SLCoShipAlls,0,NoteExistsFlag,,,Byte,,0
+QtyInvoiced,SLCoShipAlls,0,qty_invoiced,,,Decimal,,0
+QtyReturned,SLCoShipAlls,0,qty_returned,,,Decimal,,0
+QtyShipped,SLCoShipAlls,0,qty_shipped,,,Decimal,,0
+RecordDate,SLCoShipAlls,0,RecordDate,,,Date,,0
+RowPointer,SLCoShipAlls,0,RowPointer,,,GUID,,0
+ShipDate,SLCoShipAlls,0,ship_date,,,Date,,0
+ShipmentId,SLCoShipAlls,0,shipment_id,,,Decimal,,0
+ShpCarrierCode,SLCoShipAlls,0,carrier_code,,String,String,,0
+ShpContainer,SLCoShipAlls,0,container,,,String,,0
+ShpPickupDate,SLCoShipAlls,0,pickup_date,,,Date,,0
+ShpProNumber,SLCoShipAlls,0,pro_number,,,String,,0
+ShpRoute,SLCoShipAlls,0,route,,,String,,0
+ShpVehNum,SLCoShipAlls,0,veh_num,,,String,,0
+SiteRef,SLCoShipAlls,0,site_ref,,,String,,0
+TrackingNumber,SLCoShipAlls,0,tracking_number,,,String,,0
+TrackingURL,SLCoShipAlls,0,tracking_url,,,String,,0
+UpdatedBy,SLCoShipAlls,0,UpdatedBy,,,String,,0

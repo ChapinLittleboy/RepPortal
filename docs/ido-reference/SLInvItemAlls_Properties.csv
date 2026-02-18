@@ -1,0 +1,63 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+CoLine,SLInvItemAlls,0,co_line,,,Short Integer,,0
+CoNum,SLInvItemAlls,0,co_num,,,NumSortedString,,0
+CoRelease,SLInvItemAlls,0,co_release,,,Long Integer,,0
+CurrAmtFormat,SLInvItemAlls,0,amt_format,,,String,,0
+CurrCstPrcFormat,SLInvItemAlls,0,cst_prc_format,,,String,,0
+CurrPlaces,SLInvItemAlls,0,places,,,Byte,,0
+CustaddrCurrCode,SLInvItemAlls,0,curr_code,,,String,,0
+CustaddrCustNum,SLInvItemAlls,0,cust_num,,,NumSortedString,,0
+CustaddrName,SLInvItemAlls,0,name,,,String,,0
+CustPo,SLInvItemAlls,0,cust_po,,,String,,0
+DerCoNum,SLInvItemAlls,0,,,,NumSortedString,"ISNULL(InvhdrCoNum , CoNum)
+",0
+DerCoNumXref,SLInvItemAlls,0,,,String,String,"dbo.SetCoNumXrefType(DerInvNum, DerCoNum, 1)",0
+DerCurrencyPlaces,SLInvItemAlls,0,,,,Byte,"ISNULL(CurrPlaces, 
+                ISNULL( (SELECT cur2.places FROM dbo.currency cur2 WHERE cur2.curr_code = CustaddrCurrCode) ,
+(SELECT cur1.places FROM dbo.currparms, currency cur1 WHERE cur1.curr_code = currparms.curr_code) 
+                             )   
+              )  
+",0
+DerCustPo,SLInvItemAlls,0,,,,String,"ISNULL(CustPo,InvhdrCustPo)",0
+DerDescription,SLInvItemAlls,0,,,,String,"isnull((select item.description from dbo.item_all item where item.item = invitm.item and item.site_ref=invitm.site_ref), isnull((select coitem.description from dbo.coitem_all coitem where coitem.co_num = invitm.co_num
+   and coitem.co_line = invitm.co_line
+   and coitem.co_release = invitm.co_release
+   and coitem.site_ref=invitm.site_ref),
+   (select citemh.description from dbo.citemh_all citemh where citemh.co_num = invitm.co_num
+   and citemh.co_line = invitm.co_line
+   and citemh.co_release = invitm.co_release 
+   and citemh.site_ref=invitm.site_ref)))",0
+DerExtendedPrice,SLInvItemAlls,0,,,,Decimal,"Case When InvhdrBillType = 'P'  then 
+ROUND(Price , ISNULL(CurrPlaces,DerCurrencyPlaces) )  else
+ROUND( (QtyInvoiced * Price) , ISNULL(CurrPlaces,DerCurrencyPlaces) )
+End",0
+DerInvDate,SLInvItemAlls,0,,,,String,"convert(char,InvhdrInvDate,101)",0
+DerInvHdrProFormaInvNum,SLInvItemAlls,0,,,,NumSortedString,"(select pro_forma_inv_num from pro_forma_inv_hdr where inv_num = ISNULL(InvNum, ItemInvNum))",0
+DerInvhdrSlsmanName,SLInvItemAlls,0,,,,String,dbo.DerSlsmanName(Slsman),0
+DerInvNum,SLInvItemAlls,0,,,,NumSortedString,"ISNULL(InvNum, ItemInvNum)",0
+InvhdrBillType,SLInvItemAlls,0,bill_type,,,String,,0
+InvhdrCoNum,SLInvItemAlls,0,co_num,,,NumSortedString,,0
+InvhdrCustNum,SLInvItemAlls,0,cust_num,,,NumSortedString,,0
+InvhdrCustPo,SLInvItemAlls,0,cust_po,,,String,,0
+InvHdrCustSeq,SLInvItemAlls,0,cust_seq,,,Long Integer,,0
+InvhdrExchRate,SLInvItemAlls,0,exch_rate,,,Decimal,,0
+InvhdrFreight,SLInvItemAlls,0,freight,,,Decimal,,0
+InvhdrInvDate,SLInvItemAlls,0,inv_date,,,Date,,0
+InvhdrMiscCharges,SLInvItemAlls,0,misc_charges,,,Decimal,,0
+InvhdrPrepaidAmt,SLInvItemAlls,0,prepaid_amt,,,Decimal,,0
+InvhdrPrice,SLInvItemAlls,0,price,,,Decimal,,0
+InvhdrSiteRef,SLInvItemAlls,0,site_ref,,,String,,0
+InvhdrSlsman,SLInvItemAlls,0,slsman,,,String,,0
+InvLine,SLInvItemAlls,0,inv_line,,,Long Integer,,0
+InvNum,SLInvItemAlls,0,inv_num,,,NumSortedString,,0
+InvSeq,SLInvItemAlls,0,inv_seq,,,Long Integer,,0
+Item,SLInvItemAlls,0,item,,,String,,0
+ItemInvNum,SLInvItemAlls,0,inv_num,,,NumSortedString,,0
+NoteExistsFlag,SLInvItemAlls,0,NoteExistsFlag,,,Byte,,0
+Price,SLInvItemAlls,0,price,,,Decimal,,0
+ProcessInd,SLInvItemAlls,0,process_ind,,,String,,0
+QtyInvoiced,SLInvItemAlls,0,qty_invoiced,,,Decimal,,0
+RecordDate,SLInvItemAlls,0,RecordDate,,,Date,,0
+RowPointer,SLInvItemAlls,0,RowPointer,,,GUID,,0
+SiteRef,SLInvItemAlls,0,site_ref,,,String,,0
+SitSiteName,SLInvItemAlls,0,site_name,,,String,,0

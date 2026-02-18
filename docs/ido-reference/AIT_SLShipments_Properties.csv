@@ -1,0 +1,26 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+AspCreateDate,AIT_SLShipments,0,CreateDate,,,Date,,0
+AspCreatedBy,AIT_SLShipments,0,CreatedBy,,,String,,0
+AspInWorkflow,AIT_SLShipments,0,InWorkflow,,,Byte,,0
+AspNoteExistsFlag,AIT_SLShipments,0,NoteExistsFlag,,,Byte,,0
+AspRecordDate,AIT_SLShipments,0,RecordDate,,Date,Date,,0
+AspRowPointer,AIT_SLShipments,0,RowPointer,,,GUID,,0
+AspUpdatedBy,AIT_SLShipments,0,UpdatedBy,,,String,,0
+carrier_residential_indicator,AIT_SLShipments,0,carrier_residential_indicator,,,Byte,,0
+COD,AIT_SLShipments,0,COD,,,Byte,,0
+CODCollectionType,AIT_SLShipments,0,CODCollectionType,,String,String,,0
+DerHasCOCreditHold,AIT_SLShipments,0,,,,Byte,"case when exists(select 1 from shipment ship left join shipment_line sl  on ship.shipment_id = sl.shipment_id  left join pick_list_ref plr on plr.pick_list_id = sl.pick_list_id and plr.[sequence] = sl.pick_list_ref_sequence  inner join co co on co.co_num = ISNULL(plr.ref_num, sl.ref_num)  where ship.shipment_id = ShipmentId   and co.credit_hold = 1) then 1 else 0 end ",0
+DerHasTrackingNumber,AIT_SLShipments,0,,,,Byte,CASE WHEN EXISTS(select 1 from AIT_shipment_package pkg where pkg.shipment_id = ShipmentId and pkg.TrackingNumber is not null)  THEN 1 ELSE 0 END ,0
+freight_rule,AIT_SLShipments,0,freight_rule,,String,String,,0
+Insured,AIT_SLShipments,0,Insured,,,Byte,,0
+International,AIT_SLShipments,0,International,,,Byte,,0
+SatDelivery,AIT_SLShipments,0,SatDelivery,,,Byte,,0
+ScaleWeight,AIT_SLShipments,0,ScaleWeight,,,Decimal,,0
+ScaleWeightUM,AIT_SLShipments,0,ScaleWeightUM,,String,String,,0
+SignatureReq,AIT_SLShipments,0,SignatureReq,,,Byte,,0
+SunHolDelivery,AIT_SLShipments,0,SunHolDelivery,,String,String,,0
+UB_CSIConfigID,AIT_SLShipments,0,,,Long Integer,Long Integer,,0
+UB_KioskID,AIT_SLShipments,0,,,Long Integer,Long Integer,,0
+UB_PrinterID,AIT_SLShipments,0,,,Long Integer,Long Integer,,0
+UB_ScaleID,AIT_SLShipments,0,,,Long Integer,Long Integer,,0
+UBShipDescription,AIT_SLShipments,0,,,String,String,,0

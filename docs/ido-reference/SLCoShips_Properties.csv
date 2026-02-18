@@ -1,0 +1,197 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+BolNumber,Chap_SLCoShips,1,,,Long Integer,Long Integer,"(
+    SELECT TOP (1)
+        ref.shipment_id
+    FROM AIT_SS_BOL_ref_charges_mst ref
+    INNER JOIN AIT_SS_BOL_mst b
+        ON b.shipment_id = ref.shipment_id
+    WHERE ref.ref_num = CoNum
+      AND b.ship_date >= DATEADD(SECOND, -5, ShipDate)
+      AND b.ship_date <= DATEADD(SECOND,  5, ShipDate)
+    ORDER BY ABS(DATEDIFF(SECOND, b.ship_date, ShipDate))
+)",0
+ByCons,SLCoShips,0,by_cons,,,Byte,,0
+CadrCurrCode,SLCoShips,0,curr_code,,,String,,0
+CadrName,SLCoShips,0,name,,,String,,0
+CarrierName,SLCoShips,0,carrier_name,,,String,,0
+CoCurrCode,SLCoShips,0,curr_code,,,String,,0
+CoCustNum,SLCoShips,0,cust_num,,,NumSortedString,,0
+CoCustPo,SLCoShips,0,cust_po,,,String,,0
+CoCustSeq,SLCoShips,0,cust_seq,,,Long Integer,,0
+CoExchRate,SLCoShips,0,exch_rate,,,Decimal,,0
+CoFixedRate,SLCoShips,0,fixed_rate,,,Byte,,0
+CohShipmentApprovalRequired,SLCoShips,0,shipment_approval_required,,,Byte,,0
+CoiCustItem,SLCoShips,0,cust_item,,,String,,0
+CoiCustNum,SLCoShips,0,cust_num,,,NumSortedString,,0
+CoiCustPo,SLCoShips,0,cust_po,,,String,,0
+CoiCustSeq,SLCoShips,0,cust_seq,,,Long Integer,,0
+CoiDescription,SLCoShips,0,description,,,String,,0
+CoiDueDate,SLCoShips,0,due_date,,,Date,,0
+CoihDescription,SLCoShips,0,description,,,String,,0
+CoihDueDate,SLCoShips,0,due_date,,,Date,,0
+CoihItem,SLCoShips,0,item,,,String,,0
+CoihQtyOrderedConv,SLCoShips,0,qty_ordered_conv,,,Decimal,,0
+CoihReleaseDate,SLCoShips,0,release_date,,,Date,,0
+CoihStat,SLCoShips,0,stat,,,String,,0
+CoihUM,SLCoShips,0,u_m,,,String,,0
+CoiItem,SLCoShips,0,item,,,String,,0
+CoiOrCoihItem,SLCoShips,0,,,,String,"ISNULL( CoiItem, CoihItem )",0
+CoiPrice,SLCoShips,0,price,,,Decimal,,0
+CoiQtyOrderedConv,SLCoShips,0,qty_ordered_conv,,,Decimal,,0
+CoiQtyReady,SLCoShips,0,qty_ready,,,Decimal,,0
+CoiReleaseDate,SLCoShips,0,release_date,,,Date,,0
+CoiStat,SLCoShips,0,stat,,,String,,0
+CoiUM,SLCoShips,0,u_m,,,String,,0
+CoLine,SLCoShips,0,co_line,,,Short Integer,,0
+CoNum,SLCoShips,0,co_num,,,NumSortedString,,0
+CoOrCoiCustPo,SLCoShips,0,,,,String,"ISNULL(CoiCustPo, CoCustPo)",0
+CoOrderDate,SLCoShips,0,order_date,,,Date,,0
+CoRelease,SLCoShips,0,co_release,,,Long Integer,,0
+CoShipmentApprovalRequired,SLCoShips,0,shipment_approval_required,,,Byte,,0
+CoSlsman,SLCoShips,0,slsman,,,String,,0
+Cost,SLCoShips,0,cost,,,Decimal,,0
+CoType,SLCoShips,0,type,,,String,,0
+CoUseExchRate,SLCoShips,0,use_exch_rate,,,Byte,,0
+CurrAmtFormat,SLCoShips,0,amt_format,,,String,,0
+CurrAmtTotFormat,SLCoShips,0,amt_tot_format,,,String,,0
+CurrCstPrcFormat,SLCoShips,0,cst_prc_format,,,String,,0
+CurrDescription,SLCoShips,0,description,,,String,,0
+CurrPlaces,SLCoShips,0,places,,,Byte,,0
+Cus0Name,Chap_SLCoShips,1,,,String,String,(Select Name from custaddr_mst where cust_num = CustNum and cust_seq=0),0
+DateSeq,SLCoShips,0,date_seq,,,Short Integer,,0
+DerApprovalDate,SLCoShips,0,,,,Date,GetDate(),0
+DerBillToState,Chap_SLCoShips,1,,,String,String,(Select State from custaddr_mst where cust_num = CustNum and cust_seq=0),0
+DerCarrier,SLCoShips,0,,,,String,CASE WHEN DoNum IS NOT NULL THEN DoCarrier ELSE CarrierName END,0
+DerCarrierNumber,SLCoShips,0,,,,String,CASE WHEN DoNum IS NOT NULL THEN DoCarrierNum ELSE ShpCarrierCode END,0
+DerCoiCustNum,SLCoShips,0,,,,NumSortedString,"ISNULL(CoiCustNum, CoCustNum)",0
+DerCoiCustSeq,SLCoShips,0,,,,Long Integer,CASE WHEN CoiCustNum IS NULL THEN CoCustSeq ELSE CoiCustSeq END,0
+DerContainer,SLCoShips,0,,,,,CASE WHEN DoNum IS NOT NULL THEN DoContainer ELSE ShpContainer END,0
+DerCoNumCoLine,SLCoShips,0,,,,String,"CONCAT(CoNum,  '-', CoLine)",0
+DerCoShipmentApprovalRequired,SLCoShips,0,,,,Byte,"case CoihStat
+when 'H' then
+CohShipmentApprovalRequired
+else
+CoShipmentApprovalRequired
+end",0
+DerCumulativeApprovalQty,SLCoShips,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           (Select SUM(IsNull( csal.qty_approved, 0) ) from co_ship_approval_log as csal where csal.co_num = CoNum and csal.co_line = CoLine and csal.co_release = CoRelease and csal.date_seq = DateSeq and csal.ship_date = ShipDate),
+           ISNULL(dbo.Getumcf(CoiUM, CoiItem, CoCustNum, 'C'), 1),
+          'From Base')
+        , 0)",0
+DerCurrCode,SLCoShips,0,,,,String,"ISNULL(CoCurrCode, HcoCurrCode)",0
+DerDiscPrice,Chap_SLCoShips,1,,,,Decimal,"coi.price*(100-Coalesce(NULLIF(coi.disc, 0),co.disc))/100",0
+derFamilyCode,Chap_SLCoShips,1,,,String,String,"(SELECT coalesce(Family_Code,'') FROM dbo.item WHERE Item = CoiOrCoihItem)",0
+DerHPriceConv,SLCoShips,0,,,,Decimal,"ROUND(ISNULL(dbo.UomConvAmt(
+           Price,
+           ISNULL(dbo.Getumcf(CoihUM, CoihItem, HcoCustNum, 'C'), 1),
+          'From Base')
+        , 0), HCurrPlaces)",0
+DerHQtyReturnedConv,SLCoShips,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           QtyReturned,
+           ISNULL(dbo.Getumcf(CoihUM, CoihItem, HcoCustNum, 'C'), 1),
+          'From Base')
+        , 0)",0
+DerHQtyShippedConv,SLCoShips,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           QtyShipped,
+           ISNULL(dbo.Getumcf(CoihUM, CoihItem, HcoCustNum, 'C'), 1),
+          'From Base')
+        , 0)",0
+DerHTotPrice,SLCoShips,0,,,,Decimal,"ROUND(QtyShipped * Price, HCurrPlaces)",0
+DerMaxQtyToApprove,SLCoShips,0,,,,Decimal,DerQtyShippedConv - DerCumulativeApprovalQty,0
+DerMinQtyToApprove,SLCoShips,0,,,,Decimal,DerQtyInvoicedConv - DerCumulativeApprovalQty - DerQtyReturnedConv,0
+DerNetPrice,Chap_SLCoShips,1,,,,Decimal,QtyShipped * DerDiscPrice,0
+DerPackCoNumLineRelease,SLCoShips,0,,,,String,CAST(PackNum AS NVARCHAR(30)) + '-' + CAST(CoNum AS NVARCHAR(30)) + '-' + CAST(CoLine  AS NVARCHAR(30)) + CASE WHEN CoRelease <> 0 THEN  '-' ELSE ' ' END + CASE WHEN CoRelease <> 0 THEN CAST(CoRelease AS NVARCHAR(30)) ELSE ' ' END,0
+DerPickupDate,SLCoShips,0,,,,Date,CASE WHEN DoNum IS NOT NULL THEN DoPickupDate ELSE ShpPickupDate END,0
+DerPriceConv,SLCoShips,0,,,,Decimal,"ROUND(ISNULL(dbo.UomConvAmt(
+           Price,
+           ISNULL(dbo.Getumcf(CoiUM, CoiItem, CoCustNum, 'C'), 1),
+          'From Base')
+        , 0), CurrPlaces)",0
+DerProNumber,SLCoShips,0,,,,String,CASE WHEN DoNum IS NOT NULL THEN DoProNumber ELSE ShpProNumber END,0
+DerQtyInvoicedConv,SLCoShips,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           QtyInvoiced,
+           ISNULL(dbo.Getumcf(CoiUM, CoiItem, CoCustNum, 'C'), 1),
+          'From Base')
+        , 0)",0
+DerQtyReadyConv,SLCoShips,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           CoiQtyReady,
+           ISNULL(dbo.Getumcf(CoiUM, CoiItem, CoCustNum, 'C'), 1),
+          'From Base')
+        , 0)",0
+DerQtyReturnedConv,SLCoShips,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           QtyReturned,
+           ISNULL(dbo.Getumcf(CoiUM, CoiItem, CoCustNum, 'C'), 1),
+          'From Base')
+        , 0)",0
+DerQtyShippedConv,SLCoShips,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           QtyShipped,
+           ISNULL(dbo.Getumcf(CoiUM, CoiItem, CoCustNum, 'C'), 1),
+          'From Base')
+        , 0)",0
+DerQtyToApprove,SLCoShips,0,,,,Decimal,0,0
+DerRoute,SLCoShips,0,,,,String,CASE WHEN DoNum IS NOT NULL THEN DoRoute ELSE ShpRoute END,0
+DerShipToSalesRegion,Chap_SLCoShips,1,,,String,String,(Select Uf_SalesRegion from customer_mst where cust_num = CustNum and cust_seq=CustSeq),0
+DerToInvoice,SLCoShips,0,,,,Decimal,QtyShipped + QtyReturned - QtyInvoiced,0
+DerTotPrice,SLCoShips,0,,,,Decimal,"ROUND(QtyShipped * Price, CurrPlaces)",0
+DerVehicleNumber,SLCoShips,0,,,,String,CASE WHEN DoNum IS NOT NULL THEN DoVehNum ELSE ShpVehNum END,0
+DoCarrier,SLCoShips,0,carrier,,,String,,0
+DoCarrierNum,SLCoShips,0,carrier_num,,,String,,0
+DoContainer,SLCoShips,0,container,,,String,,0
+DoLine,SLCoShips,0,do_line,,,Short Integer,,0
+DoNum,SLCoShips,0,do_num,,,NumSortedString,,0
+DoPickupDate,SLCoShips,0,pickup_date,,,Date,,0
+DoProNumber,SLCoShips,0,pro_number,,,String,,0
+DoRoute,SLCoShips,0,route,,,String,,0
+DoSeq,SLCoShips,0,do_seq,,,Long Integer,,0
+DoVehNum,SLCoShips,0,veh_num,,,String,,0
+ExternalShipmentDocId,SLCoShips,0,external_shipment_doc_id,,,String,,0
+FovhdCost,SLCoShips,0,fovhd_cost,,,Decimal,,0
+HcadrCurrCode,SLCoShips,0,curr_code,,,String,,0
+HcadrName,SLCoShips,0,name,,,String,,0
+HcoCurrCode,SLCoShips,0,curr_code,,,String,,0
+HcoCustNum,SLCoShips,0,cust_num,,,NumSortedString,,0
+HcoExchRate,SLCoShips,0,exch_rate,,,Decimal,,0
+HcoOrderDate,SLCoShips,0,order_date,,,Date,,0
+HcoType,SLCoShips,0,type,,,String,,0
+HcurrAmtFormat,SLCoShips,0,amt_format,,,String,,0
+HcurrAmtTotFormat,SLCoShips,0,amt_tot_format,,,String,,0
+HcurrCstPrcFormat,SLCoShips,0,cst_prc_format,,,String,,0
+HcurrDescription,SLCoShips,0,description,,,String,,0
+HCurrPlaces,SLCoShips,0,places,,,Byte,,0
+InvHdrProFormaInvNum,SLCoShips,0,pro_forma_inv_num,,NumSortedString,NumSortedString,,0
+InWorkflow,SLCoShips,0,InWorkflow,,,Byte,,0
+LbrCost,SLCoShips,0,lbr_cost,,,Decimal,,0
+MatlCost,SLCoShips,0,matl_cost,,,Decimal,,0
+MtkLot,SLCoShips,0,lot,,,String,,0
+NoteExistsFlag,SLCoShips,0,NoteExistsFlag,,,Byte,,0
+OutCost,SLCoShips,0,out_cost,,,Decimal,,0
+PackNum,SLCoShips,0,pack_num,,,Long Integer,,0
+PckiQtyPacked,SLCoShips,0,qty_packed,,,Decimal,,0
+PckPackDate,SLCoShips,0,pack_date,,,Date,,0
+Price,SLCoShips,0,price,,,Decimal,,0
+QtyInvoiced,SLCoShips,0,qty_invoiced,,,Decimal,,0
+QtyReturned,SLCoShips,0,qty_returned,,,Decimal,,0
+QtyShipped,SLCoShips,0,qty_shipped,,,Decimal,,0
+RecordDate,SLCoShips,0,RecordDate,,,Date,,0
+RowPointer,SLCoShips,0,RowPointer,,,GUID,,0
+Selected,SLCoShips,0,,,,Byte,0,0
+ShipDate,SLCoShips,0,ship_date,,,Date,,0
+ShipmentId,SLCoShips,0,shipment_id,,,Decimal,,0
+ShipmentLine,SLCoShips,0,shipment_line,,,Long Integer,,0
+ShipmentLot,SLCoShips,0,lot,,String,String,,0
+ShipmentPackageId,SLCoShips,0,package_id,,Long Integer,Long Integer,,0
+ShipmentQtyShipped,SLCoShips,0,qty_shipped,,,Decimal,,0
+ShipmentSeq,SLCoShips,0,shipment_seq,,,Long Integer,,0
+ShipperNum,SLCoShips,0,shipper_num,,,String,,0
+ShpCarrierCode,SLCoShips,0,carrier_code,,,String,,0
+ShpContainer,SLCoShips,0,container,,,String,,0
+ShpPickupDate,SLCoShips,0,pickup_date,,,Date,,0
+ShpProNumber,SLCoShips,0,pro_number,,,String,,0
+ShpRoute,SLCoShips,0,route,,,String,,0
+ShpVehNum,SLCoShips,0,veh_num,,,String,,0
+SupplQty,SLCoShips,0,suppl_qty,,,Decimal,,0
+TrackingNumber,SLCoShips,0,tracking_number,,,String,,0
+TrackingURL,SLCoShips,0,tracking_url,,,String,,0
+UnboundGroupFlag,SLCoShips,0,,,Byte,Byte,,0
+UnitWeight,SLCoShips,0,unit_weight,,,Decimal,,0
+VovhdCost,SLCoShips,0,vovhd_cost,,,Decimal,,0

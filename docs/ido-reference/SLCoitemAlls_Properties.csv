@@ -1,0 +1,63 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+Adr0Name,SLCoitemAlls,0,name,,,String,,0
+AdrCurrCode,SLCoitemAlls,0,curr_code,,,String,,0
+CoAllCurrCode,SLCoitemAlls,0,curr_code,,,String,,0
+CoCoCustNum,SLCoitemAlls,0,cust_num,,,NumSortedString,,0
+CoCustNum,SLCoitemAlls,0,co_cust_num,,,NumSortedString,,0
+CoDisc,SLCoitemAlls,0,disc,,,Decimal,,0
+CoExchRate,SLCoitemAlls,0,exch_rate,,,Decimal,,0
+CoLine,SLCoitemAlls,0,co_line,,,Short Integer,,0
+CoNum,SLCoitemAlls,0,co_num,,,NumSortedString,,0
+CoOrderDate,SLCoitemAlls,0,order_date,,,Date,,0
+CoOrigSite,SLCoitemAlls,0,co_orig_site,,String,String,,0
+CoRelease,SLCoitemAlls,0,co_release,,,Long Integer,,0
+CoSlsman,SLCoitemAlls,0,slsman,,String,String,,0
+CostConv,SLCoitemAlls,0,cost_conv,,,Decimal,,0
+CoType,SLCoitemAlls,0,type,,,String,,0
+CreateDate,SLCoitemAlls,0,CreateDate,,,Date,,0
+CreatedBy,SLCoitemAlls,0,CreatedBy,,,String,,0
+CurDomPlaces,SLCoitemAlls,0,places,,,Byte,,0
+CurrencyAmtFormat,SLCoitemAlls,0,amt_format,,,String,,0
+CurrencyCstPrcFormat,SLCoitemAlls,0,cst_prc_format,,,String,,0
+CurrencyPlaces,SLCoitemAlls,0,places,,,Byte,,0
+CustItem,SLCoitemAlls,0,cust_item,,,String,,0
+CustNum,SLCoitemAlls,0,cust_num,,,NumSortedString,,0
+CustSeq,SLCoitemAlls,0,cust_seq,,,Long Integer,,0
+DerCurrCode,SLCoitemAlls,0,,,String,String,CASE WHEN co.prospect_id IS NULL AND co.cust_num IS NOT NULL THEN AdrCurrCode WHEN co.prospect_id IS NOT NULL THEN (SELECT pro.curr_code FROM prospect_all pro WHERE pro.prospect_id = co.prospect_id and pro.site_ref = SiteRef) ELSE currp.curr_code END,0
+DerCurrencyPlaces,SLCoitemAlls,0,,,,Byte,"ISNULL(CurrencyPlaces, CurDomPlaces)",0
+DerCurrentDate,SLCoitemAlls,0,,,Date,Date,GetDate(),0
+DerExtInvoicedCost,SLCoitemAlls,0,,,,Decimal,"ROUND((ISNULL(DerQtyInvoicedConv, 0) * ISNULL(CostConv,0)),DerCurrencyPlaces)",0
+DerExtInvoicedPrice,SLCoitemAlls,0,,,,Decimal,"ROUND(ISNULL(DerQtyInvoicedConv, 0) * ISNULL(dbo.CurrCnvtSingleAmt2 ( DerCurrCode, 0, 0, 1, default, default, default, default, CoExchRate, default, default, default, ISNULL(PriceConv,0)),0) * (1-Disc/100.0) * (1-CoDisc/100.0), DerCurrencyPlaces)",0
+DerExtPrice,SLCoitemAlls,0,,,,Decimal,"ROUND(ISNULL(QtyOrderedConv,0) * ISNULL(PriceConv,0),DerCurrencyPlaces)",0
+DerMargin,SLCoitemAlls,0,,,,Decimal,DerExtInvoicedPrice - DerExtInvoicedCost,0
+DerMarginPercent,SLCoitemAlls,0,,,,Decimal,"CASE WHEN DerExtInvoicedPrice <> 0 
+THEN ROUND(100 * (DerExtInvoicedPrice - DerExtInvoicedCost) /DerExtInvoicedPrice, DerCurrencyPlaces)
+ELSE 0
+END",0
+DerNetPrice,SLCoitemAlls,0,,,,Decimal,"ROUND(ISNULL(QtyOrderedConv,0) * (1.0 - ISNULL(Disc,0) / 100.0) * ISNULL(PriceConv,0), DerCurrencyPlaces)",0
+DerQtyInvoicedConv,SLCoitemAlls,0,,,,Decimal,"ISNULL(dbo.UomConvQty( QtyInvoiced, ISNULL(dbo.Getumcf(UM, Item, '', 'C'), 1), 'From Base') , 0)",0
+DerQtyShippedConv,SLCoitemAlls,0,,,,Decimal,"ISNULL(dbo.UomConvQty( QtyShipped, ISNULL(dbo.Getumcf(UM, Item, '', 'C'), 1), 'From Base') , 0)",0
+Description,SLCoitemAlls,0,description,,,String,,0
+Disc,SLCoitemAlls,0,disc,,,Decimal,,0
+DueDate,SLCoitemAlls,0,due_date,,,Date,,0
+InvoiceHold,SLCoitemAlls,0,invoice_hold,,,Byte,,0
+ItDescription,SLCoitemAlls,0,description,,,String,,0
+Item,SLCoitemAlls,0,item,,,String,,0
+NoteExistsFlag,SLCoitemAlls,0,NoteExistsFlag,,,Byte,,0
+Price,SLCoitemAlls,0,price,,,Decimal,,0
+PriceConv,SLCoitemAlls,0,price_conv,,,Decimal,,0
+QtyInvoiced,SLCoitemAlls,0,qty_invoiced,,,Decimal,,0
+QtyOrdered,SLCoitemAlls,0,qty_ordered,,,Decimal,,0
+QtyOrderedConv,SLCoitemAlls,0,qty_ordered_conv,,,Decimal,,0
+QtyPicked,SLCoitemAlls,0,qty_picked,,Decimal,Decimal,,0
+QtyShipped,SLCoitemAlls,0,qty_shipped,,,Decimal,,0
+RecordDate,SLCoitemAlls,0,RecordDate,,,Date,,0
+RefLineSuf,SLCoitemAlls,0,ref_line_suf,,,Short Integer,,0
+RefNum,SLCoitemAlls,0,ref_num,,,NumSortedString,,0
+RefRelease,SLCoitemAlls,0,ref_release,,,Long Integer,,0
+RefType,SLCoitemAlls,0,ref_type,,,String,,0
+RowPointer,SLCoitemAlls,0,RowPointer,,,GUID,,0
+SiteRef,SLCoitemAlls,0,site_ref,,,String,,0
+Stat,SLCoitemAlls,0,stat,,,String,,0
+UM,SLCoitemAlls,0,u_m,,,String,,0
+UpdatedBy,SLCoitemAlls,0,UpdatedBy,,,String,,0

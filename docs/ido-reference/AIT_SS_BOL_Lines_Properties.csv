@@ -1,0 +1,37 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+CoRowPointer,AIT_SS_BOL_Lines,0,RowPointer,,GUID,GUID,,0
+CreateDate,AIT_SS_BOL_Lines,0,CreateDate,,Date,Date,,0
+CreatedBy,AIT_SS_BOL_Lines,0,CreatedBy,,String,String,,0
+DerLockFreight,AIT_SS_BOL_Lines,0,,,Byte,Byte,"ISNULL(lock_freight_CO,ISNULL(lock_freight_TR,0))",0
+DerRefLineRowPointer,AIT_SS_BOL_Lines,0,,,GUID,GUID,"dbo.AIT_SS_GetRefRowPointerFn(shline.ref_type, shline.ref_num, shline.ref_line_suf, 0)",0
+DerRefLineTable,AIT_SS_BOL_Lines,0,,,String,String,CASE WHEN shline.ref_type = 'O'  and co.type = 'B' THEN 'co_bln' WHEN shline.ref_type = 'O'  and co.type = 'R' THEN 'coitem' WHEN shline.ref_type = 'T' THEN 'trnitem' WHEN shline.ref_type = 'S' THEN 'fs_sro_line' END ,0
+DerRefNumRowPointer,AIT_SS_BOL_Lines,0,,,GUID,GUID,CASE shline.ref_type WHEN 'O' THEN CoRowPointer WHEN 'T' THEN TrnRowPointer WHEN 'S' THEN SroRowPointer END,0
+DerRefNumTable,AIT_SS_BOL_Lines,0,,,String,String,CASE shline.ref_type WHEN 'O' THEN 'co' WHEN 'T' THEN 'transfer' WHEN 'S' THEN 'fs_sro' END,0
+DerRefReleaseRowPointer,AIT_SS_BOL_Lines,0,,,GUID,GUID,"dbo.AIT_SS_GetRefRowPointerFn(shline.ref_type, shline.ref_num, shline.ref_line_suf, shline.ref_release)",0
+DerRefReleaseTable,AIT_SS_BOL_Lines,0,,,String,String,CASE WHEN shline.ref_type = 'O'  and co.type = 'B' THEN 'coitem' END,0
+InWorkflow,AIT_SS_BOL_Lines,0,InWorkflow,,Byte,Byte,,0
+lock_freight_CO,AIT_SS_BOL_Lines,0,lock_freight,,Byte,Byte,,0
+lock_freight_SR,AIT_SS_BOL_Lines,0,lock_freight,,Byte,Byte,,0
+lock_freight_TR,AIT_SS_BOL_Lines,0,lock_freight,,Byte,Byte,,0
+NoteExistsFlag,AIT_SS_BOL_Lines,0,NoteExistsFlag,,Byte,Byte,,0
+PickDate,AIT_SS_BOL_Lines,0,pick_date,,Date,Date,,0
+PickListId,AIT_SS_BOL_Lines,0,pick_list_id,,Decimal,Decimal,,0
+PickListRefSequence,AIT_SS_BOL_Lines,0,pick_list_ref_sequence,,Long Integer,Long Integer,,0
+RecordDate,AIT_SS_BOL_Lines,0,RecordDate,,Date,Date,,0
+RefLineSuf,AIT_SS_BOL_Lines,0,ref_line_suf,,,Short Integer,,0
+RefNum,AIT_SS_BOL_Lines,0,ref_num,,,String,,0
+RefRelease,AIT_SS_BOL_Lines,0,ref_release,,,Long Integer,,0
+RefType,AIT_SS_BOL_Lines,0,ref_type,,,String,,0
+RowPointer,AIT_SS_BOL_Lines,0,RowPointer,,GUID,GUID,,0
+ShipmentId,AIT_SS_BOL_Lines,0,shipment_id,,Decimal,Decimal,,0
+ShipmentLine,AIT_SS_BOL_Lines,0,shipment_line,,Long Integer,Long Integer,,0
+SLShipmentSeqs,AIT_SS_BOL_Lines,0,,AIT_SS_BOL_Seqs,,,,0
+SLShipmentSeqSerials,AIT_SS_BOL_Lines,0,,AIT_SS_BOL_Seq_Serials,,,,0
+SroRowPointer,AIT_SS_BOL_Lines,0,RowPointer,,GUID,GUID,,0
+TrnRowPointer,AIT_SS_BOL_Lines,0,RowPointer,,GUID,GUID,,0
+UbEsigEncryptedPassword,AIT_SS_BOL_Lines,0,,,,String,,0
+UbEsigReasonCode,AIT_SS_BOL_Lines,0,,,String,String,,0
+UbEsigRowPointer,AIT_SS_BOL_Lines,0,,,GUID,GUID,,0
+UbEsigUserName,AIT_SS_BOL_Lines,0,,,String,String,,0
+UbSelect,AIT_SS_BOL_Lines,0,,,,Byte,0,0
+UpdatedBy,AIT_SS_BOL_Lines,0,UpdatedBy,,String,String,,0

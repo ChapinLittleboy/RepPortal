@@ -1,0 +1,675 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+Adr01CreditHold,SLCoitems,0,credit_hold,,,Byte,,0
+Adr0CorpCred,SLCoitems,0,corp_cred,,,Byte,,0
+Adr0CorpCust,SLCoitems,0,corp_cust,,,NumSortedString,,0
+Adr0CreditHold,SLCoitems,0,credit_hold,,,Byte,,0
+Adr0Name,SLCoitems,0,name,,,String,,0
+AdrAddr_1,SLCoitems,0,addr##1,,,String,,0
+AdrAddr_2,SLCoitems,0,addr##2,,,String,,0
+AdrAddr_3,SLCoitems,0,addr##3,,,String,,0
+AdrAddr_4,SLCoitems,0,addr##4,,,String,,0
+AdrCity,SLCoitems,0,city,,,String,,0
+AdrCountry,SLCoitems,0,country,,,String,,0
+AdrCreditHold,SLCoitems,0,,,,Byte,"Case When (Adr0CorpCust is not null and Adr0CorpCred = 1 and Adr0CreditHold <> 1) then Adr01CreditHold else Adr0CreditHold end 
+",0
+AdrCurrCode,SLCoitems,0,curr_code,,,String,,0
+AdrCurrdescription,SLCoitems,0,description,,,String,,0
+AdrFaxNum,SLCoitems,0,fax_num,,,String,,0
+AdrName,SLCoitems,0,,,,String,"Case When ProspectId is not null and ProspectId <> '' Then ProCompany    
+   Else Name 
+End 
+",0
+AdrState,SLCoitems,0,state,,,String,,0
+AdrZip,SLCoitems,0,zip,,,String,,0
+AllowOnPickList,SLCoitems,0,allow_on_pick_list,,,Byte,,0
+ApsDueDate,SLCoitems,0,,,,Date,,0
+ApsItem,SLCoitems,0,,,,String,,0
+ApsOrderId,SLCoitems,0,,,,String,,0
+ApsRequestDate,SLCoitems,0,,,,Date,,0
+AUContractPriceMethod,SLCoitems,0,AU_contract_price_method,,,String,,0
+AUInvItems,SLCoitems,0,,AUInvItems,,,"CoNum=CoNum,CoLine=CoLine,CoRelease=CoRelease",0
+AUPriceBy,SLCoitems,0,AU_price_by,,,String,,0
+AUReasonText,SLCoitems,0,reason_text,,,String,,0
+AURePrice,SLCoitems,0,new_price,,,Decimal,,0
+BatchId,SLCoitems,0,batch_id,,,Long Integer,,0
+Bol,SLCoitems,0,bol,,,Byte,,0
+BrkQty_1,SLCoitems,0,,,,Decimal,,0
+BrkQty_2,SLCoitems,0,,,,Decimal,,0
+BrkQty_3,SLCoitems,0,,,,Decimal,,0
+BrkQty_4,SLCoitems,0,,,,Decimal,,0
+BrkQty_5,SLCoitems,0,,,,Decimal,,0
+Category,SLCoitems,0,,,,Long Integer,,0
+CblBlanketQtyConv,SLCoitems,0,blanket_qty_conv,,,Decimal,,0
+CblCoLine,SLCoitems,0,co_line,,,Short Integer,,0
+CblContPriceConv,SLCoitems,0,cont_price_conv,,,Decimal,,0
+CblEffDate,SLCoitems,0,eff_date,,,Date,,0
+CblExpDate,SLCoitems,0,exp_date,,,Date,,0
+CblItem,SLCoitems,0,item,,,String,,0
+CblShipSite,SLCoitems,0,ship_site,,,String,,0
+CblStat,SLCoitems,0,stat,,,String,,0
+CblUM,SLCoitems,0,u_m,,,String,,0
+CDescription,SLCoitems,0,,,,String,,0
+CfgMainConfigGid,SLCoitems,0,config_gid,,,String,,0
+CfgMainConfigModel,SLCoitems,0,config_model,,,String,,0
+CfgMainConfigStatus,SLCoitems,0,config_status,,,String,,0
+CgsTotal,SLCoitems,0,cgs_total,,,Decimal,,0
+CgsTotalFovhd,SLCoitems,0,cgs_total_fovhd,,,Decimal,,0
+CgsTotalLbr,SLCoitems,0,cgs_total_lbr,,,Decimal,,0
+CgsTotalMatl,SLCoitems,0,cgs_total_matl,,,Decimal,,0
+CgsTotalOut,SLCoitems,0,cgs_total_out,,,Decimal,,0
+CgsTotalVovhd,SLCoitems,0,cgs_total_vovhd,,,Decimal,,0
+CoCloseDate,SLCoitems,0,close_date,,,Date,,0
+CoCoCustNum,SLCoitems,0,cust_num,,,NumSortedString,,0
+CoCoCustSeq,SLCoitems,0,cust_seq,,,Long Integer,,0
+CoConsignment,SLCoitems,0,consignment,,,Byte,,0
+CoConsolidate,SLCoitems,0,consolidate,,,Byte,,0
+CoCost,SLCoitems,0,cost,,,Decimal,,0
+CoCreditHold,SLCoitems,0,credit_hold,,,Byte,,0
+CoCustNnum,SLCoitems,0,cust_num,,,NumSortedString,,0
+CoCustNum,SLCoitems,0,co_cust_num,,,NumSortedString,,0
+CoCustPo,SLCoitems,0,cust_po,,,String,,0
+CoCustSeq,SLCoitems,0,cust_seq,,,Long Integer,,0
+CoDisc,SLCoitems,0,disc,,,Decimal,,0
+CoEdiOrder,SLCoitems,0,edi_order,,,Byte,,0
+CoExchRate,SLCoitems,0,exch_rate,,,Decimal,,0
+CoExportType,SLCoitems,0,export_type,,,String,,0
+CoiiCoNum,SLCoitems,0,co_num,,,NumSortedString,,0
+CoIncludeTaxInPrice,SLCoitems,0,include_tax_in_price,,,Byte,,0
+CoInvFreq,SLCoitems,0,inv_freq,,,String,,0
+CoLine,SLCoitems,0,co_line,,,Short Integer,,0
+CommCode,SLCoitems,0,comm_code,,,String,,0
+ComSupplQtyReq,SLCoitems,0,suppl_qty_req,,,Byte,,0
+ConfigID,SLCoitems,0,config_id,,,NumSortedString,,0
+ConsNum,SLCoitems,0,cons_num,,,Long Integer,,0
+Consolidate,SLCoitems,0,consolidate,,,Byte,,0
+CoNum,SLCoitems,0,co_num,,,NumSortedString,,0
+CoOrderDate,SLCoitems,0,order_date,,,Date,,0
+CoOrigSite,SLCoitems,0,co_orig_site,,,String,,0
+CoPortalOrder,SLCoitems,0,portal_order,,,Byte,,0
+CoPrice,SLCoitems,0,price,,,Decimal,,0
+CopUseAltPriceCalc,SLCoitems,0,use_alt_price_calc,,,Byte,,0
+CoRelease,SLCoitems,0,co_release,,,Long Integer,,0
+CoRowPointer,SLCoitems,0,RowPointer,,,GUID,,0
+CosDoLine,SLCoitems,0,do_line,,,Short Integer,,0
+CosDoNum,SLCoitems,0,do_num,,,NumSortedString,,0
+CosDoSeq,SLCoitems,0,do_seq,,Short Integer,Short Integer,,0
+CoShipCode,SLCoitems,0,ship_code,,,String,,0
+CoShipMethod,SLCoitems,0,ship_method,,,String,,0
+CoSlsman,SLCoitems,0,slsman,,String,String,,0
+CosQtyInvoiced,SLCoitems,0,qty_invoiced,,,Decimal,,0
+CosQtyReturned,SLCoitems,0,qty_returned,,,Decimal,,0
+CosQtyShipped,SLCoitems,0,qty_shipped,,,Decimal,,0
+CosShipmentId,SLCoitems,0,shipment_id,,,Decimal,,0
+Cost,SLCoitems,0,cost,,,Decimal,,0
+CoStat,SLCoitems,0,stat,,,String,,0
+CostConv,SLCoitems,0,cost_conv,,,Decimal,,0
+CoTaxCode1,SLCoitems,0,tax_code1,,,String,,0
+CoTaxCode2,SLCoitems,0,tax_code2,,,String,,0
+CoTermsCode,SLCoitems,0,terms_code,,,String,,0
+CoType,SLCoitems,0,type,,,String,,0
+CouEcCode,SLCoitems,0,ec_code,,,String,,0
+CoUseExchRate,SLCoitems,0,use_exch_rate,,,Byte,,0
+CoWhse,SLCoitems,0,whse,,,String,,0
+CurDomPlaces,SLCoitems,0,places,,,Byte,,0
+CurrCode,SLCoitems,0,,,String,String,,0
+CurrencyAmtFormat,SLCoitems,0,amt_format,,,String,,0
+CurrencyCstPrcFormat,SLCoitems,0,cst_prc_format,,,String,,0
+CurrencyCurrCode,SLCoitems,0,curr_code,,,String,,0
+CurrencyPlaces,SLCoitems,0,places,,,Byte,,0
+Cus0CustType,SLCoitems,0,cust_type,,,String,,0
+CusContact_2,SLCoitems,0,contact##2,,,String,,0
+CusCustType,SLCoitems,0,cust_type,,,String,,0
+CusDoInvoice,SLCoitems,0,do_invoice,,,String,,0
+CusPhone_2,SLCoitems,0,phone##2,,,String,,0
+CusTaxCode1Type,SLCoitems,0,tax_code_type,,,String,,0
+CusTaxRegNum1ExpDate,SLCoitems,0,tax_reg_num1_exp_date,,,Date,,0
+CustItem,SLCoitems,0,cust_item,,,String,,0
+CustNum,SLCoitems,0,cust_num,,,NumSortedString,,0
+CustPo,SLCoitems,0,cust_po,,,String,,0
+CustSeq,SLCoitems,0,cust_seq,,,Long Integer,,0
+CusUseExchRate,SLCoitems,0,use_exch_rate,,,Byte,,0
+DaysShippedAfterDueDateTolerance,SLCoitems,0,days_shipped_after_due_date_tolerance,,,Short Integer,,0
+DaysShippedBeforeDueDateTolerance,SLCoitems,0,days_shipped_before_due_date_tolerance,,,Short Integer,,0
+Delterm,SLCoitems,0,delterm,,,String,,0
+DemandingSite,SLCoitems,0,demanding_site,,,String,,0
+DerAllowOverCreditLimit,SLCoitems,0,,,,Byte,0,0
+DerApsOrderID,SLCoitems,0,,,,String,"dbo.ApsOrderId(CoNum, CoLine, CoRelease)",0
+DerAUContractPriceMethod,SLCoitems,0,,,,String,AUContractPriceMethod,0
+DerAvailable,SLCoitems,0,,,,Decimal,"dbo.ApsDemandQtyAvailable(dbo.ApsOrderId(CoNum, CoLine, CoRelease))",0
+DerAvailToReserve,SLCoitems,0,,,,Decimal,IteWhsQtyOnHand - IteWhsQtyRsvdCo,0
+DerCanChangeItem,SLCoitems,0,,,,Byte,"dbo.CanChangeItem(CoNum, CoLine, Stat, QtyOrderedConv, 'coitem')",0
+DerCanChgShipSite,SLCoitems,0,,,,Byte,"dbo.CanChangeShipSite(CoNum,CoLine,CoRelease,ShipSite)",0
+DerCanConfigureItem,SLCoitems,0,,,,Byte,Case WHEN ItPlanFlag = 1 AND ItPMTCode = 'M' AND it.Job IS NOT NULL THEN 1 ELSE 0 END,0
+DerCfgConfigurationForBGJobCreation,SLCoitems,0,,,,Byte,dbo.CfgConfigurationIsForBGJobCreation(ConfigID),0
+DerCfgJobIsConfigurable,SLCoitems,0,,,,Byte,"dbo.CfgJobIsConfigurable( CoNum,CoLine,CoRelease,ShipSite )",0
+DerCfgOnHold,SLCoitems,0,,,,Byte,"CASE 
+WHEN CoType='E'  THEN
+dbo.CfgConfigurationIsOnHold('OE',CoNum,CoLine)
+ELSE
+dbo.CfgConfigurationIsOnHold('OR',CoNum,CoLine)
+END",0
+DerCoitemShipped,SLCoitems,0,,,,Byte,"CASE
+ WHEN EXISTS (SELECT 1 FROM dbo.coitem  WHERE coitem.co_num = CoNum and coitem.co_line = CoLine and coitem.stat = 'F')  THEN 1 
+ WHEN EXISTS (SELECT 1 FROM dbo.coitem  WHERE coitem.co_num = CoNum and coitem.co_line = CoLine and coitem.stat = 'P') THEN 2
+ELSE 0
+END",0
+DerControlledByExternalWhse,SLCoitems,0,,,,Byte,(SELECT whse.controlled_by_external_wms FROM dbo.whse where whse.whse = Whse),0
+DerCoverSheetCompany,SLCoitems,0,,,,String,'',0
+DerCoverSheetContact,SLCoitems,0,,,,String,'',0
+DerCurrCode,SLCoitems,0,,,,String,"CASE WHEN ProspectId IS NULL AND CoCustNnum IS NOT NULL THEN AdrCurrCode
+WHEN ProspectId IS NOT NULL THEN (SELECT ProCurrCode FROM dbo.prospect pro WHERE ProProspectId = ProspectId) 
+ELSE currp.curr_code END",0
+DerCurrencyPlaces,SLCoitems,0,,,,Byte,"ISNULL(CurrencyPlaces, CurDomPlaces)",0
+DerCurrentDate,SLCoitems,0,,,,Date,GetDate(),0
+DerCustNum,SLCoitems,0,,,,NumSortedString,"ISNULL(CustNum,CoCustNum)",0
+DerCustPo,SLCoitems,0,,,,String,"ISNULL(CustPo,CoCustPo)",0
+DerCustSeq,SLCoitems,0,,,,Long Integer,"CASE
+   WHEN CustNum IS NULL THEN CoCustSeq
+   ELSE CustSeq
+END",0
+DerDescription,SLCoitems,0,,,,String,CASE WHEN CoOrigSite = ShipSite and ItmLanDescription is not null THEN ItmLanDescription ELSE Description END,0
+DerDIFOT,SLCoitems,0,,,,Byte,CASE WHEN (DerInFull = 0) AND (DerOnTime = 0) THEN 0 ELSE 1 END,0
+DerDomCurrCode,SLCoitems,0,,,,String,currp.curr_code,0
+DerDomPriceConv,SLCoitems,0,,,Decimal,Decimal,"dbo.CurrCnvtSingleAmt2 (AdrCurrCode, 0, 0, 0, CoOrderDate, default, default, default, CoExchRate, default, default, default, ISNULL(PriceConv, 0))",0
+DerDropShipAddress,SLCoitems,0,,,,String,"CASE WHEN CustNum IS NULL THEN 
+dbo.FormatAddress(CoCustNum, CoCustSeq) 
+ELSE
+dbo.FormatAddress(CustNum, CustSeq)
+END",0
+DerDropShipCustAddr,SLCoitems,0,,,,String,"dbo.FormatAddress(CustNum,ISNULL(CustSeq,0))",0
+DerDropShipFlag,SLCoitems,0,,,,Byte,"CASE WHEN ISNULL(CustNum,{''}) <> '' THEN 1 ELSE 0 END",0
+DerDueDate,SLCoitems,0,,,,Date,DueDate,0
+DerExtInvoicedCost,SLCoitems,0,,,,Decimal,"ROUND((ISNULL(DerQtyInvoicedConv, 0) * ISNULL(CostConv,0)),DerCurrencyPlaces)",0
+DerExtInvoicedPrice,SLCoitems,0,,,,Decimal,"ROUND(ISNULL(DerQtyInvoicedConv, 0) * ISNULL(dbo.CurrCnvtSingleAmt2 ( AdrCurrCode, 0, 0, 1, default, default, default, default, CoExchRate, default, default, default, ISNULL(PriceConv,0)),0) * (1-Disc/100.0) * (1-CoDisc/100.0), DerCurrencyPlaces)
+",0
+DerExtPrice,SLCoitems,0,,,,Decimal,"CASE
+WHEN CopUseAltPriceCalc = 1 THEN
+   ROUND(ISNULL(PriceConv,0), DerCurrencyPlaces) * ISNULL(QtyOrderedConv,0)
+ELSE
+   ROUND(ISNULL(QtyOrderedConv,0) * ISNULL(PriceConv,0), DerCurrencyPlaces)
+END",0
+DerExtPriceInDomesticCurrency,SLCoitems,0,,,,Decimal,"ROUND(ISNULL(QtyOrderedConv,0) * ISNULL(DerDomPriceConv,0),DerCurrencyPlaces)
+",0
+DerFavoriteCustomer,SLCoitems,0,,,,Byte,"CASE WHEN EXISTS (SELECT 1 FROM favorite_customer WHERE cust_num = CoCustNum AND username = dbo.[UserName2Sp]() )
+THEN 1
+ELSE
+0
+END",0
+DerFovhdCostConv,SLCoitems,0,,,,Decimal,QtyOrderedConv * FovhdCostConv,0
+DerFovhdExtended,SLCoitems,0,,,,Decimal,QtyOrderedConv * FovhdCostConv,0
+DerGetOrderLineStatusForPortal,SLCoitems,0,,,String,String,"dbo.GetOrderLineStatusForPortal(CoNum, CoLine, CoRelease)",0
+DerInfobar,SLCoitems,0,,,,String,'',0
+DerInFull,SLCoitems,0,,,,Byte,"CASE WHEN DerQtyShippedOver > ShippedOverOrderedQtyTolerance OR DerQtyShippedUnder > ShippedUnderOrderedQtyTolerance THEN 1 ELSE 0 END
+",0
+DerIsOnPickList,SLCoitems,0,,,,Byte,"CASE WHEN EXISTS(
+SELECT 1
+FROM dbo.pick_list_ref
+WHERE pick_list_ref.ref_num = CoNum AND pick_list_ref.ref_line_suf = CoLine AND pick_list_ref.ref_release = CoRelease 
+)THEN 1 ELSE 0 END",0
+DerItem,SLCoitems,0,,,,String,"dbo.GetItemOrCustItem (CustItem, Item)",0
+DerItemContentExist,SLCoitems,0,,,,Byte,CASE WHEN ItItemContent = 1 THEN 1 ELSE 0 END,0
+DerItemFeatTempl,SLCoitems,0,,,,String,dbo.ItemFeatTempl(Item),0
+DerItemNotAvailable,SLCoitems,0,,,,Byte,0,0
+DerItExist,SLCoitems,0,,,,Byte,"CASE
+   WHEN EXISTS (SELECT TOP 1 1 FROM dbo.item  WHERE (item.item = Item)) 
+   THEN 1
+   ELSE 0
+END",0
+DerLate,SLCoitems,0,,,,Byte,(CASE WHEN Stat<>'C' THEN 1 ELSE 0 END),0
+DerLbrExtended,SLCoitems,0,,,,Decimal,QtyOrderedConv * LbrCostConv,0
+DerLineInvoicedPrice,SLCoitems,0,,,,Decimal,(SELECT SUM(inv_item.qty_invoiced * inv_item.price) FROM dbo.inv_item where inv_item.co_num = CoNum and inv_item.co_line = CoLine),0
+DerLoc,SLCoitems,0,,,,String,'',0
+DerLot,SLCoitems,0,,,,String,'',0
+DerLotPrefix,SLCoitems,0,,,,String,'',0
+DerMargin,SLCoitems,0,,,,Decimal,"dbo.CoitemMargin(CoNum, CoLine, CoRelease, 0)",0
+DerMarginPercent,SLCoitems,0,,,,Decimal,"dbo.CoitemMargin(CoNum, CoLine, CoRelease, 1)",0
+DerMarkup,SLCoitems,0,,,,Decimal,MOProdcodeMarkup,0
+DerMatlExtended,SLCoitems,0,,,,Decimal,QtyOrderedConv * MatlCostConv,0
+DerMaxQtyToPackConv,SLCoitems,0,,,,Decimal,0,0
+DerMessage,SLCoitems,0,,,,String,null,0
+DerNetPrice,SLCoitems,0,,,,Decimal,"CASE
+WHEN CopUseAltPriceCalc = 1 THEN
+   ROUND((1.0 - ISNULL(Disc,0) / 100.0) * ISNULL(PriceConv,0), DerCurrencyPlaces) * ISNULL(QtyOrderedConv,0)
+ELSE
+   ROUND(ISNULL(QtyOrderedConv,0) * (1.0 - ISNULL(Disc,0) / 100.0) * ISNULL(PriceConv,0), DerCurrencyPlaces)
+END",0
+DerNonInventoryItemFlag,SLCoitems,0,,,,Byte,CASE WHEN ItPlanFlag IS NULL THEN 1 ELSE 0 END,0
+DerOldCoLine,SLCoitems,0,,,,Short Integer,,0
+DerOldCoNum,SLCoitems,0,,,,NumSortedString,,0
+DerOldStat,SLCoitems,0,,,,String,Stat,0
+DerOnTime,SLCoitems,0,,,,Byte,CASE WHEN DerShippedBeforeDueDate > DaysShippedBeforeDueDateTolerance OR DerShippedAfterDueDate > DaysShippedAfterDueDateTolerance THEN 1 ELSE 0 END,0
+DerOrderID,SLCoitems,0,,,,String,"dbo.ApsOrderId(CoNum, CoLine, CoRelease)",0
+DerOrigQtyOrderedConv,SLCoitems,0,,,,Decimal,"QtyOrderedConv
+",0
+DerOutExtended,SLCoitems,0,,,,Decimal,QtyOrderedConv * OutCostConv,0
+DerPercentShippedOnTime,SLCoitems,0,,,,Decimal,CASE WHEN dbo.MidnightOf(ShipDate) <= DueDate THEN 100 ELSE 0 END,0
+DerPostCfg,SLCoitems,0,,,,Byte,"CASE 
+WHEN CoType='E'  THEN
+dbo.CfgPostConfigurationExist('OE',CoNum,CoLine)
+ELSE
+dbo.CfgPostConfigurationExist('OR',CoNum,CoLine)
+END",0
+DerPostCfgMsg,SLCoitems,0,,,,String,"CASE 
+WHEN CoType='E'  THEN
+dbo.CfgPostConfigurationMsg('OE',CoNum,CoLine)
+ELSE
+dbo.CfgPostConfigurationMsg('OR',CoNum,CoLine)
+END",0
+DerPostCfgQueueType,SLCoitems,0,,,,String,"CASE 
+WHEN CoType='E'  THEN
+dbo.CfgPostConfigurationQueueType('OE',CoNum,CoLine)
+ELSE
+dbo.CfgPostConfigurationQueueType('OR',CoNum,CoLine)
+END",0
+DerPostCfgRequestID,SLCoitems,0,,,,String,"CASE 
+WHEN CoType='E'  THEN
+dbo.CfgPostConfigurationRequestID('OE',CoNum,CoLine)
+ELSE
+dbo.CfgPostConfigurationRequestID('OR',CoNum,CoLine)
+END",0
+DerPostCfgStat,SLCoitems,0,,,,String,"CASE 
+WHEN CoType='E'  THEN
+dbo.CfgPostConfigurationStat('OE',CoNum,CoLine)
+ELSE
+dbo.CfgPostConfigurationStat('OR',CoNum,CoLine)
+END",0
+DerPrintingEstimateExists,SLCoitems,0,,,,Byte,Case When PPJobRowPointer Is Null AND DerPrintingQuoteExists = 0 Then 0 Else 1 End,0
+DerPrintingQuoteExists,SLCoitems,0,,,,Byte,"CASE WHEN EXISTS(SELECT TOP 1 1 FROM dbo.PP_quote_hdr 
+                       WHERE PP_quote_hdr.co_num= CoNum 
+                          and PP_quote_hdr.co_line= CoLine 
+                          and PP_quote_hdr.co_release= CoRelease) THEN 1 ELSE 0 END",0
+DerPrintQuotePrice,SLCoitems,0,,,,Decimal,"dbo.PP_SumPrintQuotePriceForCoLine(RefType,CoNum, CoLine, CoRelease)",0
+DerProdMix,SLCoitems,0,,,String,String,(select job.prod_mix from dbo.job where job.ord_num = CoNum),0
+DerProgBillTotalBilled,SLCoitems,0,,,,Decimal,"ISNULL( ( SELECT SUM( progbill.bill_amt ) FROM dbo.progbill WHERE progbill.co_num = CoNum and progbill.co_line = CoLine and progbill.invc_flag <> 'I' ) , 0)",0
+DerProgBillTotalInvoiced,SLCoitems,0,,,,Decimal,"ISNULL( ( SELECT SUM( progbill.bill_amt ) FROM dbo.progbill WHERE progbill.co_num = CoNum and progbill.co_line = CoLine and progbill.invc_flag = 'I' ) , 0)",0
+DerQtyInvoicedConv,SLCoitems,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           QtyInvoiced, 
+           ISNULL(dbo.GetumcfAll(UM, Item, CoCoCustNum, 'C', ShipSite), 1),
+          'From Base')
+        , 0)",0
+DerQtyOpen,SLCoItems_FT,1,,,,,(QtyOrdered -QtyRsvd),0
+DerQtyPackedConv,SLCoitems,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           QtyPacked, 
+           ISNULL(dbo.GetumcfAll(UM, Item, CoCoCustNum, 'C', ShipSite), 1),
+          'From Base')
+        , 0)",0
+DerQtyPicked,SLCoitems,0,,,,Decimal,0,0
+DerQtyPickedConv,SLCoitems,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           QtyPicked,
+           ISNULL(dbo.GetumcfAll(UM, Item, CoCoCustNum, 'C', ShipSite), 1),
+          'From Base')
+        , 0)",0
+DerQtyReady,SLCoitems,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           QtyReady, 
+           ISNULL(dbo.GetumcfAll(UM, Item, '', 'C', ShipSite), 1),
+          'To Base')
+        , 0)",0
+DerQtyReadyByRefType,SLCoitems,0,,,,Decimal,"dbo.GetCoitemQtyReady (CoNum, CoLine, CoRelease)",0
+DerQtyReadyConv,SLCoitems,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           DerQtyReadyByRefType, 
+           ISNULL(dbo.GetumcfAll(UM, Item, CoCoCustNum, 'C', ShipSite), 1),
+          'From Base')
+        , 0)",0
+DerQtyRsvdConv,SLCoitems,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           QtyRsvd, 
+           ISNULL(dbo.GetumcfAll(UM, Item, CoCoCustNum, 'C', ShipSite), 1),
+          'From Base')
+        , 0)",0
+DerQtyShippedConv,SLCoitems,0,,,,Decimal,"ISNULL(dbo.UomConvQty(
+           QtyShipped, 
+           ISNULL(dbo.GetumcfAll(UM, Item, CoCoCustNum, 'C', ShipSite), 1),
+          'From Base')
+        , 0)",0
+DerQtyShippedOver,SLCoitems,0,,,,Decimal,CASE WHEN DerQtyShippedConv > QtyOrderedConv AND QtyOrderedConv <> 0 THEN (DerQtyShippedConv / QtyOrderedConv * 100) - 100 ElSE 0 END,0
+DerQtyShippedUnder,SLCoitems,0,,,,Decimal,CASE WHEN DerQtyShippedConv < QtyOrderedConv AND QtyOrderedConv <> 0 THEN (100 - (DerQtyShippedConv / QtyOrderedConv * 100)) ELSE 0 END,0
+DerQtyToInvoice,SLCoitems,0,,,,Decimal,CosQtyReturned + CosQtyShipped - CosQtyInvoiced,0
+DerQtyToPack,SLCoitems,0,,,,Decimal,NULL,0
+DerQtyToPackConv,SLCoitems,0,,,,Decimal,0,0
+DerQtyToPick,SLCoitems,0,,,,Decimal,0,0
+DerQtyToShip,SLCoitems,0,,,,Decimal,QtyOrdered - QtyShipped,0
+DerQtyToShipConv,SLCoItems_FT,1,,,,Decimal,QtyOrderedConv - DerQtyShippedConv,0
+DerReady,SLCoitems,0,,,,Byte,dbo.ApsIsDemandReady(DerOrderID),0
+DerRefType,SLCoitems,0,,,,String,"CASE WHEN CoType = 'E'  THEN 'E' ELSE 'O' END
+",0
+DerReleaseInvoicedPrice,SLCoitems,0,,,,Decimal,(SELECT SUM(inv_item.qty_invoiced * inv_item.price) FROM dbo.inv_item where inv_item.co_num = CoNum and inv_item.co_line = CoLine and inv_item.co_release = CoRelease),0
+DerSelected,SLCoitems,0,,,,Byte,1,0
+DerSerialPrefix,SLCoitems,0,,,,String,'',0
+DerShiIteActive,SLCoitems,0,,,,Byte,"ISNULL(ShiIteActive, 0)",0
+DerShipFromAddress,SLCoitems,0,,,,String,'',0
+DerShippedAfterDueDate,SLCoitems,0,,,,Short Integer,"CASE WHEN ShipDate > DueDate THEN (DATEDIFF(DAY, DueDate, ShipDate)) ELSE 0 END",0
+DerShippedBeforeDueDate,SLCoitems,0,,,,Short Integer,"CASE WHEN ShipDate < DueDate THEN (DATEDIFF(DAY, ShipDate, DueDate)) ELSE 0 END",0
+DerShipToAddress,SLCoitems,0,,,,String,'',0
+DerSiteQtyAvailable,SLCoitems,0,,,,Decimal,"CASE WHEN dbo.GetSiteItemQtyAvailable(Item, ShipSite) >= 0 THEN dbo.GetSiteItemQtyAvailable(Item, ShipSite) ELSE 0 END",0
+DerStatus,SLCoItems_FT,1,,,,,"CASE WHEN Stat = 'O' THEN dbo.stringof('@:coitem.stat:O') WHEN Stat = 'P' THEN  dbo.stringof('@:coitem.stat:P')
+ WHEN Stat = 'C' THEN  dbo.stringof('@:coitem.stat:C')  WHEN Stat = 'S' THEN  dbo.stringof('@:coitem.stat:S')
+WHEN Stat = 'H' THEN  dbo.stringof('@:coitem.stat:H') ELSE Stat END",0
+DerTiedToPicklist,AIT_SS_SLCoitems,2,,,Byte,Byte,"ISNULL((SELECT TOP 1 1 FROM AIT_SS_pick_list_ref r WITH(NOLOCK) WHERE r.ref_num = coi.co_num AND r.ref_line_suf = coi.co_line AND r.ref_release = coi.co_release and r.ref_type = 'O'),0)",0
+DerTotalQtyOrderedConv,SLCoitems,0,,,,Decimal,0,0
+DerTotCost,SLCoitems,0,,,,Decimal,QtyOrderedConv * CostConv,0
+DerTotExtended,SLCoitems,0,,,,Decimal,"CASE WHEN DerNonInventoryItemFlag = 1 THEN (QtyOrderedConv * CostConv) ELSE (DerMatlExtended + DerLbrExtended + DerFovhdExtended + DerVovhdExtended + DerOutExtended) END
+",0
+DerTotQtyToInvoice,SLCoitems,0,,,,Decimal,"dbo.CalcQtyToInvoice(CoNum,CoLine,CoRelease)",0
+DerUomConvFactor,SLCoitems,0,,,,Float,"dbo.GetumcfAll(UM,Item,CoCustNum,'C', ShipSite)",0
+DerViewCustPortalDetail,SLCoitems,0,,,,Byte,CASE WHEN EXISTS (SELECT parms.Site FROM dbo.parms WHERE parms.Site = ShipSite) AND (EXISTS (SELECT item.item FROM dbo.item WHERE item.item = Item AND item.active_for_customer_portal = 1) OR CustItem IS NOT NULL) THEN 1 ELSE 0 END,0
+DerVovhdExtended,SLCoitems,0,,,,Decimal,QtyOrderedConv * VovhdCostConv,0
+DerXRefJobExists,SLCoitems,0,,,,Byte,"CASE
+   WHEN RefType = 'J' AND EXISTS (SELECT TOP 1 1 FROM dbo.job  WHERE (job.Job = RefNum AND job.Suffix = RefLineSuf)) 
+   THEN 1
+   ELSE 0
+END",0
+DerYield,SLCoitems,0,,,Decimal,Decimal,"(Select Yield = COALESCE(SUM(jobroute.yield) / COUNT(jobroute.oper_num) / 100, 1 )
+FROM dbo.jobroute where  jobroute.job= RefNum and jobroute.suffix = RefLineSuf)",0
+Description,SLCoitems,0,description,,,String,,0
+Disc,SLCoitems,0,disc,,,Decimal,,0
+DltDescription,SLCoitems,0,description,,,String,,0
+DoLine,SLCoitems,0,do_line,,,Short Integer,,0
+DueDate,SLCoitems,0,due_date,,,Date,,0
+EcCode,SLCoitems,0,ec_code,,,String,,0
+end_user_type,CHA_SLCoitems,1,end_user_type,,String,String,,0
+ExcludeFromCopyToCo,SLCoitems,0,exclude_from_copy_to_co,,,Byte,,0
+ExportValue,SLCoitems,0,export_value,,,Decimal,,0
+ExtendedCost,SLCoitems,0,,,,Decimal,(QtyOrdered*Cost),0
+ExtendedPrice,SLCoitems,0,,,,Decimal,(QtyOrdered*Price),0
+ExternalReservationRef,SLCoitems,0,external_reservation_ref,,,String,,0
+ExternalShipmentStatus,SLCoitems,0,external_shipment_status,,,String,,0
+FeatStr,SLCoitems,0,feat_str,,,String,,0
+Flags,SLCoitems,0,,,,Long Integer,,0
+Flags2,SLCoitems,0,,,,Long Integer,,0
+FovhdCost,SLCoitems,0,fovhd_cost,,,Decimal,,0
+FovhdCostConv,SLCoitems,0,fovhd_cost_conv,,,Decimal,,0
+FSIncNum,SLCoitems,0,fs_inc_num,,,NumSortedString,,0
+FSSROs,SLCoitems,0,,FSSROs,,,RefNum=SroNum,0
+InvFreq,SLCoitems,0,inv_freq,,,String,,0
+InvoiceHold,SLCoitems,0,invoice_hold,,,Byte,,0
+InWorkflow,SLCoitems,0,InWorkflow,,,Byte,,0
+ItAutoJob,SLCoitems,0,auto_job,,,String,,0
+ItCfgModel,SLCoitems,0,cfg_model,,,String,,0
+ItDescription,SLCoitems,0,description,,,String,,0
+Item,SLCoitems,0,item,,,String,,0
+ItemCost,SLCoitems,0,,,,Decimal,,0
+itemFamilyCode,CHA_SLCoitems,1,family_code,,String,String,,0
+IteWhsQtyOnHand,SLCoitems,0,qty_on_hand,,,Decimal,,0
+IteWhsQtyRsvdCo,SLCoitems,0,qty_rsvd_co,,,Decimal,,0
+ItItemContent,SLCoitems,0,item_content,,,Byte,,0
+ItKit,SLCoitems,0,kit,,,Byte,,0
+ItLotTracked,SLCoitems,0,lot_tracked,,,Byte,,0
+ItmDescription,SLCoItems_FT,1,description,,String,String,,0
+ItmLanDescription,SLCoitems,0,description,,,String,,0
+ItOrderConfigurable,SLCoitems,0,order_configurable,,,Byte,,0
+ItPlanFlag,SLCoitems,0,plan_flag,,,Byte,,0
+ItPMTCode,SLCoitems,0,p_m_t_code,,,String,,0
+ItReservable,SLCoitems,0,reservable,,,Byte,,0
+ItSerialTracked,SLCoitems,0,serial_tracked,,,Byte,,0
+ItStocked,SLCoitems,0,stocked,,,Byte,,0
+ItSupplySite,SLCoitems,0,supply_site,,,String,,0
+ItUM,SLCoitems,0,u_m,,,String,,0
+ItUWsPrice,SLCoitems,0,u_ws_price,,,Decimal,,0
+LanLocaleID,SLCoitems,0,LocaleID,,,Long Integer,,0
+LastExternalShipDocID,SLCoitems,0,last_external_shipment_doc_id,,,String,,0
+LbrCost,SLCoitems,0,lbr_cost,,,Decimal,,0
+LbrCostConv,SLCoitems,0,lbr_cost_conv,,,Decimal,,0
+LCDTCOLine_DTIcon,LCDTSLCoitems-COLine-DTIcon,4,,,String,String,"dbo.lc_dt_GetDTIconFN('CustomerOrderLines', CoNum, CoLine, NULL, NULL, NULL, NULL)",0
+LCDTCOLineDynamicAssociations,LCDTSLCoitems-COLine-DTIcon,4,,,Byte,Byte,dbo.lc_dt_GetDynamicAssociationsFn(),0
+LCDTCOLineDynamicVirtuals,LCDTSLCoitems-COLine-DTIcon,4,,,Byte,Byte,dbo.lc_dt_GetDynamicVirtualFn(),0
+LCDTCOLineRunVirtsOnClient,LCDTSLCoitems-COLine-DTIcon,4,,,String,String,dbo.lc_dt_GetRunVirtsOnClientFN(),0
+LCDTCORelease_DTIcon,LCDTSLCoitems-CORelease-DTIcon,3,,,String,String,"dbo.lc_dt_GetDTIconFN('BlanketReleases', CoNum, CoLine, NULL, CoRelease, NULL, NULL)",0
+LCDTCOReleaseDynamicAssociations,LCDTSLCoitems-CORelease-DTIcon,3,,,Byte,Byte,dbo.lc_dt_GetDynamicAssociationsFn(),0
+LCDTCOReleaseDynamicVirtuals,LCDTSLCoitems-CORelease-DTIcon,3,,,Byte,Byte,dbo.lc_dt_GetDynamicVirtualFn(),0
+LCDTCOReleaseRunVirtsOnClient,LCDTSLCoitems-CORelease-DTIcon,3,,,String,String,dbo.lc_dt_GetRunVirtsOnClientFN(),0
+LCDTEstimateLine_DTIcon,LCDTSLCoitems-EstimateLine-DTIcon,5,,,String,String,"dbo.lc_dt_GetDTIconFN('EstimateLines', CoNum, CoLine, NULL, NULL, NULL, NULL)",0
+LCDTEstimateLineDynamicAssociations,LCDTSLCoitems-EstimateLine-DTIcon,5,,,Byte,Byte,dbo.lc_dt_GetDynamicAssociationsFn(),0
+LCDTEstimateLineDynamicVirtuals,LCDTSLCoitems-EstimateLine-DTIcon,5,,,Byte,Byte,dbo.lc_dt_GetDynamicVirtualFn(),0
+LCDTEstimateLineRunVirtsOnClient,LCDTSLCoitems-EstimateLine-DTIcon,5,,,String,String,dbo.lc_dt_GetRunVirtsOnClientFN(),0
+ManufacturerId,SLCoitems,0,manufacturer_id,,,String,,0
+ManufacturerItem,SLCoitems,0,manufacturer_item,,,String,,0
+ManufacturerItemDescription,SLCoitems,0,description,,,String,,0
+Margin,SLCoitems,0,,,,Decimal,"ROUND(ISNULL(QtyOrdered,0) * ISNULL(Price,0),CurrencyPlaces) - ROUND(ISNULL(QtyOrdered,0) * ISNULL(Cost,0),CurrencyPlaces)",0
+MarginPercent,SLCoitems,0,,,,Decimal,"CASE WHEN (QtyOrdered*Cost >0 AND Price >0) THEN ((ROUND(ISNULL(QtyOrdered,0) * ISNULL(Price,0),CurrencyPlaces) - ROUND(ISNULL(QtyOrdered,0) * ISNULL(Cost,0),CurrencyPlaces)) / ROUND(ISNULL(QtyOrdered,0) * ISNULL(Price,0),CurrencyPlaces)*100) ELSE 0 end
+",0
+MatlCost,SLCoitems,0,matl_cost,,,Decimal,,0
+MatlCostConv,SLCoitems,0,matl_cost_conv,,,Decimal,,0
+MfrName,SLCoitems,0,name,,,String,,0
+MOBomAlternateDescription,SLCoitems,0,,,,String,(SELECT jb.MO_bom_alternate_description FROM job jb where jb.job = RefNum AND jb.suffix = RefLineSuf),0
+MOBomAlternateID,SLCoitems,0,,,,String,(SELECT jb.MO_bom_alternate_id FROM job jb where jb.job = RefNum AND jb.suffix = RefLineSuf),0
+MOCoJob,SLCoitems,0,MO_co_job,,,Byte,,0
+MOCoProductMix,SLCoitems,0,co_product_mix,,,Short Integer,,0
+MODerBOMType,SLCoitems,0,,,,String,"CASE 
+WHEN MOCoJob ='1'  THEN
+'J'
+WHEN MOCoProductMix ='1'  THEN
+'P'
+ELSE
+'I'
+END",0
+MODerCostPiece,SLCoitems,0,,,,Decimal,"Case When (RefType = 'J'  And ISNULL(QtyOrderedConv, 0) <> 0)
+THEN (dbo.GetJobPlanFOvhdCost(RefNum,RefLineSuf)+dbo.GetJobPlanLbrCost(RefNum,RefLineSuf)+
+        dbo.GetJobPlanMatlCost(RefNum,RefLineSuf)+dbo.GetJobPlanOutCost(RefNum,RefLineSuf)+
+        dbo.GetJobPlanVOvhdCost(RefNum,RefLineSuf)) / QtyOrderedConv
+ELSE 0
+END",0
+MODerExtendedCost,SLCoitems,0,,,,Decimal,0.0,0
+MODerExtPrice,SLCoitems,0,,,,Decimal,0,0
+MODerLaborPiece,SLCoitems,0,,,,Decimal,0,0
+MODerMarkup,SLCoitems,0,,,,Decimal,"DerExtPriceInDomesticCurrency - ExtendedCost
+",0
+MODerMaterialPiece,SLCoitems,0,,,,Decimal,"Case When RefType = 'J'  
+THEN dbo.GetJobPlanMatlCost(RefNum,RefLineSuf)
+ELSE 0
+END",0
+MODerNetPrice,SLCoitems,0,,,,Decimal,"ROUND((1.0 - ISNULL(Disc,0) / 100.0) * ISNULL(PriceConv,0), DerCurrencyPlaces)",0
+MODerPrice,SLCoitems,0,,,,Decimal,(MODerPricePiece * QtyOrderedConv),0
+MODerPriceBasis,SLCoitems,0,,,,String,0,0
+MODerPriceBasisAmount,SLCoitems,0,,,,Decimal,WksValue,0
+MODerPriceBasisUnitofMeasure,SLCoitems,0,,,,Decimal,0,0
+MODerPricePiece,SLCoitems,0,,,,Decimal,"Case MODerPriceBasis When '1'    Then MODerCostPiece * (1 + WksValue/100)
+                          When '2'    Then MODerCostPiece + WksValue
+                          When '3'    Then WksValue
+                          When '4'    Then MODerNetPrice 
+                          When '5'    Then MODerCostPiece+ MODerMarkup
+ELSE 0 
+END",0
+MODerPriceUnit,SLCoitems,0,,,,Decimal,0,0
+MODerQty,SLCoitems,0,,,,Decimal,0,0
+MODerUnitCost,SLCoitems,0,,,,Decimal,"Case When (RefType = 'J' And ISNULL(QtyOrderedConv, 0) <> 0)
+THEN ((dbo.GetJobPlanFOvhdCost(RefNum,RefLineSuf)+dbo.GetJobPlanLbrCost(RefNum,RefLineSuf)+
+        dbo.GetJobPlanMatlCost(RefNum,RefLineSuf)+dbo.GetJobPlanOutCost(RefNum,RefLineSuf)+
+        dbo.GetJobPlanVOvhdCost(RefNum,RefLineSuf))/QtyOrderedConv)
+ELSE 0
+END",0
+MOJob,SLCoitems,0,job,,,NumSortedString,,0
+MOJobSuffix,SLCoitems,0,suffix,,,Short Integer,,0
+MOProdcodeMarkup,SLCoitems,0,markup,,,Decimal,,0
+MOProductCycles,SLCoitems,0,MO_product_cycle,,,Long Integer,,0
+MOProductMix,SLCoitems,0,prod_mix,,,NumSortedString,,0
+MOQtyCycle,SLCoitems,0,,,,Decimal,"CASE
+WHEN dbo.MOGetBOMType(CoNum) = 'P' THEN
+(SELECT TOP 1 jm.ratio1 FROM job JOIN jobitem jm ON jm.job = job.job AND jm.suffix = job.suffix AND jm.item = Item
+WHERE job.ord_num = CoNum)
+ELSE
+(SELECT jb.MO_qty_per_cycle FROM job jb where jb.job = RefNum AND jb.suffix = RefLineSuf)
+END
+",0
+MOUbBOMType,SLCoitems,0,,,,String,dbo.MOGetBOMType(CoNum),0
+MOUbCoProductMix,SLCoitems,0,,,,NumSortedString,,0
+MOUbJob,SLCoitems,0,,,,NumSortedString,,0
+MOUbJobSuffix,SLCoitems,0,,,,Short Integer,,0
+MOUbProductCycles,SLCoitems,0,,,,Long Integer,,0
+MOUbResource,SLCoitems,0,,,,String,,0
+MOVenderPriceBreaks,SLCoitems,0,,,Short Integer,Short Integer,1,0
+Name,SLCoitems,0,name,,,String,,0
+NewDueDate,SLCoitems,0,,,Date,Date,,0
+NonInvAccessUnit1,SLCoitems,0,access_unit1,,,String,,0
+NonInvAccessUnit2,SLCoitems,0,access_unit2,,,String,,0
+NonInvAccessUnit3,SLCoitems,0,access_unit3,,,String,,0
+NonInvAccessUnit4,SLCoitems,0,access_unit4,,,String,,0
+NonInvAcct,SLCoitems,0,non_inv_acct,,,String,,0
+NonInvAcctDesc,SLCoitems,0,description,,,String,,0
+NonInvAcctUnit1,SLCoitems,0,non_inv_acct_unit1,,,String,,0
+NonInvAcctUnit2,SLCoitems,0,non_inv_acct_unit2,,,String,,0
+NonInvAcctUnit3,SLCoitems,0,non_inv_acct_unit3,,,String,,0
+NonInvAcctUnit4,SLCoitems,0,non_inv_acct_unit4,,,String,,0
+NonInvIsControl,SLCoitems,0,is_control,,,Byte,,0
+NoteExistsFlag,SLCoitems,0,NoteExistsFlag,,,Byte,,0
+OrdType,SLCoitems,0,,,,Long Integer,,0
+Origin,SLCoitems,0,origin,,,String,,0
+OutCost,SLCoitems,0,out_cost,,,Decimal,,0
+OutCostConv,SLCoitems,0,out_cost_conv,,,Decimal,,0
+Packed,SLCoitems,0,packed,,,Byte,,0
+ParCfgConfigGid,SLCoitems,0,config_id,,,String,,0
+ParSite,SLCoitems,0,site,,,String,,0
+PickDate,SLCoitems,0,pick_date,,,Date,,0
+PictureExistsFlag,SLCoitems,0,,,,Byte,"(SELECT CASE WHEN item.Picture IS NULL THEN 0 ELSE 1 END 
+FROM item WHERE item.item = Item)",0
+PlanCost,SLCoitems,0,,,,Decimal,,0
+PoLine,SLCoitems,0,,,Short Integer,Short Integer,,0
+PoNum,SLCoitems,0,,,NumSortedString,NumSortedString,,0
+PoRelease,SLCoitems,0,,,Long Integer,Long Integer,,0
+PPJobRowPointer,SLCoitems,0,RowPointer,,,GUID,,0
+PrgBillApp,SLCoitems,0,prg_bill_app,,,Decimal,,0
+PrgBillTot,SLCoitems,0,prg_bill_tot,,,Decimal,,0
+Price,SLCoitems,0,price,,,Decimal,,0
+Pricecode,SLCoitems,0,pricecode,,,String,,0
+PricecodeDesc,SLCoitems,0,description,,,String,,0
+PriceConv,SLCoitems,0,price_conv,,,Decimal,,0
+PrintKitComponents,SLCoitems,0,print_kit_components,,,Byte,,0
+Priority,SLCoitems,0,priority,,,Short Integer,,0
+ProcessInd,SLCoitems,0,process_ind,,,String,,0
+ProCompany,SLCoitems,0,company,,,String,,0
+ProCurrCode,SLCoitems,0,curr_code,,,String,,0
+ProdMix,SLCoitems,0,prod_mix,,,NumSortedString,,0
+ProjectedDate,SLCoitems,0,projected_date,,,Date,,0
+PromiseDate,SLCoitems,0,promise_date,,,Date,,0
+PromotionCode,SLCoitems,0,promotion_code,,,String,,0
+ProProspectId,SLCoitems,0,prospect_id,,,NumSortedString,,0
+ProspectId,SLCoitems,0,prospect_id,,,NumSortedString,,0
+QtyInvoiced,SLCoitems,0,qty_invoiced,,,Decimal,,0
+QtyOrdered,SLCoitems,0,qty_ordered,,,Decimal,,0
+QtyOrderedConv,SLCoitems,0,qty_ordered_conv,,,Decimal,,0
+QtyPacked,SLCoitems,0,qty_packed,,,Decimal,,0
+QtyPicked,SLCoitems,0,qty_picked,,,Decimal,,0
+QtyReady,SLCoitems,0,qty_ready,,,Decimal,,0
+QtyReturned,SLCoitems,0,qty_returned,,,Decimal,,0
+QtyRsvd,SLCoitems,0,qty_rsvd,,,Decimal,,0
+QtyShipped,SLCoitems,0,qty_shipped,,,Decimal,,0
+RcvdDate,SLCoitems,0,,,Date,Date,,0
+RecordDate,SLCoitems,0,RecordDate,,,Date,,0
+RefLineSuf,SLCoitems,0,ref_line_suf,,,Short Integer,,0
+RefNum,SLCoitems,0,ref_num,,,NumSortedString,,0
+RefRelease,SLCoitems,0,ref_release,,,Long Integer,,0
+RefType,SLCoitems,0,ref_type,,,String,,0
+ReleaseDate,SLCoitems,0,release_date,,,Date,,0
+Reprice,SLCoitems,0,reprice,,,Byte,,0
+RmaLine,SLCoitems,0,rma_line,,,Short Integer,,0
+RmaNum,SLCoitems,0,rma_num,,,NumSortedString,,0
+RowPointer,SLCoitems,0,RowPointer,,,GUID,,0
+SalesRegion,CHA_SLCoitems,1,Uf_SalesRegion,,String,String,,0
+ShiIteActive,SLCoitems,0,active,,,Byte,,0
+ShipDate,SLCoitems,0,ship_date,,,Date,,0
+ShippedOverOrderedQtyTolerance,SLCoitems,0,shipped_over_ordered_qty_tolerance,,,Decimal,,0
+ShippedUnderOrderedQtyTolerance,SLCoitems,0,shipped_under_ordered_qty_tolerance,,,Decimal,,0
+ShipSite,SLCoitems,0,ship_site,,,String,,0
+ShipSiteName,SLCoitems,0,site_name,,,String,,0
+ShowInDropDownList,SLCoitems,0,show_in_drop_down_list,,,Byte,,0
+Site,SLCoitems,0,site,,,String,,0
+SiteRef,SLCoitems,0,,,String,String,,0
+SLCoShipAlls,SLCoitems,0,,SLCoShipAlls,,,"ShipSite=SiteRef,CoNum=CoNum,CoLine=CoLine,CoRelease=CoRelease",0
+SLCoships,SLCoitems,0,,SLCoships,,,"CoNum=CoNum,CoLine=CoLine,CoRelease=CoRelease",0
+SLItemLocAlls,SLCoitems,0,,SLItemlocAlls,,,,0
+SLJobPriceBreaks,SLCoitems,0,,SLJobPriceBreaks,,,"MOUbJob=Job,MOUbJobSuffix=Suffix",0
+SLJobRoutes,SLCoitems,0,,SLJobRoutes,,,"RefNum=Job,RefLineSuf=Suffix",0
+SLPlanningDetails,SLCoitems,0,,SLPlanningDetails,,,,0
+SLPoItems,SLCoitems,0,,SLPoItems,,,"RefNum=PoNum,RefLineSuf=PoLine,RefRelease=PoRelease",0
+SLPreqitems,SLCoitems,0,,SLPreqitems,,,"RefLineSuf=ReqLine,RefNum=ReqNum",0
+SLProgbills,SLCoitems,0,,SL.SLProgbills,,,,0
+SLProjTasks,SLCoitems,0,,SLProjTasks,,,"RefNum=ProjNum,RefLineSuf=TaskNum",0
+SLRsvdInvs,SLCoitems,0,,SL.SLRsvdInvs,Object,Object,co_num = ref_num AND co_line = ref_line AND co_release = ref_release,0
+SLSerials,SLCoitems,0,,SL.SLSerials,Object,Object,,0
+SLShipmentSeqs,SLCoitems,0,,SLShipmentSeqs,,,"CoNum=RefNum,CoLine=RefLineSuf,CoRelease=RefRelease",0
+SLTrnitems,SLCoitems,0,,SLTrnitems,,,"RefNum=TrnNum,RefLineSuf=TrnLine",0
+Stat,SLCoitems,0,stat,,,String,,0
+StateCode,SLCoitems,0,state_code,,,String,,0
+StateDescription,SLCoitems,0,description,,,String,,0
+Summarize,SLCoitems,0,summarize,,,Byte,,0
+SupplQtyConvFactor,SLCoitems,0,suppl_qty_conv_factor,,,Float,,0
+SyncReqd,SLCoitems,0,sync_reqd,,,Byte,,0
+taken_by,CHA_SLCoitems,1,taken_by,,String,String,,0
+TaxCode1,SLCoitems,0,tax_code1,,,String,,0
+TaxCode2,SLCoitems,0,tax_code2,,,String,,0
+TaxRegNum1,SLCoitems,0,tax_reg_num1,,,String,,0
+Tc1Description,SLCoitems,0,description,,,String,,0
+Tc2Description,SLCoitems,0,description,,,String,,0
+TermsDescription,SLCoitems,0,description,,,String,,0
+TransNat,SLCoitems,0,trans_nat,,,String,,0
+TransNat2,SLCoitems,0,trans_nat_2,,,String,,0
+TransNat2Description,SLCoitems,0,description,,,String,,0
+Transport,SLCoitems,0,transport,,,String,,0
+TrnDescription,SLCoitems,0,description,,,String,,0
+TVariance,SLCoitems,0,,,,Decimal,,0
+UbAmount,SLCoitems,0,,,,Decimal,,0
+UbAmountWeb,SLCoitems,0,,,,Decimal,,0
+UbBrkPrice_1,SLCoitems,0,,,,Decimal,,0
+UbBrkPrice_2,SLCoitems,0,,,,Decimal,,0
+UbBrkPrice_3,SLCoitems,0,,,,Decimal,,0
+UbBrkPrice_4,SLCoitems,0,,,,Decimal,,0
+UbBrkPrice_5,SLCoitems,0,,,,Decimal,,0
+UbCommissionAmount,SLCoitems,0,,,,Decimal,,0
+UbContractDescription,SLCoitems,0,,,,String,,0
+UbContractID,SLCoitems,0,,,,NumSortedString,,0
+UbCustPriceConv,SLCoitems,0,,,,Decimal,,0
+UbDispMsg,SLCoitems,0,,,,Byte,0,0
+UbDispXRefMsg,SLCoitems,0,,,,Byte,,0
+UbGenerateQty,SLCoitems,0,,,,Long Integer,,0
+UbIncrPrice,SLCoitems,0,,,,Decimal,,0
+UbIndicator,SLCoitems,0,,,String,String,,0
+UbISOUM,SLCoitems,0,,,,String,,0
+UbItem,SLCoitems,0,,,,String,,0
+UbItemCustAdd,SLCoitems,0,,,,Byte,0,0
+UbItemCustUpdate,SLCoitems,0,,,,Byte,,0
+UbListPriceConv,SLCoitems,0,,,,Decimal,,0
+UbLotTrxRestrictCode,SLCoitems,0,,,,String,,0
+UbNetAdjust,SLCoitems,0,,,,Decimal,0.0,0
+UbNewDisc,SLCoitems,0,,,,Decimal,0.0,0
+UbNewDueDate,SLCoitems,0,,,,Date,,0
+UbNewNet,SLCoitems,0,,,,Decimal,0.0,0
+UbNewPrice,SLCoitems,0,,,,Decimal,0.0,0
+UbNumberOfCOLinesShipped,SLCoitems,0,,,,Long Integer,,0
+UbNumberOfCOLinesToShip,SLCoitems,0,,,,Long Integer,,0
+UbNumberOfPOLinesRcvd,SLCoitems,0,,,,Long Integer,,0
+UbNumberOfPOLinesToRcv,SLCoitems,0,,,,Long Integer,,0
+UbOldCustPriceConv,SLCoitems,0,,,,Decimal,,0
+UbOldNet,SLCoitems,0,,,,Decimal,0.0,0
+UbOrigCustPriceConv,SLCoitems,0,,,,Decimal,,0
+UbOrigUnitPrice,SLCoitems,0,,,,Decimal,,0
+UbPackNum,SLCoitems,0,,,,Long Integer,,0
+UbPicture,SLCoitems,0,,,,Binary,,0
+UbPlanOnSave,SLCoitems,0,,,,Byte,0,0
+UbPortalPricingOptionsExist,SLCoitems,0,,,,Byte,,0
+UbPrecision,SLCoitems,0,,,,Byte,,0
+UbProgBillAmount,SLCoitems,0,,,,Decimal,0,0
+UbQtyRsvd,SLCoitems,0,,,,Decimal,,0
+UbQtyToAdjust,SLCoitems,0,,,,Decimal,0.0,0
+UbRangeQty,SLCoitems,0,,,,Long Integer,,0
+UbRePrice,SLCoitems,0,,,,Decimal,,0
+UbSelect,SLCoitems,0,,,,Byte,0,0
+UbSelectedQty,SLCoitems,0,,,,Long Integer,,0
+UbSetItemCust,SLCoitems,0,,,,Byte,0,0
+UbSNTrxRestrictCode,SLCoitems,0,,,,String,,0
+UbSourceCoLine,SLCoitems,0,,,,Short Integer,,0
+UbSourceConfigID,SLCoitems,0,,,,NumSortedString,,0
+UbSourceCoNum,SLCoitems,0,,,,NumSortedString,,0
+UbTargetQty,SLCoitems,0,,,,Long Integer,,0
+Uf_ItmKent,CHA_SLCoitems,1,Uf_ItmKent,,Byte,Byte,,0
+Uf_Mkt_Msd,CHA_SLCoitems,1,Uf_Mkt_Msd,,Byte,Byte,,0
+Uf_RMA_Mkt,CHA_SLCoitems,1,Uf_RMA_Mkt,,String,String,,0
+UM,SLCoitems,0,u_m,,,String,,0
+UnitWeight,SLCoitems,0,unit_weight,,,Decimal,,0
+VendNum,SLCoitems,0,,,NumSortedString,NumSortedString,,0
+VName,SLCoitems,0,,,,String,,0
+VovhdCost,SLCoitems,0,vovhd_cost,,,Decimal,,0
+VovhdCostConv,SLCoitems,0,vovhd_cost_conv,,,Decimal,,0
+VPercent,SLCoitems,0,,,,Decimal,,0
+WBItProductCode,SLCoitems,0,product_code,,,String,,0
+WhsControlledByExternalWms,SLCoitems,0,controlled_by_external_wms,,,Byte,,0
+Whse,SLCoitems,0,whse,,,String,,0
+WksBasis,SLCoitems,0,wks_basis,,,String,,0
+WksValue,SLCoitems,0,wks_value,,,Decimal,,0

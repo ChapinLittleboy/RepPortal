@@ -1,0 +1,577 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+AckStat,SLCos,0,ack_stat,,,String,,0
+AcoCreateDate,AITSLCos,2,CreateDate,,Date,Date,,0
+AcoCreatedBy,AITSLCos,2,CreatedBy,,String,String,,0
+AcoInWorkflow,AITSLCos,2,InWorkflow,,Byte,Byte,,0
+AcoNoteExistsFlag,AITSLCos,2,NoteExistsFlag,,Byte,Byte,,0
+AcoRecordDate,AITSLCos,2,RecordDate,,Date,Date,,0
+AcoRowPointer,AITSLCos,2,RowPointer,,GUID,GUID,,0
+AcoUpdatedBy,AITSLCos,2,UpdatedBy,,String,String,,0
+AdrName,SLCos,0,name,,String,String,,0
+AIT_OrderTrackingNumbers,AITSLCos,2,,AIT_SS_OrderTrackingNumbers,,,,0
+AIT_SS_BOLByRefNums,AITSLCos,2,,AIT_SS_BOLByRefNums,,,CoNum=ref_num,0
+AIT_SS_ShopPackages,AITSLCos,2,,AIT_SS_ShopPackages,,,,0
+AIT_SS_ShopResults,AITSLCos,2,,AIT_SS_ShopResults,,,,0
+AITSSvalidate_address,AITSLCos,2,validate_address,,Byte,Byte,,0
+Amount,SLCos,0,,,Decimal,Decimal,,0
+ApplyToInvNum,SLCos,0,apply_to_inv_num,,,NumSortedString,,0
+ApsPullUp,SLCos,0,aps_pull_up,,,Byte,,0
+AUContractID,SLCos,0,,,NumSortedString,NumSortedString,(SELECT TOP 1 contract_id FROM  AU_co_contract_line WHERE co_num = CoNum),0
+BillToAddr_1,SLCos,0,addr##1,,,String,,0
+BillToAddr_2,SLCos,0,addr##2,,,String,,0
+BillToAddr_3,SLCos,0,addr##3,,,String,,0
+BillToAddr_4,SLCos,0,addr##4,,,String,,0
+BillToCity,SLCos,0,city,,,String,,0
+BillToContact_3,SLCos,0,contact##3,,,String,,0
+BillToCountry,SLCos,0,country,,,String,,0
+BillToEmailAddr,SLCos,0,customer_email_addr,,,String,,0
+BillToFaxNum,SLCos,0,fax_num,,,String,,0
+BillToName,SLCos,0,name,,,String,,0
+BillToPhone_3,SLCos,0,phone##3,,,String,,0
+BillToState,SLCos,0,state,,,String,,0
+BillToStateCode,SLCos,0,state_code,,,String,,0
+BillToStateDescription,SLCos,0,description,,,String,,0
+BillToZip,SLCos,0,zip,,,String,,0
+BillTransportationTo,AITSLCos,2,BillTransportationTo,,String,String,,0
+BR_PartyName,AITSLCos,2,,,String,String,(Select TOP 1 x.Name From AIT_SS_Shipping_Party x Where x.PartyNum = Aco.BR_PartyNum and x.PartyType = 'B'),0
+BR_PartyNum,AITSLCos,2,BR_PartyNum,,Long Integer,Long Integer,,0
+Cad01CreditHold,SLCos,0,credit_hold,,,Byte,,0
+Cad01Name,SLCos,0,name,,,String,,0
+Cad0CorpAddress,SLCos,0,corp_address,,,Byte,,0
+Cad0CorpCred,SLCos,0,corp_cred,,,Byte,,0
+Cad0CorpCust,SLCos,0,corp_cust,,String,String,,0
+Cad0CreditHold,SLCos,0,credit_hold,,,Byte,,0
+Cad0CurrPlaces,SLCos,0,places,,,Byte,,0
+Cad0Name,SLCos,0,name,,,String,,0
+CadrCurrCode,SLCos,0,curr_code,,,String,,0
+CadrName,SLCos,0,,,,String,"Case When CustNum is not null and CustNum <> ''
+   Then AdrName
+   Else
+      Case When ProspectId is not null and ProspectId <> ''
+         Then ProCompany
+         Else ''
+      End
+End",0
+camCampaignId,SLCos,0,campaign_id,,NumSortedString,NumSortedString,,0
+camCampaignStatus,SLCos,0,campaign_status,,String,String,,0
+camCampaignType,SLCos,0,campaign_type,,String,String,,0
+Caption,SLCos,0,,,String,String,,0
+CarrierServiceType,SLCos,0,carrier_service_type,,,String,,0
+Certifiedpickup,AITSLCos,2,Certifiedpickup,,Byte,Byte,,0
+CfgMainConfigGid,SLCos,0,config_gid,,,String,,0
+CfgMainConfigModel,SLCos,0,config_model,,,String,,0
+CfgMainConfigStatus,SLCos,0,config_status,,,String,,0
+Charfld1,SLCos,0,charfld1,,,String,,0
+Charfld2,SLCos,0,charfld2,,,String,,0
+Charfld3,SLCos,0,charfld3,,,String,,0
+CloseDate,SLCos,0,close_date,,,Date,,0
+CoCreditHold,SLCos,0,,,,Byte,Case When (Cad0CorpCust is not null and Cad0CorpCred = 1 and Cad0CreditHold <> 1) then Cad01CreditHold else Cad0CreditHold end,0
+COD,AITSLCos,2,COD,,,Byte,,0
+CODCollectionType,AITSLCos,2,CODCollectionType,,String,String,,0
+ConfigDocId,SLCos,0,config_doc_id,,,NumSortedString,,0
+ConfigId,SLCos,0,config_id,,,NumSortedString,,0
+ConfigModel,SLCos,0,config_model,,,String,,0
+Consignment,SLCos,0,consignment,,,Byte,,0
+Consolidate,SLCos,0,consolidate,,,Byte,,0
+Contact,SLCos,0,contact,,,String,,0
+CoNum,SLCos,0,co_num,,,NumSortedString,,0
+CoNumSort,SLCos,0,,,,NumSortedString,( SPACE( 7 - LEN( CoNum ) ) + CoNum ),0
+ConvertType,SLCos,0,convert_type,,,String,,0
+CorpCust,SLCos,0,corp_cust,,,NumSortedString,,0
+CoShipmentApprovalRequired,SLCos,0,shipment_approval_required,,,Byte,,0
+Cost,SLCos,0,cost,,,Decimal,,0
+Count,SLCos,0,,,Long Integer,Long Integer,,0
+CreateDate,SLCos_FT,1,CreateDate,,Date,Date,,0
+CreditHold,SLCos,0,credit_hold,,,Byte,,0
+CreditHoldDate,SLCos,0,credit_hold_date,,,Date,,0
+CreditHoldReason,SLCos,0,credit_hold_reason,,,String,,0
+CreditHoldReasonDesc,SLCos,0,description,,,String,,0
+CreditHoldUser,SLCos,0,credit_hold_user,,,String,,0
+Cur0AmtFormat,SLCos,0,amt_format,,,String,,0
+Cur0CstPrcFormat,SLCos,0,cst_prc_format,,,String,,0
+CurAllowOver,SLCos,0,allow_currate_override,,Byte,Byte,,0
+CurpAllowOver,SLCos,0,allow_currate_override,,Byte,Byte,,0
+CurrCode,SLCos,0,curr_code,,,String,,0
+CurrDescription,SLCos,0,description,,,String,,0
+cus_decifld2,CHAP_SLCos,1,decifld2,,Decimal,Decimal,,0
+Cus01Contact_3,SLCos,0,contact##3,,,String,,0
+Cus01Phone_3,SLCos,0,phone##3,,,String,,0
+Cus0CustType,SLCos,0,cust_type,,String,String,,0
+CusCustType,SLCos,0,cust_type,,,String,,0
+CusLangCode,SLCos,0,lang_code,,,String,,0
+CusLcrReqd,SLCos,0,lcr_reqd,,,Byte,,0
+CusTaxRegNum1ExpDate,SLCos,0,tax_reg_num1_exp_date,,,Date,,0
+CustCarrierAcct,AITSLCos,2,CustCarrierAcct,,String,String,,0
+CustNum,SLCos,0,cust_num,,,NumSortedString,,0
+CustomerPicture,SLCos,0,picture,,,Binary,,0
+CustPayType,SLCos,0,pay_type,,,String,,0
+CustPo,SLCos,0,cust_po,,,String,,0
+CustSeq,SLCos,0,cust_seq,,,Long Integer,,0
+CusTypTaxablePrice,SLCos,0,taxable_price,,,String,,0
+CusUseExchRate,SLCos,0,use_exch_rate,,,Byte,,0
+Date,SLCos,0,,,Date,Date,,0
+DateChar,SLCos,0,,,String,String,,0
+Datefld,SLCos,0,datefld,,,Date,,0
+DaysShippedAfterDueDateTolerance,SLCos,0,days_shipped_after_due_date_tolerance,,,Short Integer,,0
+DaysShippedBeforeDueDateTolerance,SLCos,0,days_shipped_before_due_date_tolerance,,,Short Integer,,0
+Decifld1,SLCos,0,decifld1,,,Decimal,,0
+Decifld2,SLCos,0,decifld2,,,Decimal,,0
+Decifld3,SLCos,0,decifld3,,,Decimal,,0
+DeclareValue,AITSLCos,2,DeclareValue,,Byte,Byte,,0
+DefaultShipTo,SLCos,0,default_ship_to,,Short Integer,Short Integer,,0
+DeliveryDocsRequiredForPu,AITSLCos,2,DeliveryDocsRequiredForPu,,Byte,Byte,,0
+DeliveryLoadingDock,AITSLCos,2,DeliveryLoadingDock,,Byte,Byte,,0
+DeliverySeaLinkRequired,AITSLCos,2,DeliverySeaLinkRequired,,Byte,Byte,,0
+DeliveryTWICRequired,AITSLCos,2,DeliveryTWICRequired,,Byte,Byte,,0
+Delterm,SLCos,0,delterm,,,String,,0
+DeltermDesc,SLCos,0,description,,,String,,0
+DemandingSite,SLCos,0,demanding_site,,,String,,0
+DemandingSitePoNum,SLCos,0,demanding_site_po_num,,,NumSortedString,,0
+density_based_freight,AITSLCos,2,density_based_freight,,Byte,Byte,,0
+DerASPSearch,SLCos,0,,,,String,"ISNULL(CoNum,{''}) + '|' + ISNULL(Stat,{''}) + '|' + ISNULL(CadrName,{''}) + '|' + CAST (OrderDate AS nvarchar(20))",0
+DerBillToAddress,SLCos,0,,,,String,"CASE WHEN CustNum <> '' AND CustNum IS NOT NULL THEN dbo.FormatAddress(CustNum, 0) ELSE '' END",0
+DerCOLineCount,SLCos,0,,,Short Integer,Short Integer,(SELECT COUNT(*) FROM dbo.coitem WHERE co_num = CoNum AND (Type  = 'E' Or Type = 'R')),0
+DerCoNum,SLCos,0,,,,NumSortedString,LTRIM(RTRIM(CoNum)),0
+DerCoShipmentApprovalRequired,SLCos,0,,,Byte,Byte,"CASE
+ WHEN EXISTS (SELECT 1 FROM dbo.co_ship  WHERE co_num = CoNum) THEN 1 
+ELSE 0
+END",0
+DerCoverSheetCompany,SLCos,0,,,,String,'',0
+DerCoverSheetContact,SLCos,0,,,,String,'',0
+DerCurrCode,SLCos,0,,,String,String,"COALESCE(ProCurrCode, CurrCode)
+",0
+DerCustName,SLCos,0,,,,String,"Case When CustNum is null or CustNum = '' Then
+    Case When ProspectId is not null and ProspectId <> ''
+        Then ProCompany
+    Else 
+        ''
+    End
+Else
+    CadrName
+End",0
+DerCustProspect,SLCos,0,,,String,String,"IsNull(CustNum, ProspectId)",0
+DerCustProspectCompany,SLCos,0,,,,String,CASE WHEN CustNum is NULL then ProspectCompany ELSE BillToName END,0
+DerDaysToShip,SLCos,0,,,,String,CASE WHEN ShmMinDaysToShip IS NOT NULL AND ShmMaxDaysToShip IS NOT NULL THEN LTRIM(Str(ShmMinDaysToShip)) + '-' + LTRIM(Str(ShmMaxDaysToShip)) WHEN ShmMinDaysToShip IS NOT NULL AND ShmMaxDaysToShip IS NULL THEN LTRIM(Str(ShmMinDaysToShip)) WHEN ShmMinDaysToShip IS NULL AND ShmMaxDaysToShip IS NOT NULL THEN LTRIM(Str(ShmMaxDaysToShip)) ELSE '' END,0
+DerDaysToShipMsg,SLCos,0,,,,String,"CASE WHEN DerDaysToShip IS NOT NULL THEN
+ShmDescription + '      ' + dbo.MsgAppFunctionSp ('', '@!UsuallyArrivesShipDate', DerDaysToShip, '', '', '', '', '', '', '', '', '', '', '', '', '', '')
+ELSE ShmDescription END",0
+DerDestination,SLCos,0,,,,String,'',0
+DerDocumentExists,SLCos,0,,,Byte,Byte,CASE WHEN EXISTS(SELECT TOP 1 RowPointer FROM dbo.DocumentObjectReference WHERE TableName = 'co' AND TableRowPointer = RowPointer) THEN 1 ELSE 0 END,0
+DerDoLines,SLCos,0,,,,Byte,0,0
+DerExistCoLine,SLCos,0,,,Byte,Byte,CASE WHEN EXISTS (SELECT 1 FROM dbo.coitem WHERE co_num = CoNum)  THEN 1 ELSE 0 END,0
+DerFavoriteCustomer,SLCos,0,,,,Byte,"CASE WHEN EXISTS (SELECT 1 FROM favorite_customer WHERE cust_num = CustNum AND username = dbo.[UserName2Sp]() )
+THEN 1
+ELSE
+0
+END",0
+DerGetOrderHeaderStatusForPortal,SLCos,0,,,String,String,dbo.GetOrderHeaderStatusForPortal(CoNum),0
+DerHasCoShipped,SLCos,0,,,,Byte,dbo.HasCoShipped(CoNum),0
+DerHasXRef,SLCos,0,,,,Byte,"CASE
+ WHEN EXISTS (SELECT 1 FROM dbo.coitem  WHERE co_num = CoNum and ref_type <> 'I' and Ref_Num Is not null) THEN 1 
+ELSE 0
+                 END",0
+DerIncludedCOLineCount,SLCos,0,,,Short Integer,Short Integer,(SELECT COUNT(*) FROM dbo.coitem WHERE co_num = CoNum AND (Type  = 'E' Or Type = 'R') AND exclude_from_copy_to_co = 0),0
+DerInteractionExists,SLCos,0,,,,Byte,"CASE WHEN EXISTS(SELECT TOP 1 * FROM dbo.interaction WHERE RefRowPointer = RowPointer) THEN 1
+ELSE 0 END",0
+DerInteractionRefType,SLCos,0,,,,String,"CASE 
+WHEN Type = 'E' THEN
+'E'
+ELSE 
+'C'
+END",0
+DerItemsShippedOnTime,SLCos,0,,,,Decimal,(SELECT COUNT(coitem.InWorkflow) FROM dbo.coitem WHERE ship_date <= due_date),0
+DerKentPrice,CHAP_SLCos,1,,,,Decimal,"COALESCE((SELECT Sum(price) FROM kent_app.dbo.co_mst WHERE co_num = CoNum ),0)",0
+DerLaborType,SLCos,0,,,,String,'',0
+DerLangCode,SLCos,0,,,,String,'',0
+DerLastLineShipDate,SLCos,0,,,Date,Date,(SELECT TOP 1 ship_date FROM dbo.coitem WHERE co_num = CoNum ORDER BY ship_date DESC),0
+DerLineExists,SLCos,0,,,,Byte,"CASE
+ WHEN EXISTS (SELECT 1 FROM dbo.co_bln  WHERE co_num = CoNum) THEN 1 
+ WHEN EXISTS (SELECT 1 FROM dbo.coitem  WHERE co_num = CoNum) THEN 1
+ELSE 0
+                 END",0
+DerMessage,SLCos,0,,,,String,'',0
+DerMethod,SLCos,0,,,,String,'',0
+DerNumCopies,SLCos,0,,,,Byte,'',0
+DerNumPackages,SLCos,0,,,,Short Integer,QtyPackages,0
+DerOldStat,SLCos,0,,,,String,Stat,0
+DerOpenItems,SLCos,0,,,,Decimal,(SELECT COUNT(CoItem.InWorkflow) FROM dbo.CoItem WHERE co_num=CoNum AND stat<>'C'),0
+DerOrderConfigurable,SLCos,0,,,,Byte,"CASE WHEN EXISTS (SELECT TOP 1 *
+FROM dbo.coitem c
+INNER JOIN dbo.item i on i.item = c.item
+WHERE i.order_configurable = 1 AND c.co_num = CoNum) THEN
+1 ELSE 0
+END",0
+DerOrderType,SLCos,0,,,String,String,'',0
+DerOutstandingOrderItems,SLCos,0,,,,Byte,(CASE WHEN EXISTS(SELECT stat FROM dbo.coitem WHERE coitem.stat <> 'F' AND coitem.stat <> 'C' AND coitem.co_num = CoNum) THEN 1 ELSE 0 END),0
+DerPaidByCreditCard,SLCos,0,,,,Byte,CASE WHEN PaymentMethod = 'C' THEN 1 ELSE 0 END,0
+DerPortalStatFormatted,SLCos,0,,,,String,"CASE WHEN EXISTS (SELECT TOP 1 * FROM dbo.co AS co2 WHERE co2.est_num = CoNum) THEN
+   dbo.MsgAppSubSp('&1', '@:CoStatus:O', '&1')
+ELSE
+   dbo.MsgAppSubSp('&1', '@:CoStatus:' + ISNULL(co.stat, {''}), '&1')
+END",0
+DerPreviousStat,SLCos,0,,,,String,Stat,0
+DerPriceBasis,SLCos,0,,,,String,(select top 1 wks_basis FROM dbo.coitem where co_num = CoNum),0
+DerPriceBasisAmount,SLCos,0,,,,Decimal,dbo.GetWksValue(CoNum),0
+DerProdMix,SLCos,0,,,NumSortedString,NumSortedString,(select top 1 prod_mix from dbo.job where job.ord_num = CoNum),0
+DerProfileExists,SLCos,0,,,,Byte,'',0
+DerQuoteCoNum,SLCos,0,,,NumSortedString,NumSortedString,"ISNULL((SELECT TOP 1 co_num FROM dbo.co AS co2 WHERE co2.est_num = CoNum ORDER BY co2.co_num DESC), '')",0
+DerRESIDQTY,SLCos,0,,,,Long Integer,0,0
+DerRevaluedExchRate,SLCos,0,,,,Decimal,'',0
+DerSelect,SLCos,0,,,,Byte,1,0
+DerShipDescription,SLCos,0,,,String,String,CASE WHEN ShipCodeDesc IS NOT NULL THEN ShipCodeDesc ELSE DerDaysToShipMsg END,0
+DerShipToAddress,SLCos,0,,,,String,"CASE WHEN CustNum <> '' AND CustNum IS NOT NULL THEN dbo.FormatAddress(CustNum, CustSeq) ELSE '' END",0
+DerShipVia,SLCos,0,,,,String,ShipCode,0
+DerSlsmanName,SLCos,0,,,,String,dbo.DerSlsmanName(Slsman),0
+DerStatFormatted,SLCos,0,,,,String,"dbo.MsgAppSubSp('&1', '@:CoStatus:' + ISNULL(co.stat, {''}), '&1')",0
+DerTaxCode1,SLCos,0,,,,String,TaxCode1,0
+DerTaxCode2,SLCos,0,,,,String,TaxCode2,0
+DerTotalPrice,CHAP_SLCos,1,,,,Decimal,(SELECT Sum(price) FROM dbo.co_mst_all WHERE co_num = CoNum ),0
+DerTotalProgBillAmt,SLCos,0,,,,Decimal,"ISNULL( (SELECT SUM(progbill.bill_amt) FROM dbo.progbill WHERE progbill.co_num = CoNum and progbill.invc_flag <> 'I' ) , 0)",0
+DerTotalTax,CHAP_SLCos,1,,,Decimal,Decimal,(SELECT Sum(sales_tax) FROM dbo.co_mst_all WHERE co_num = CoNum ),0
+DerTurnaroundDays,SLCos,0,,,,Decimal,"(DATEDIFF(day, OrderDate, DerLastLineShipDate))",0
+DerWeight,SLCos,0,,,,Decimal,Weight,0
+Description,AITSLCos,2,description,,String,String,,0
+Disc,SLCos,0,disc,,,Decimal,,0
+DiscAmount,SLCos,0,disc_amount,,,Decimal,,0
+DiscountType,SLCos,0,discount_type,,,String,,0
+DropShipType,AITSLCos,2,DropShipType,,String,String,,0
+DueDate,SLCos,0,,,Date,Date,,0
+DutyCustCarrierAcct,AITSLCOs,2,DutyCustCarrierAcct,,String,String,,0
+EdiOrder,SLCos,0,edi_order,,,Byte,,0
+EdiType,SLCos,0,edi_type,,,String,,0
+EEI_ExportDate,AITSLCos,2,EEI_ExportDate,,Date,Date,,0
+EEI_ModeOfTransport,AITSLCos,2,EEI_ModeOfTransport,,String,String,,0
+EEIFlag,AITSLCos,2,EEIFlag,,Byte,Byte,,0
+EffDate,SLCos,0,eff_date,,,Date,,0
+Einvoice,SLCos,0,einvoice,,,Byte,,0
+EndUserType,SLCos,0,end_user_type,,,String,,0
+EndUserTypeDesc,SLCos,0,description,,,String,,0
+EstCoNum,SLCos,0,co_num,,,NumSortedString,,0
+EstesExpeditedCode,AITSLCos,2,EstesExpeditedCode,,String,String,,0
+EstNum,SLCos,0,est_num,,,NumSortedString,,0
+ExchRate,SLCos,0,exch_rate,,,Decimal,,0
+ExpDate,SLCos,0,exp_date,,,Date,,0
+ExportType,SLCos,0,export_type,,,String,,0
+ExternalConfirmationRef,SLCos,0,external_confirmation_ref,,String,String,,0
+ExternalFreight,SLCos,0,external_freight,,,Decimal,,0
+ExternalWhseLineChanged,SLCos,0,external_whse_line_changed,,,Byte,,0
+FedexImmediatePickup,AITSLCos,2,FedexImmediatePickup,,Byte,Byte,,0
+FF_Addr1,AITSLCos,2,FF_Addr1,,String,String,,0
+FF_Addr2,AITSLCos,2,FF_Addr2,,String,String,,0
+FF_Addr3,AITSLCos,2,FF_Addr3,,String,String,,0
+FF_Addr4,AITSLCos,2,FF_Addr4,,String,String,,0
+FF_City,AITSLCos,2,FF_City,,String,String,,0
+FF_Country,AITSLCos,2,FF_Country,,String,String,,0
+FF_CustNum,AITSLCos,2,FF_CustNum,,String,String,,0
+FF_CustSeq,AITSLCos,2,FF_CustSeq,,String,String,,0
+FF_Email,AITSLCos,2,FF_Email,,String,String,,0
+FF_Fax,AITSLCos,2,FF_Fax,,String,String,,0
+FF_Name,AITSLCos,2,FF_Name,,String,String,,0
+FF_PartyName,AITSLCos,2,,,String,String,(Select TOP 1 x.Name From AIT_SS_Shipping_Party x Where x.PartyNum = Aco.FF_PartyNum and x.PartyType = 'F'),0
+FF_PartyNum,AITSLCos,2,FF_PartyNum,,Long Integer,Long Integer,,0
+FF_Phone,AITSLCos,2,FF_Phone,,String,String,,0
+FF_State,AITSLCos,2,FF_State,,String,String,,0
+FF_TaxID,AITSLCos,2,FF_TaxID,,String,String,,0
+FF_Terms,AITSLCos,2,FF_Terms,,String,String,,0
+FF_Zip,AITSLCos,2,FF_Zip,,String,String,,0
+FixedRate,SLCos,0,fixed_rate,,,Byte,,0
+FormatBillToAddress,SLCos,0,,,,String,"CASE WHEN CustNum <> '' AND CustNum IS NOT NULL 
+  THEN dbo.FormatAddress(CustNum, 0) 
+  ELSE 
+    CASE WHEN ProspectId <> '' AND ProspectId IS NOT NULL
+      THEN dbo.FormatProspectAddress(ProspectId)
+      ELSE ''
+    END
+END",0
+FormatShipToAddress,SLCos,0,,,,String,"CASE WHEN CustNum <> '' AND CustNum IS NOT NULL THEN dbo.FormatAddress(CustNum, CustSeq) ELSE '' END",0
+FovhdCostT,SLCos,0,fovhd_cost_t,,,Decimal,,0
+Freight,SLCos,0,freight,,,Decimal,,0
+freight_rule,AITSLCos,2,freight_rule,,String,String,,0
+FreightT,SLCos,0,freight_t,,,Decimal,,0
+FrtTaxCode1,SLCos,0,frt_tax_code1,,,String,,0
+FrtTaxCode1Desc,SLCos,0,description,,,String,,0
+FrtTaxCode2,SLCos,0,frt_tax_code2,,,String,,0
+FrtTaxCode2Desc,SLCos,0,description,,,String,,0
+hide_postage,AITSLCos,2,hide_postage,,Byte,Byte,,0
+IgnoreCustCarrierAcct,AITSLCos,2,IgnoreCustCarrierAcct,,Byte,Byte,,0
+IncludeTaxInPrice,SLCos,0,include_tax_in_price,,,Byte,,0
+Insured,AITSLCos,2,Insured,,,Byte,,0
+InteractionContact,SLCos,0,,,String,String,,0
+InteractionId,SLCos,0,,,Decimal,Decimal,,0
+InteractionSeq,SLCos,0,,,Decimal,Decimal,,0
+InteractionType,SLCos,0,,,String,String,,0
+International,AITSLCos,2,International,,,Byte,,0
+InvFreq,SLCos,0,inv_freq,,,String,,0
+Invoiced,SLCos,0,invoiced,,,Byte,,0
+InWorkflow,SLCos,0,InWorkflow,,,Byte,,0
+is_adult_signature_restricted_delivery,AITSLCos,2,is_adult_signature_restricted_delivery,,Byte,Byte,,0
+is_am_delivery,AITSLCos,2,is_am_delivery,,Byte,Byte,,0
+is_certified_mail,AITSLCos,2,is_certified_mail,,Byte,Byte,,0
+is_construction_delivery,AITSLCos,2,is_construction_delivery,,Byte,Byte,,0
+is_delivery_confirmation,AITSLCos,2,is_delivery_confirmation,,Byte,Byte,,0
+is_hal,AITSLCos,2,is_hal,,Byte,Byte,,0
+is_holiday_pickup,AITSLCos,2,is_holiday_pickup,,Byte,Byte,,0
+is_live_animal_surcharge,AITSLCos,2,is_live_animal_surcharge,,Byte,Byte,,0
+is_optional_endorsement,AITSLCos,2,is_optional_endorsement,,Byte,Byte,,0
+is_pickup_from_door,AITSLCos,2,is_pickup_from_door,,Byte,Byte,,0
+is_pm_express_return,AITSLCos,2,is_pm_express_return,,Byte,Byte,,0
+is_registered_mail,AITSLCos,2,is_registered_mail,,Byte,Byte,,0
+is_restricted_delivery,AITSLCos,2,is_restricted_delivery,,Byte,Byte,,0
+is_return_receipt,AITSLCos,2,is_return_receipt,,Byte,Byte,,0
+is_softpack,AITSLCos,2,is_softpack,,Byte,Byte,,0
+is_special_handling,AITSLCos,2,is_special_handling,,Byte,Byte,,0
+is_to_door_delivery,AITSLCos,2,is_to_door_delivery,,Byte,Byte,,0
+is_weekend_delivery,AITSLCos,2,is_weekend_delivery,,Byte,Byte,,0
+is_weekend_pickup,AITSLCos,2,is_weekend_pickup,,Byte,Byte,,0
+isAlcoholShipment,AITSLCos,2,isAlcoholShipment,,Byte,Byte,,0
+isApptDelivery,AITSLCos,2,isApptDelivery,,Byte,Byte,,0
+IsArrivalNotification,AITSLCos,2,IsArrivalNotification,,Byte,Byte,,0
+isas3816,AITSLCos,2,isas3816,,Byte,Byte,,0
+isBlindShipmentCoordination,AITSLCos,2,isBlindShipmentCoordination,,Byte,Byte,,0
+isCallBeforeDelivery,AITSLCos,2,isCallBeforeDelivery,,Byte,Byte,,0
+isCustomsPaperworkPort,AITSLCos,2,isCustomsPaperworkPort,,Byte,Byte,,0
+isDangerousGoods,AITSLCos,2,isDangerousGoods,,Byte,Byte,,0
+IsDeliveryToMines,AITSLCos,2,IsDeliveryToMines,,Byte,Byte,,0
+isDeliveryToPort,AITSLCos,2,isDeliveryToPort,,Byte,Byte,,0
+isDonotbreakdownpallet,AITSLCos,2,isDonotbreakdownpallet,,Byte,Byte,,0
+isDoNotStackPallets,AITSLCos,2,isDoNotStackPallets,,Byte,Byte,,0
+isDryIce,AITSLCos,2,isDryIce,,Byte,Byte,,0
+isExhibitionCharge,AITSLCos,2,isExhibitionCharge,,Byte,Byte,,0
+IsExternal,SLCos,0,is_external,,Byte,Byte,,0
+isFairAmusementParkDelivery,AITSLCos,2,isFairAmusementParkDelivery,,Byte,Byte,,0
+isFairAmusementParkPickup,AITSLCos,2,isFairAmusementParkPickup,,Byte,Byte,,0
+isFarmCountryClubEstateDelivery,AITSLCos,2,isFarmCountryClubEstateDelivery,,Byte,Byte,,0
+isFarmCountryClubEstatePickup,AITSLCos,2,isFarmCountryClubEstatePickup,,Byte,Byte,,0
+isFedexOneRate,AITSLCos,2,isFedexOneRate,,Byte,Byte,,0
+isFood,AITSLCos,2,isFood,,Byte,Byte,,0
+isFreezableProtection,AITSLCos,2,isFreezableProtection,,Byte,Byte,,0
+isGuaranteedPlus,AITSLCos,2,isGuaranteedPlus,,Byte,Byte,,0
+IsHazardousMaterial,AITSLCos,2,IsHazardousMaterial,,Byte,Byte,,0
+isHeatChargePerItem810,AITSLCos,2,isHeatChargePerItem810,,Byte,Byte,,0
+isInBondService,AITSLCos,2,isInBondService,,Byte,Byte,,0
+isInsidedelivery,AITSLCos,2,isInsidedelivery,,Byte,Byte,,0
+isInsideDeliveryChargeCollect,AITSLCos,2,isInsideDeliveryChargeCollect,,Byte,Byte,,0
+isInsidepickup,AITSLCos,2,isInsidepickup,,Byte,Byte,,0
+isLiftgateatdelivery,AITSLCos,2,isLiftgateatdelivery,,Byte,Byte,,0
+isLiftgateatpickup,AITSLCos,2,isLiftgateatpickup,,Byte,Byte,,0
+isLimitedAccessDelivery,AITSLCos,2,isLimitedAccessDelivery,,Byte,Byte,,0
+isLimitedAccessPickup,AITSLCos,2,isLimitedAccessPickup,,Byte,Byte,,0
+isMineDeliveryorPickup,AITSLCos,2,isMineDeliveryorPickup,,Byte,Byte,,0
+isNonStdContainer,AITSLCos,2,isNonStdContainer,,Byte,Byte,,0
+isOversizeExtremelength,AITSLCos,2,isOversizeExtremelength,,Byte,Byte,,0
+isPickupFromPort,AITSLCos,2,isPickupFromPort,,Byte,Byte,,0
+isPoison,AITSLCos,2,isPoison,,Byte,Byte,,0
+isPriorityAlert,AITSLCos,2,isPriorityAlert,,Byte,Byte,,0
+isPrisonMilitaryDelivery,AITSLCos,2,isPrisonMilitaryDelivery,,Byte,Byte,,0
+isSchoolDelivery,AITSLCos,2,isSchoolDelivery,,Byte,Byte,,0
+isSchoolPickup,AITSLCos,2,isSchoolPickup,,Byte,Byte,,0
+IsSchoolsCollegeChurchesPickupDelivery,AITSLCos,2,IsSchoolsCollegeChurchesPickupDelivery,,Byte,Byte,,0
+isSecuredLocDelivery,AITSLCos,2,isSecuredLocDelivery,,Byte,Byte,,0
+isSecuredLocPickup,AITSLCos,2,isSecuredLocPickup,,Byte,Byte,,0
+IsSelfStorageDelivery,AITSLCos,2,IsSelfStorageDelivery,,Byte,Byte,,0
+isStopoffServices,AITSLCos,2,isStopoffServices,,Byte,Byte,,0
+isTopLoadOnly,AITSLCos,2,isTopLoadOnly,,Byte,Byte,,0
+isUnloadingServicesRequested,AITSLCos,2,isUnloadingServicesRequested,,Byte,Byte,,0
+ItemCount,SLCos,0,,,Long Integer,Long Integer,dbo.GetOrderItemCount(CoNum),0
+KeyField,SLCos,0,,,String,String,,0
+KeySeq,SLCos,0,,,String,String,,0
+KPIAmount,SLCos,0,,,Decimal,Decimal,,0
+KPIAmount2,SLCos,0,,,Decimal,Decimal,,0
+KPIDateShort,SLCos,0,,,String,String,,0
+LbrCostT,SLCos,0,lbr_cost_t,,,Decimal,,0
+LCDTCO_DTIcon,LCDTSLCos-CO-DTIcon,3,,,String,String,"dbo.lc_dt_GetDTIconFN('CustomerOrders', CoNum, NULL, NULL, NULL, NULL, NULL)",0
+LCDTCODynamicAssociations,LCDTSLCos-CO-DTIcon,3,,,Byte,Byte,dbo.lc_dt_GetDynamicAssociationsFn(),0
+LCDTCODynamicVirtuals,LCDTSLCos-CO-DTIcon,3,,,Byte,Byte,dbo.lc_dt_GetDynamicVirtualFn(),0
+LCDTCORunVirtsOnClient,LCDTSLCos-CO-DTIcon,3,,,String,String,dbo.lc_dt_GetRunVirtsOnClientFN(),0
+LCDTEstimate_DTIcon,LCDTSLCos-Estimate-DTIcon,4,,,String,String,"dbo.lc_dt_GetDTIconFN('Estimates', CoNum, NULL, NULL, NULL, NULL, NULL)",0
+LCDTEstimateDynamicAssociations,LCDTSLCos-Estimate-DTIcon,4,,,Byte,Byte,dbo.lc_dt_GetDynamicAssociationsFn(),0
+LCDTEstimateDynamicVirtuals,LCDTSLCos-Estimate-DTIcon,4,,,Byte,Byte,dbo.lc_dt_GetDynamicVirtualFn(),0
+LCDTEstimateRunVirtsOnClient,LCDTSLCos-Estimate-DTIcon,4,,,String,String,dbo.lc_dt_GetRunVirtsOnClientFN(),0
+LcrNum,SLCos,0,lcr_num,,,String,,0
+Lead,SLCos,0,,SLLeads,,,,0
+LeadDescription,SLCos,0,description,,,String,,0
+LeadId,SLCos,0,lead_id,,NumSortedString,NumSortedString,,0
+lock_freight,AITSLCos,2,lock_freight,,Byte,Byte,,0
+Logifld,SLCos,0,logifld,,,Byte,,0
+MatlCostT,SLCos,0,matl_cost_t,,,Decimal,,0
+MChargesT,SLCos,0,m_charges_t,,,Decimal,,0
+MiniStorageUnitDelivery,AITSLCos,2,MiniStorageUnitDelivery,,Byte,Byte,,0
+MiniStorageUnitPickup,AITSLCos,2,MiniStorageUnitPickup,,Byte,Byte,,0
+MiscCharges,SLCos,0,misc_charges,,,Decimal,,0
+MOCoProductMix,SLCos,0,,,,NumSortedString,,0
+MODerEstJobFlag,SLCos,0,,,,Byte,"ISNULL(dbo.MOGetEstJobFlag(CoNum),0)",0
+MODerLoadByDateChange,SLCos,0,,,,Byte,0,0
+ModeTransport,AITSLCos,2,transport,,String,String,,0
+MOProductCycles,SLCos,0,,,,Long Integer,dbo.MOGetBOMProductCycles(CoNum),0
+MOUbBOMType,SLCos,0,,,,String,dbo.MOGetBOMType(CoNum),0
+MOUbResource,SLCos,0,,,,String,,0
+MscTaxCode1,SLCos,0,msc_tax_code1,,,String,,0
+MscTaxCode1Desc,SLCos,0,description,,,String,,0
+MscTaxCode2,SLCos,0,msc_tax_code2,,,String,,0
+MscTaxCode2Desc,SLCos,0,description,,,String,,0
+no_weekend_delivery,AITSLCos,2,no_weekend_delivery,,Byte,Byte,,0
+Note,SLCos,0,,,String,String,,0
+NoteExistsFlag,SLCos,0,NoteExistsFlag,,,Byte,,0
+OppDescription,SLCos,0,description,,,String,,0
+OppId,SLCos,0,opp_id,,,NumSortedString,,0
+Opportunity,SLCos,0,,SLOpportunities,,,,0
+OrderDate,SLCos,0,order_date,,,Date,,0
+OrderSource,SLCos,0,order_source,,,String,,0
+OrigSite,SLCos,0,orig_site,,,String,,0
+OrigSiteName,SLCos,0,site_name,,,String,,0
+OutCostT,SLCos,0,out_cost_t,,,Decimal,,0
+ParAddr1,SLCos,0,addr##1,,,String,,0
+ParAddr2,SLCos,0,addr##2,,,String,,0
+ParCity,SLCos,0,city,,,String,,0
+ParCompany,SLCos,0,company,,,String,,0
+ParmSite,SLCos,0,site,,,String,,0
+ParSite,SLCos,0,site,,,String,,0
+ParState,SLCos,0,state,,,String,,0
+ParZip,SLCos,0,zip,,,String,,0
+PaymentMethod,SLCos,0,payment_method,,,String,,0
+Phone,SLCos,0,phone,,,String,,0
+PickupDocsRequiredForPu,AITSLCos,2,PickupDocsRequiredForPu,,Byte,Byte,,0
+PickupSeaLinkRequired,AITSLCos,2,PickupSeaLinkRequired,,Byte,Byte,,0
+PortalOrder,SLCos,0,portal_order,,,Byte,,0
+PrepaidAmt,SLCos,0,prepaid_amt,,,Decimal,,0
+PrepaidT,SLCos,0,prepaid_t,,,Decimal,,0
+Price,SLCos,0,price,,,Decimal,,0
+Pricecode,SLCos,0,pricecode,,,String,,0
+PricecodeDesc,SLCos,0,description,,,String,,0
+Priority,SLCos,0,priority,,,Short Integer,,0
+ProcessInd,SLCos,0,process_ind,,,String,,0
+ProCompany,SLCos,0,company,,,String,,0
+ProCurrCode,SLCos,0,curr_code,,,String,,0
+ProjectedDate,SLCos,0,projected_date,,,Date,,0
+ProspectCompany,SLCos,0,company,,,String,,0
+ProspectId,SLCos,0,prospect_id,,,NumSortedString,,0
+Qty,SLCos,0,,,Decimal,Decimal,,0
+QtyPackages,SLCos,0,qty_packages,,,Short Integer,,0
+RecordDate,SLCos,0,RecordDate,,,Date,,0
+ReqDeliveryDate,AITSLCos,2,ReqDeliveryDate,,Date,Date,,0
+RHawk_DestLocType,AITSLCos,2,RHawk_DestLocType,,String,String,,0
+RHawk_DLLT,AITSLCos,2,RHawk_DLLT,,String,String,,0
+RHawk_EquipCode,AITSLCos,2,RHawk_EquipCode,,String,String,,0
+RHawk_GTD,AITSLCos,2,RHawk_GTD,,String,String,,0
+RHawk_OrigLocType,AITSLCos,2,RHawk_OrigLocType,,String,String,,0
+RHawk_PULT,AITSLCos,2,RHawk_PULT,,String,String,,0
+RHawk_RfrTemp,AITSLCos,2,RHawk_RfrTemp,,String,String,,0
+RHawk_Tarp,AITSLCos,2,RHawk_Tarp,,String,String,,0
+RHawk_TeamDrv,AITSLCos,2,RHawk_TeamDrv,,String,String,,0
+RHawk_TrlFt,AITSLCos,2,RHawk_TrlFt,,String,String,,0
+RHawk_TrlSpclType,AITSLCos,2,RHawk_TrlSpclType,,String,String,,0
+RowPointer,SLCos,0,RowPointer,,,GUID,,0
+RWOOD_Equipment,AITSLCos,2,RWOOD_Equipment,,String,String,,0
+SalesTax,SLCos,0,sales_tax,,,Decimal,,0
+SalesTax2,SLCos,0,sales_tax_2,,,Decimal,,0
+SalesTaxT,SLCos,0,sales_tax_t,,,Decimal,,0
+SalesTaxT2,SLCos,0,sales_tax_t2,,,Decimal,,0
+SatDelivery,AITSLCos,2,SatDelivery,,,Byte,,0
+SCAC,AITSLCos,2,SCAC,,String,String,,0
+SecuredDividerService,AITSLCos,2,SecuredDividerService,,Byte,Byte,,0
+SessionID,SLCos,0,,,,GUID,dbo.SessionIDSp(),0
+ShipCode,SLCos,0,ship_code,,,String,,0
+ShipCodeDesc,SLCos,0,description,,,String,,0
+ShipEarly,SLCos,0,ship_early,,,Byte,,0
+ShipHold,SLCos,0,ship_hold,,,Byte,,0
+ShipMethod,SLCos,0,ship_method,,,String,,0
+ShipMethodDesc,SLCos,0,description,,,String,,0
+ShipPartial,SLCos,0,ship_partial,,,Byte,,0
+ShippedOverOrderedQtyTolerance,SLCos,0,shipped_over_ordered_qty_tolerance,,,Decimal,,0
+ShippedUnderOrderedQtyTolerance,SLCos,0,shipped_under_ordered_qty_tolerance,,,Decimal,,0
+ShippingMethod,SLCos,0,,,,String,,0
+ShippingMethodDescription,SLCos,0,,,,String,,0
+ShipToAddr_1,SLCos,0,addr##1,,,String,,0
+ShipToAddr_2,SLCos,0,addr##2,,,String,,0
+ShipToAddr_3,SLCos,0,addr##3,,,String,,0
+ShipToAddr_4,SLCos,0,addr##4,,,String,,0
+ShipToCity,SLCos,0,city,,,String,,0
+ShipToContact_2,SLCos,0,contact##2,,,String,,0
+ShipToCountry,SLCos,0,country,,,String,,0
+ShipToEmailAddr,SLCos,0,customer_email_addr,,,String,,0
+ShipToFaxNum,SLCos,0,fax_num,,,String,,0
+ShipToName,SLCos,0,name,,,String,,0
+ShipToPhone_2,SLCos,0,phone##2,,,String,,0
+ShipToState,SLCos,0,state,,,String,,0
+ShipToStateCode,SLCos,0,state_code,,,String,,0
+ShipToStateDescription,SLCos,0,description,,,String,,0
+ShipToZip,SLCos,0,zip,,,String,,0
+ShmDescription,SLCos,0,description,,,String,,0
+ShmMaxDaysToShip,SLCos,0,max_days_to_ship,,,Long Integer,,0
+ShmMinDaysToShip,SLCos,0,min_days_to_ship,,,Long Integer,,0
+show_ret_addr,AITSLCos,2,show_ret_addr,,Byte,Byte,,0
+signature_waiver,AITSLCos,2,signature_waiver,,Byte,Byte,,0
+SignatureReq,AITSLCos,2,SignatureReq,,,Byte,,0
+SiteSiteName,SLCos,0,site_name,,,String,,0
+SLCoBlns,SLCos,0,,SL.SLCoBlns,,,,0
+SLCoitems,SLCos,0,,SL.SLCoitems,,,,0
+SLCoShips,SLCos,0,,SL.SLCoShips,Object,Object,,0
+SLCoSlsComms,SLCos,0,,SL.SLCoSlsComms,Object,Object,,0
+SLRsvdInvs,SLCos,0,,SL.SLRsvdInvs,Object,Object,,0
+SLShipmentSeqs,SLCos,0,,SLShipmentSeqs,,,CoNum=RefNum,0
+Slsman,SLCos,0,slsman,,,String,,0
+SLXTaxes,SLCos,0,,SL.SLXTaxes,Object,Object,,0
+sp_endorsement_type,AITSLCos,2,sp_endorsement_type,,String,String,,0
+Stat,SLCos,0,stat,,,String,,0
+Summarize,SLCos,0,summarize,,,Byte,,0
+SunHolDelivery,AITSLCos,2,SunHolDelivery,,String,String,,0
+Surcharge,SLCos,0,surcharge,,,Decimal,,0
+SurchargeT,SLCos,0,surcharge_t,,,Decimal,,0
+SyncReqd,SLCos,0,sync_reqd,,,Byte,,0
+TakenBy,SLCos,0,taken_by,,,String,,0
+TaxCode1,SLCos,0,tax_code1,,,String,,0
+TaxCode1Desc,SLCos,0,description,,,String,,0
+TaxCode2,SLCos,0,tax_code2,,,String,,0
+TaxCode2Desc,SLCos,0,description,,,String,,0
+TaxRegNum1,SLCos,0,tax_reg_num1,,,String,,0
+TCSA,AITSLCos,2,TCSA,,Byte,Byte,,0
+TermsCode,SLCos,0,terms_code,,,String,,0
+TermsCodeDesc,SLCos,0,description,,,String,,0
+TermsCodeDiscDays,SLCos,0,disc_days,,,Long Integer,,0
+TermsCodeDiscPct,SLCos,0,disc_pct,,,Decimal,,0
+TermsCodeDueDays,SLCos,0,due_days,,,Long Integer,,0
+TP_Addr1,AITSLCos,2,TP_Addr1,,String,String,,0
+TP_Addr2,AITSLCos,2,TP_Addr2,,String,String,,0
+TP_Addr3,AITSLCos,2,TP_Addr3,,String,String,,0
+TP_Addr4,AITSLCos,2,TP_Addr4,,String,String,,0
+TP_City,AITSLCos,2,TP_City,,String,String,,0
+TP_Country,AITSLCos,2,TP_Country,,String,String,,0
+TP_CustNum,AITSLCos,2,TP_CustNum,,String,String,,0
+TP_CustSeq,AITSLCos,2,TP_CustSeq,,String,String,,0
+TP_Email,AITSLCos,2,TP_Email,,String,String,,0
+TP_Fax,AITSLCos,2,TP_Fax,,String,String,,0
+TP_Name,AITSLCos,2,TP_Name,,String,String,,0
+TP_PartyName,AITSLCos,2,,,String,String,(Select TOP 1 x.Name From AIT_SS_Shipping_Party x Where x.PartyNum = Aco.TP_PartyNum and x.PartyType = 'T'),0
+TP_PartyNum,AITSLCos,2,TP_PartyNum,,Long Integer,Long Integer,,0
+TP_Phone,AITSLCos,2,TP_Phone,,String,String,,0
+TP_State,AITSLCos,2,TP_State,,String,String,,0
+TP_TaxID,AITSLCos,2,TP_TaxID,,String,String,,0
+TP_Terms,AITSLCos,2,TP_Terms,,String,String,,0
+TP_Zip,AITSLCos,2,TP_Zip,,String,String,,0
+TransNat,SLCos,0,trans_nat,,,String,,0
+TransNat2,SLCos,0,trans_nat_2,,,String,,0
+TransNat2Description,SLCos,0,description,,,String,,0
+TransNatDesc,SLCos,0,description,,,String,,0
+Ts1TaxMode,SLCos,0,tax_mode,,,String,,0
+Type,SLCos,0,type,,,String,,0
+Ub_freight_rule,AITSLCos,2,,,String,String,,0
+Ub_freight_rule_desc,AITSLCos,2,,,String,String,,0
+UbEstSetLineStat,SLCos,0,,,,Byte,0,0
+UbPackNum,SLCos,0,,,,Long Integer,,0
+UbProgBillBillingDate,SLCos,0,,,,Date,,0
+UbProgBillDescription,SLCos,0,,,,String,,0
+UbProgBillInvoiceFlag,SLCos,0,,,,String,Y,0
+UbProgBillPercentToBill,SLCos,0,,,,Short Integer,0,0
+UbSourceConfigID,SLCos,0,,,,NumSortedString,,0
+UbSourceCoNum,SLCos,0,,,,NumSortedString,,0
+uf_c_slsmgr,CHAP_SLCos,1,uf_c_slsmgr,,String,String,,0
+Uf_FrtTerms,CHAP_SLCos,1,Uf_FrtTerms,,String,String,,0
+Uf_SalesRegion,CHAP_SLCos,1,Uf_SalesRegion,,String,String,,0
+UpdatedBy,SLCos,0,UpdatedBy,,String,String,,0
+UseExchRate,SLCos,0,use_exch_rate,,,Byte,,0
+VendName,SLCos,0,,,String,String,,0
+VovhdCostT,SLCos,0,vovhd_cost_t,,,Decimal,,0
+Weight,SLCos,0,weight,,,Decimal,,0
+Whse,SLCos,0,whse,,,String,,0
+WithholdingTaxAmount,SLCos,0,withholding_tax_amount,,,Decimal,,0
+WithholdingTaxAmountT,SLCos,0,withholding_tax_amount_t,,,Decimal,,0

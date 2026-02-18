@@ -1,0 +1,49 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+AdrCurrCode,SLItemCustPriceAlls,0,curr_code,,,String,,0
+AdrName,SLItemCustPriceAlls,0,name,,,String,,0
+BaseCode_1,SLItemCustPriceAlls,0,base_code##1,,,String,,0
+BaseCode_2,SLItemCustPriceAlls,0,base_code##2,,,String,,0
+BaseCode_3,SLItemCustPriceAlls,0,base_code##3,,,String,,0
+BaseCode_4,SLItemCustPriceAlls,0,base_code##4,,,String,,0
+BaseCode_5,SLItemCustPriceAlls,0,base_code##5,,,String,,0
+BrkPrice_1,SLItemCustPriceAlls,0,brk_price##1,,,Decimal,,0
+BrkPrice_2,SLItemCustPriceAlls,0,brk_price##2,,,Decimal,,0
+BrkPrice_3,SLItemCustPriceAlls,0,brk_price##3,,,Decimal,,0
+BrkPrice_4,SLItemCustPriceAlls,0,brk_price##4,,,Decimal,,0
+BrkPrice_5,SLItemCustPriceAlls,0,brk_price##5,,,Decimal,,0
+BrkQty_1,SLItemCustPriceAlls,0,brk_qty##1,,,Decimal,,0
+BrkQty_2,SLItemCustPriceAlls,0,brk_qty##2,,,Decimal,,0
+BrkQty_3,SLItemCustPriceAlls,0,brk_qty##3,,,Decimal,,0
+BrkQty_4,SLItemCustPriceAlls,0,brk_qty##4,,,Decimal,,0
+BrkQty_5,SLItemCustPriceAlls,0,brk_qty##5,,,Decimal,,0
+ContPrice,SLItemCustPriceAlls,0,cont_price,,,Decimal,,0
+CurrCstPrcFormat,SLItemCustPriceAlls,0,cst_prc_format,,,String,,0
+CurrRateIsDivisor,SLItemCustPriceAlls,0,rate_is_divisor,,,Byte,,0
+CustNum,SLItemCustPriceAlls,0,cust_num,,,NumSortedString,,0
+DerIfConvertedConversionRate,SLItemCustPriceAlls,0,,,,Decimal,Case when AdrCurrCode = PriCurrCode then 1 else RateSellRate End,0
+DerUnitPrice1,SLItemCustPriceAlls,0,,,,Decimal,"IsNull(dbo.DerivedUnitPrice(DolPercent_1, RateSellRate, DerIfConvertedConversionRate, BaseCode_1, BrkPrice_1, PriUnitPrice1, PriUnitPrice2, PriUnitPrice3, PriUnitPrice4, PriUnitPrice5, PriUnitPrice6, ItmUnitCost,CurrRateIsDivisor,BrkQty_1), 0)",0
+DerUnitPrice2,SLItemCustPriceAlls,0,,,,Decimal,"IsNull(dbo.DerivedUnitPrice(DolPercent_2, RateSellRate, DerIfConvertedConversionRate, BaseCode_2, BrkPrice_2, PriUnitPrice1, PriUnitPrice2, PriUnitPrice3, PriUnitPrice4, PriUnitPrice5, PriUnitPrice6, ItmUnitCost,CurrRateIsDivisor,BrkQty_2), 0)",0
+DerUnitPrice3,SLItemCustPriceAlls,0,,,,Decimal,"IsNull(dbo.DerivedUnitPrice(DolPercent_3, RateSellRate, DerIfConvertedConversionRate, BaseCode_3, BrkPrice_3, PriUnitPrice1, PriUnitPrice2, PriUnitPrice3, PriUnitPrice4, PriUnitPrice5, PriUnitPrice6, ItmUnitCost,CurrRateIsDivisor,BrkQty_3), 0)",0
+DerUnitPrice4,SLItemCustPriceAlls,0,,,,Decimal,"IsNull(dbo.DerivedUnitPrice(DolPercent_4, RateSellRate, DerIfConvertedConversionRate, BaseCode_4, BrkPrice_4, PriUnitPrice1, PriUnitPrice2, PriUnitPrice3, PriUnitPrice4, PriUnitPrice5, PriUnitPrice6, ItmUnitCost,CurrRateIsDivisor,BrkQty_4), 0)",0
+DerUnitPrice5,SLItemCustPriceAlls,0,,,,Decimal,"IsNull(dbo.DerivedUnitPrice(DolPercent_5, RateSellRate, DerIfConvertedConversionRate, BaseCode_5, BrkPrice_5, PriUnitPrice1, PriUnitPrice2, PriUnitPrice3, PriUnitPrice4, PriUnitPrice5, PriUnitPrice6, ItmUnitCost,CurrRateIsDivisor,BrkQty_5), 0)",0
+DolPercent_1,SLItemCustPriceAlls,0,dol_percent##1,,,String,,0
+DolPercent_2,SLItemCustPriceAlls,0,dol_percent##2,,,String,,0
+DolPercent_3,SLItemCustPriceAlls,0,dol_percent##3,,,String,,0
+DolPercent_4,SLItemCustPriceAlls,0,dol_percent##4,,,String,,0
+DolPercent_5,SLItemCustPriceAlls,0,dol_percent##5,,,String,,0
+EffectDate,SLItemCustPriceAlls,0,effect_date,,,Date,,0
+Item,SLItemCustPriceAlls,0,item,,,String,,0
+ItmcstCustItem,SLItemCustPriceAlls,0,cust_item,,,String,,0
+ItmDescription,SLItemCustPriceAlls,0,description,,,String,,0
+ItmUM,SLItemCustPriceAlls,0,u_m,,,String,,0
+ItmUnitCost,SLItemCustPriceAlls,0,unit_cost,,,Decimal,,0
+PriCurrCode,SLItemCustPriceAlls,0,curr_code,,,String,,0
+PriUnitPrice1,SLItemCustPriceAlls,0,unit_price1,,,Decimal,,0
+PriUnitPrice2,SLItemCustPriceAlls,0,unit_price2,,,Decimal,,0
+PriUnitPrice3,SLItemCustPriceAlls,0,unit_price3,,,Decimal,,0
+PriUnitPrice4,SLItemCustPriceAlls,0,unit_price4,,,Decimal,,0
+PriUnitPrice5,SLItemCustPriceAlls,0,unit_price5,,,Decimal,,0
+PriUnitPrice6,SLItemCustPriceAlls,0,unit_price6,,,Decimal,,0
+RateSellRate,SLItemCustPriceAlls,0,sell_rate,,,Decimal,,0
+RowPointer,SLItemCustPriceAlls,0,RowPointer,,,GUID,,0
+SiteRef,SLItemCustPriceAlls,0,site_ref,,String,String,,0

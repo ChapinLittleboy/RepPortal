@@ -1,0 +1,17 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+AccumFreight,AIT_SS_BOL_RefCharges,0,freight_t,,,Decimal,,0
+AccumMiscCharges,AIT_SS_BOL_RefCharges,0,m_charges_t,,,Decimal,,0
+CreateDate,AIT_SS_BOL_RefCharges,0,CreateDate,,Date,Date,,0
+CreatedBy,AIT_SS_BOL_RefCharges,0,CreatedBy,,String,String,,0
+Freight,AIT_SS_BOL_RefCharges,0,freight,,,Decimal,,0
+FreightOrder,AIT_SS_BOL_RefCharges,0,order_freight,,,Decimal,,0
+FreightPub,AIT_SS_BOL_RefCharges,0,freight_pub,,,Decimal,,0
+InWorkflow,AIT_SS_BOL_RefCharges,0,InWorkflow,,Byte,Byte,,0
+MiscCharges,AIT_SS_BOL_RefCharges,0,misc_charges,,,Decimal,,0
+NoteExistsFlag,AIT_SS_BOL_RefCharges,0,NoteExistsFlag,,Byte,Byte,,0
+RecordDate,AIT_SS_BOL_RefCharges,0,RecordDate,,Date,Date,,0
+RefNum,AIT_SS_BOL_RefCharges,0,ref_num,,String,String,,0
+RefType,AIT_SS_BOL_RefCharges,0,ref_type,,String,String,,0
+RowPointer,AIT_SS_BOL_RefCharges,0,RowPointer,,GUID,GUID,,0
+ShipmentID,AIT_SS_BOL_RefCharges,0,shipment_id,,Decimal,Decimal,,0
+UpdatedBy,AIT_SS_BOL_RefCharges,0,UpdatedBy,,String,String,,0

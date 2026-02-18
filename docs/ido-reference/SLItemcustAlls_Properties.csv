@@ -1,0 +1,20 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+CreateDate,SLItemcustAlls,0,CreateDate,,Date,Date,,0
+CreatedBy,SLItemcustAlls,0,CreatedBy,,String,String,,0
+CustItem,SLItemcustAlls,0,cust_item,,String,String,,0
+CustItemSeq,SLItemcustAlls,0,cust_item_seq,,Long Integer,Long Integer,,0
+CustNum,SLItemcustAlls,0,cust_num,,String,String,,0
+DuePeriod,SLItemcustAlls,0,due_period,,Short Integer,Short Integer,,0
+EndUser,SLItemcustAlls,0,end_user,,String,String,,0
+Item,SLItemcustAlls,0,item,,String,String,,0
+NoteExistsFlag,SLItemcustAlls,0,NoteExistsFlag,,Byte,Byte,,0
+OrderPtd,SLItemcustAlls,0,order_ptd,,Decimal,Decimal,,0
+OrderYtd,SLItemcustAlls,0,order_ytd,,Decimal,Decimal,,0
+PurchYtd,SLItemcustAlls,0,purch_ytd,,Long Integer,Long Integer,,0
+Rank,SLItemcustAlls,0,rank,,Long Integer,Long Integer,,0
+RecordDate,SLItemcustAlls,0,RecordDate,,Date,Date,,0
+RowPointer,SLItemcustAlls,0,RowPointer,,GUID,GUID,,0
+ShipYtd,SLItemcustAlls,0,ship_ytd,,Decimal,Decimal,,0
+SiteRef,SLItemcustAlls,0,site_ref,,String,String,,0
+UM,SLItemcustAlls,0,u_m,,String,String,,0
+UpdatedBy,SLItemcustAlls,0,UpdatedBy,,String,String,,0

@@ -1,0 +1,79 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+AdjustableDims,AIT_SS_BOL_Packages,0,,,Byte,Byte,"ISNULL((SELECT TOP 1 cpt.AdjustableDims FROM AITSHIPVIAMap v LEFT JOIN AITShip_CarrierPackageType cpt on cpt.carrier = v.carrier WHERE v.shipcode = ShipCode AND cpt.SLPackageType = pkt.package_type),0)",0
+AESITN,AIT_SS_BOL_Packages,0,AESITN,,String,String,,0
+AltTrackingNumber,AIT_SS_BOL_Packages,0,alt_TrackingNumber,,String,String,,0
+CreateDate,AIT_SS_BOL_Packages,0,CreateDate,,Date,Date,,0
+CreatedBy,AIT_SS_BOL_Packages,0,CreatedBy,,String,String,,0
+DerIsParentPackage,AIT_SS_BOL_Packages,0,,,,Byte,CASE WHEN EXISTS(     SELECT 1      FROM AIT_SS_BOL_package sh     INNER JOIN AIT_SS_BOL_package pa     ON sh.shipment_id = pa.shipment_id      AND sh.package_id = pa.ref_package_id     WHERE sh.shipment_id = ShipmentId      AND sh.package_id = PackageId)  THEN 1 ELSE 0 END,0
+DerPacked,AIT_SS_BOL_Packages,0,,,,Byte,CASE   WHEN PackageId IS NULL THEN 0   ELSE 1 END,0
+DerParentPackage,AIT_SS_BOL_Packages,0,,,Byte,Byte,(SELECT Top 1 1 FROM AIT_SS_ChildPackages x where x.RefType = 'B' and x.RefNum = shipkg.shipment_id and x.ParentPackageID = shipkg.package_id),0
+DerRefPackaged,AIT_SS_BOL_Packages,0,,,,Byte,CASE   WHEN RefPackageId IS NULL THEN 0   ELSE 1 END,0
+DerTrackingNumber,AIT_SS_BOL_Packages,0,,,,String,( SELECT TOP 1 cs.tracking_number  FROM carrier_ship AS cs  WHERE cs.shipment_id=ShipmentId  AND cs.package_id=PackageId  AND cs.void_ind=0 AND NOT EXISTS(SELECT * FROM carrier_ship as ups                                                  WHERE ups.tracking_number=cs.tracking_number                                                        AND ups.shipment_id=ShipmentId                                                      AND ups.package_id=PackageId                                                      AND ups.void_ind=1                               ) ORDER BY cs.RecordDate DESC ) ,0
+Description,AIT_SS_BOL_Packages,0,description,,String,String,,0
+DimensionsUM,AIT_SS_BOL_Packages,0,dimension_u_m,,String,String,,0
+ExternalShipper,AIT_SS_BOL_Packages,0,ExternalShipper,,String,String,,0
+FreightCost,AIT_SS_BOL_Packages,0,FreightCost,,Decimal,Decimal,,0
+Hazard,AIT_SS_BOL_Packages,0,hazard,,Byte,Byte,,0
+Height,AIT_SS_BOL_Packages,0,Height,,Decimal,Decimal,,0
+IncludeReturnLabel,AIT_SS_BOL_Packages,0,IncludeReturnLabel,,Byte,Byte,,0
+InWorkflow,AIT_SS_BOL_Packages,0,InWorkflow,,Byte,Byte,,0
+isParent,AIT_SS_BOL_Packages,0,,,Byte,Byte,"ISNULL((SELECT TOP 1 1 FROM AITShip_CarrierPackageType x where x.SLPackageType = shipkg.package_type and x.isFreight = 1),0)",0
+Length,AIT_SS_BOL_Packages,0,Length,,Decimal,Decimal,,0
+ManualChk,AIT_SS_BOL_Packages,0,Manual,,Byte,Byte,,0
+ManualFreightCost,AIT_SS_BOL_Packages,0,ManualFreightCost,,Decimal,Decimal,,0
+ManualTrackingNumber,AIT_SS_BOL_Packages,0,TrackingNumber,,String,String,,0
+MarksExcept,AIT_SS_BOL_Packages,0,marks_except,,String,String,,0
+NMFC,AIT_SS_BOL_Packages,0,nmfc,,String,String,,0
+NoteExistsFlag,AIT_SS_BOL_Packages,0,NoteExistsFlag,,Byte,Byte,,0
+OverrideDeclaredValue,AIT_SS_BOL_Packages,0,OverrideDeclaredValue,,Decimal,Decimal,,0
+OverrideInsuredValue,AIT_SS_BOL_Packages,0,OverrideInsuredValue,,Decimal,Decimal,,0
+pack_bottopload,AIT_SS_BOL_Packages,0,pack_bottopload,,Byte,Byte,,0
+PackageId,AIT_SS_BOL_Packages,0,package_id,,Long Integer,Long Integer,,0
+PackageType,AIT_SS_BOL_Packages,0,package_type,,String,String,,0
+PalletLicense,AIT_SS_BOL_Packages,0,PalletLicense,,String,String,,0
+PKGDefaultweight,AIT_SS_BOL_Packages,0,weight,,Decimal,Decimal,,0
+PkgTypeDescription,AIT_SS_BOL_Packages,0,description,,String,String,,0
+QuoteNum,AIT_SS_BOL_Packages,0,QuoteNum,,String,String,,0
+RateCode,AIT_SS_BOL_Packages,0,rate_code,,String,String,,0
+RecordDate,AIT_SS_BOL_Packages,0,RecordDate,,Date,Date,,0
+RefPackageId,AIT_SS_BOL_Packages,0,ref_package_id,,Long Integer,Long Integer,,0
+ReturnFreightCost,AIT_SS_BOL_Packages,0,ReturnFreightCost,,Decimal,Decimal,,0
+ReturnServiceType,AIT_SS_BOL_Packages,0,ReturnServiceType,,String,String,,0
+ReturnTrackingNumber,AIT_SS_BOL_Packages,0,ReturnTrackingNumber,,String,String,,0
+RowPointer,AIT_SS_BOL_Packages,0,RowPointer,,GUID,GUID,,0
+SelectedForPallet,AIT_SS_BOL_Packages,0,SelectedForPallet,,Byte,Byte,,0
+ShipCode,AIT_SS_BOL_Packages,0,ship_code,,String,String,,0
+ShipmentId,AIT_SS_BOL_Packages,0,shipment_id,,Decimal,Decimal,,0
+ShippingError,AIT_SS_BOL_Packages,0,ShippingError,,String,String,,0
+SLShipmentSeqs,AIT_SS_BOL_Packages,0,,AIT_SS_BOL_Seqs,,,,0
+SLShipmentSeqSerials,AIT_SS_BOL_Packages,0,,AIT_SS_BOL_Seq_Serials,,,,0
+TH_CartonPrefix,AIT_SS_BOL_Packages,0,TH_carton_prefix,,,String,,0
+TH_CartonSize,AIT_SS_BOL_Packages,0,TH_carton_size,,,String,,0
+TH_Measurement,AIT_SS_BOL_Packages,0,TH_measurement,,,Decimal,,0
+TrackingNumber,AIT_SS_BOL_Packages,0,TrackingNumber,,String,String,,0
+UbConsigneeName,AIT_SS_BOL_Packages,0,,,,String,,0
+UbCustItem,AIT_SS_BOL_Packages,0,,,String,String,,0
+UbCustNum,AIT_SS_BOL_Packages,0,,,,NumSortedString,,0
+UbCustPo,AIT_SS_BOL_Packages,0,,,,String,,0
+UbCustSeq,AIT_SS_BOL_Packages,0,,,,Long Integer,,0
+UbItem,AIT_SS_BOL_Packages,0,,,,String,,0
+UbItemDescription,AIT_SS_BOL_Packages,0,,,,String,,0
+UbLabelBy,AIT_SS_BOL_Packages,0,,,String,String,,0
+UbLocation,AIT_SS_BOL_Packages,0,,,,String,,0
+UbLot,AIT_SS_BOL_Packages,0,,,,String,,0
+UbManufacturerId,AIT_SS_BOL_Packages,0,,,,String,,0
+UbManufacturerItem,AIT_SS_BOL_Packages,0,,,,String,,0
+UbManufacturerItemDesc,AIT_SS_BOL_Packages,0,,,,String,,0
+UbManufacturerName,AIT_SS_BOL_Packages,0,,,,String,,0
+UbNumberOfLabels,AIT_SS_BOL_Packages,0,,,,Decimal,,0
+UbPackagesExist,AIT_SS_BOL_Packages,0,,,,Byte,,0
+UbQty,AIT_SS_BOL_Packages,0,,,,Decimal,,0
+UbQtyPerLabel,AIT_SS_BOL_Packages,0,,,,Decimal,,0
+UbSelect,AIT_SS_BOL_Packages,0,,,,Byte,,0
+UbSite,AIT_SS_BOL_Packages,0,,,,String,,0
+UbUM,AIT_SS_BOL_Packages,0,,,,String,,0
+UbWhse,AIT_SS_BOL_Packages,0,,,,String,,0
+UpdatedBy,AIT_SS_BOL_Packages,0,UpdatedBy,,String,String,,0
+Weight,AIT_SS_BOL_Packages,0,weight,,Decimal,Decimal,,0
+WeightUM,AIT_SS_BOL_Packages,0,packaging_weight_u_m,,String,String,,0
+Width,AIT_SS_BOL_Packages,0,Width,,Decimal,Decimal,,0

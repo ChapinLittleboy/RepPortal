@@ -1,0 +1,16 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+BillType,SLInvHdrAlls,0,bill_type,,,String,,0
+BuilderInvNum,SLInvHdrAlls,0,builder_inv_num,,,String,,0
+BuilderInvOrigSite,SLInvHdrAlls,0,builder_inv_orig_site,,,String,,0
+CreateDate,SLInvHdrAlls,0,CreateDate,,,Date,,0
+CreatedBy,SLInvHdrAlls,0,CreatedBy,,,String,,0
+CustPo,SLInvHdrAlls,0,cust_po,,,String,,0
+ExchRate,SLInvHdrAlls,0,exch_rate,,,Decimal,,0
+InvDate,SLInvHdrAlls,0,inv_date,,,Date,,0
+InvNum,SLInvHdrAlls,0,inv_num,,,NumSortedString,,0
+InvSeq,SLInvHdrAlls,0,inv_seq,,,Long Integer,,0
+NoteExistsFlag,SLInvHdrAlls,0,NoteExistsFlag,,,Byte,,0
+RecordDate,SLInvHdrAlls,0,RecordDate,,,Date,,0
+RowPointer,SLInvHdrAlls,0,RowPointer,,,GUID,,0
+SiteRef,SLInvHdrAlls,0,site_ref,,,String,,0
+UpdatedBy,SLInvHdrAlls,0,UpdatedBy,,,String,,0

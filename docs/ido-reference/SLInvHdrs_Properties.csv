@@ -1,0 +1,92 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+AddrName,SLInvHdrs,0,name,,,String,,0
+Amount,SLInvHdrs,0,amount,,,Decimal,,0
+AriDueDate,SLPortalInvHdrs,1,due_date,,,Date,,0
+BillType,SLInvHdrs,0,bill_type,,,String,,0
+CadName,TaxInvHdrs,1,name,,,String,,0
+CNVATInvNum,SLInvHdrs,0,CN_vat_inv_num,,,String,,0
+CommBase,SLInvHdrs,0,comm_base,,,Decimal,,0
+CommCalc,SLInvHdrs,0,comm_calc,,,Decimal,,0
+CommDue,SLInvHdrs,0,comm_due,,,Decimal,,0
+CommPaid,SLInvHdrs,0,comm_paid,,,Decimal,,0
+CoNum,SLInvHdrs,0,co_num,,,NumSortedString,,0
+Cost,SLInvHdrs,0,cost,,,Decimal,,0
+CreateDate,TaxInvHdrs,1,CreateDate,,,Date,,0
+CreatedBy,TaxInvHdrs,1,CreatedBy,,,String,,0
+CurrCode,SLInvHdrs,0,curr_code,,String,String,,0
+CustNum,SLInvHdrs,0,cust_num,,,NumSortedString,,0
+CustPo,SLInvHdrs,0,cust_po,,,String,,0
+CustSeq,SLInvHdrs,0,cust_seq,,,Long Integer,,0
+DerCNVATSalesTax,SLInvHdrs,0,,,,Decimal,(SELECT SUM(inv_stax.sales_tax) FROM inv_stax WHERE inv_stax.inv_num = InvNum  and inv_stax.inv_seq = InvSeq),0
+DerCoverSheetCompany,SLInvHdrs,0,,,,String,'',0
+DerCoverSheetContact,SLInvHdrs,0,,,,String,'',0
+DerDestination,SLInvHdrs,0,,,,String,'',0
+DerDueDate,SLPortalInvHdrs,1,,,,Date,"ISNULL(DueDate, AriDueDate)",0
+DerFromRMA,SLInvHdrs,0,,,,Byte,"CASE
+   WHEN EXISTS (SELECT TOP 1 1 FROM rma WHERE rma.rma_num = CoNum) 
+   THEN 1 ELSE 0
+END",0
+DerLangCode,SLInvHdrs,0,,,,String,'',0
+DerMethod,SLInvHdrs,0,,,,String,'',0
+DerNumCopies,SLInvHdrs,0,,,,Byte,'',0
+DerProfileExists,SLInvHdrs,0,,,,Byte,'',0
+DerProjectNum,SLInvHdrs,0,,,,NumSortedString,CASE WHEN BillType = 'J' THEN CoNum ELSE '' END,0
+DerSalesTax1,TaxInvHdrs,1,,,,Decimal,"(SELECT SUM(inv_stax.sales_tax) FROM inv_stax 
+   WHERE inv_stax.tax_system = 1
+   AND inv_stax.inv_num = invhdr.inv_num
+   AND inv_stax.inv_seq = invhdr.inv_seq)",0
+DerSalesTax2,TaxInvHdrs,1,,,,Decimal,"(SELECT SUM(inv_stax.sales_tax) FROM inv_stax 
+   WHERE inv_stax.tax_system = 2
+   AND inv_stax.inv_num = invhdr.inv_num
+   AND inv_stax.inv_seq = invhdr.inv_seq)",0
+Disc,SLInvHdrs,0,disc,,,Decimal,,0
+DoNum,SLInvHdrs,0,do_num,,,NumSortedString,,0
+DueDate,SLInvHdrs,0,due_date,,,Date,,0
+EcCode,SLInvHdrs,0,ec_code,,,String,,0
+ExchRate,SLInvHdrs,0,exch_rate,,,Decimal,,0
+Freight,SLInvHdrs,0,freight,,,Decimal,,0
+FreightAcct,SLInvHdrs,0,freight_acct,,,String,,0
+FreightAcctUnit1,SLInvHdrs,0,freight_acct_unit1,,,String,,0
+FreightAcctUnit2,SLInvHdrs,0,freight_acct_unit2,,,String,,0
+FreightAcctUnit3,SLInvHdrs,0,freight_acct_unit3,,,String,,0
+FreightAcctUnit4,SLInvHdrs,0,freight_acct_unit4,,,String,,0
+FrtTaxCode1,SLInvHdrs,0,frt_tax_code1,,,String,,0
+FrtTaxCode2,SLInvHdrs,0,frt_tax_code2,,,String,,0
+InvDate,SLInvHdrs,0,inv_date,,,Date,,0
+InvNum,SLInvHdrs,0,inv_num,,,NumSortedString,,0
+InvoiceSelect,SLInvHdrs,0,,,,Byte,0,0
+InvSeq,SLInvHdrs,0,inv_seq,,,Long Integer,,0
+InWorkflow,TaxInvHdrs,1,InWorkflow,,,Byte,,0
+LangCode,SLInvHdrs,0,lang_code,,String,String,,0
+MgrCommBse,SLInvHdrs,0,mgr_comm_bse,,,Decimal,,0
+MgrCommCal,SLInvHdrs,0,mgr_comm_cal,,,Decimal,,0
+MiscAcct,SLInvHdrs,0,misc_acct,,,String,,0
+MiscAcctUnit1,SLInvHdrs,0,misc_acct_unit1,,,String,,0
+MiscAcctUnit2,SLInvHdrs,0,misc_acct_unit2,,,String,,0
+MiscAcctUnit3,SLInvHdrs,0,misc_acct_unit3,,,String,,0
+MiscAcctUnit4,SLInvHdrs,0,misc_acct_unit4,,,String,,0
+MiscCharges,SLInvHdrs,0,misc_charges,,,Decimal,,0
+MscTaxCode1,SLInvHdrs,0,msc_tax_code1,,,String,,0
+MscTaxCode2,SLInvHdrs,0,msc_tax_code2,,,String,,0
+NoteExistsFlag,TaxInvHdrs,1,NoteExistsFlag,,,Byte,,0
+ParSite,SLInvHdrs,0,site,,,String,,0
+PrepaidAmt,SLInvHdrs,0,prepaid_amt,,,Decimal,,0
+Price,SLInvHdrs,0,price,,,Decimal,,0
+QtyPackages,SLInvHdrs,0,qty_packages,,,Short Integer,,0
+RecordDate,TaxInvHdrs,1,RecordDate,,,Date,,0
+RowPointer,TaxInvHdrs,1,RowPointer,,,GUID,,0
+ShipCode,SLInvHdrs,0,ship_code,,,String,,0
+ShipDate,SLInvHdrs,0,ship_date,,,Date,,0
+SitSiteName,SLInvHdrs,0,site_name,,,String,,0
+Slsman,SLInvHdrs,0,slsman,,,String,,0
+State,SLInvHdrs,0,state,,,String,,0
+TaxCode1,SLInvHdrs,0,tax_code1,,,String,,0
+TaxCode2,SLInvHdrs,0,tax_code2,,,String,,0
+TaxDate,SLInvHdrs,0,tax_date,,,Date,,0
+TermsCode,SLInvHdrs,0,terms_code,,,String,,0
+TotCommDue,SLInvHdrs,0,tot_comm_due,,,Decimal,,0
+TotCommPd,SLInvHdrs,0,tot_comm_pd,,,Decimal,,0
+UpdatedBy,TaxInvHdrs,1,UpdatedBy,,,String,,0
+UseExchRate,SLInvHdrs,0,use_exch_rate,,,Byte,,0
+VtxExempted,SLInvHdrs,0,vtxexempted,,,Byte,,0
+Weight,SLInvHdrs,0,weight,,,Decimal,,0

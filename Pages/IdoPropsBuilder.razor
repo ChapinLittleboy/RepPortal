@@ -1,4 +1,4 @@
-﻿@page "/ido-props-builder"
+@page "/ido-props-builder"
 
 @using Microsoft.Data.SqlClient
 @using Syncfusion.Blazor.DropDowns
@@ -6,6 +6,8 @@
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.XlsIO;
 @using Syncfusion.Blazor.Inputs
+@using System.IO
+@using System.Text
 
 @using FilterType = Syncfusion.Blazor.DropDowns.FilterType
 @using TextAlign = Syncfusion.Blazor.Grids.TextAlign
@@ -55,6 +57,11 @@
             <SfButton CssClass="e-success" OnClick="CopySelectedProps">Copy props string</SfButton>
             <SfButton CssClass="e-info" OnClick="SelectAllVisible">Select All (Visible)</SfButton>
             <SfButton CssClass="e-warning" OnClick="ClearAll">Clear All</SfButton>
+            <SfButton CssClass="e-secondary"
+                      Disabled="@(!_csvExportEnabled || string.IsNullOrWhiteSpace(SelectedIdo))"
+                      OnClick="ExportToCsvAsync">
+                Export as CSV
+            </SfButton>
 
             <div class="ms-auto">
                 <b>Total:</b> @Rows.Count |
@@ -77,9 +84,6 @@
                     Toolbar="@(new List<string>() { "ExcelExport" })"
                     Height="550">
 
-                
-                
-
                 <GridColumns>
                     <GridColumn HeaderText="Use" Width="80" TextAlign="TextAlign.Center">
                         <Template Context="rowObj">
@@ -88,49 +92,56 @@
                             }
                             <input type="checkbox"
                                    checked="@row.IsSelected"
-                                   @onchange="(args) => OnRowSelectionChanged(row, args)"/>
-
+                                   @onchange="(args) => OnRowSelectionChanged(row, args)" />
                         </Template>
                     </GridColumn>
 
                     <GridColumn Field=@nameof(IdoPropertyRow.PropertyName)
                                 HeaderText="PropertyName"
                                 Width="120"
-                                IsPrimaryKey="true"/>
+                                IsPrimaryKey="true" />
 
                     <GridColumn Field=@nameof(IdoPropertyRow.DefinedInCollection)
                                 HeaderText="Defined In"
-                                Width="100"/>
+                                Width="100" />
 
                     <GridColumn Field=@nameof(IdoPropertyRow.Depth)
                                 HeaderText="Depth"
                                 Width="60"
-                                TextAlign="TextAlign.Right"/>
+                                TextAlign="TextAlign.Right" />
 
                     <GridColumn Field=@nameof(IdoPropertyRow.ColumnName)
                                 HeaderText="Column"
-                                Width="180"/>
-
-                    
+                                Width="180" />
 
                     <GridColumn Field=@nameof(IdoPropertyRow.EffectiveDataType)
                                 HeaderText="Eff Type"
-                                Width="90"/>
+                                Width="90" />
 
                     <GridColumn Field=@nameof(IdoPropertyRow.SubCollectionName)
                                 HeaderText="SubCollection"
                                 Width="160" />
+
                     <GridColumn Field=@nameof(IdoPropertyRow.PropertyValue)
                                 HeaderText="DerivedCode"
-                                Width="250">
-                      
-                    
+                                Width="250" />
+
+                    <GridColumn HeaderText="Do Not Use" Width="100" TextAlign="TextAlign.Center">
+                        <Template Context="rowObj">
+                            @{
+                                var row = (IdoPropertyRow)rowObj;
+                            }
+                            <input type="checkbox"
+                                   checked="@row.DoNotUse"
+                                   @onchange="(args) => OnDoNotUseChanged(row, args)" />
+                        </Template>
                     </GridColumn>
                 </GridColumns>
-                <GridEvents OnToolbarClick="OnToolbarClickHandler" 
-                            TValue="IdoPropertyRow" 
+
+                <GridEvents OnToolbarClick="OnToolbarClickHandler"
+                            TValue="IdoPropertyRow"
                             ExcelHeaderQueryCellInfoEvent="ExcelHeaderQueryCellInfoHandler"
-                            ExcelQueryCellInfoEvent="ExcelQueryCellInfoHandler"/>
+                            ExcelQueryCellInfoEvent="ExcelQueryCellInfoHandler" />
             </SfGrid>
         </div>
     </div>
@@ -139,6 +150,9 @@
 @code
 {
     private string _connectionString = "";
+    private string _csvOutputPath = "";
+    private bool _csvExportEnabled = false;
+
     private SfGrid<IdoPropertyRow>? Grid;
 
     private List<IdoCollectionRow> IdoList = new();
@@ -152,11 +166,11 @@
 
     private SfGrid<IdoPropertyRow> GridRef;
 
-    //private PageSettings PageSettings = new PageSettings { PageSize = 25 };
-
     protected override async Task OnInitializedAsync()
     {
         _connectionString = Configuration.GetConnectionString("BatAppConnection") ?? "";
+        _csvOutputPath = Configuration["IdoReference:CsvOutputPath"] ?? "";
+        _csvExportEnabled = !string.IsNullOrWhiteSpace(_csvOutputPath) && Directory.Exists(_csvOutputPath);
 
         if (string.IsNullOrWhiteSpace(_connectionString))
         {
@@ -178,7 +192,6 @@
                 (r.ColumnName?.Contains(PropertySearch, StringComparison.OrdinalIgnoreCase) ?? false)
             );
 
-
     private string SelectedPropsCsv =>
         string.Join(",",
             Rows
@@ -194,8 +207,36 @@
 
         StatusMessage = $"Loading properties for {SelectedIdo}...";
         Rows = await GetFinalIdoPropertiesAsync(SelectedIdo);
+
+        // Restore DoNotUse flags from existing CSV reference file, if present.
+        if (_csvExportEnabled)
+            ApplyDoNotUseFromCsv(SelectedIdo);
+
         StatusMessage = $"Loaded {Rows.Count} final properties for {SelectedIdo}.";
         _nextSelectedOrder = 1;
+    }
+
+    // Reads an existing CSV for the IDO and restores DoNotUse values so they survive a reload.
+    private void ApplyDoNotUseFromCsv(string idoName)
+    {
+        string csvPath = Path.Combine(_csvOutputPath, $"{idoName}_Properties.csv");
+        if (!File.Exists(csvPath))
+            return;
+
+        var doNotUseMap = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string line in File.ReadLines(csvPath).Skip(1)) // skip header row
+        {
+            string[] parts = ParseCsvLine(line);
+            if (parts.Length >= 9)
+                doNotUseMap[parts[0]] = parts[8].Trim() == "1";
+        }
+
+        foreach (IdoPropertyRow row in Rows)
+        {
+            if (doNotUseMap.TryGetValue(row.PropertyName, out bool doNotUse))
+                row.DoNotUse = doNotUse;
+        }
     }
 
     private void SelectAllVisible()
@@ -223,14 +264,12 @@
 
     private void OnRowSelectionChanged(IdoPropertyRow row, Microsoft.AspNetCore.Components.ChangeEventArgs args)
     {
-        var isChecked = args?.Value is bool b && b;
+        bool isChecked = args?.Value is bool b && b;
 
         if (isChecked)
         {
             row.IsSelected = true;
-
-            if (row.SelectedOrder == null)
-                row.SelectedOrder = _nextSelectedOrder++;
+            row.SelectedOrder ??= _nextSelectedOrder++;
         }
         else
         {
@@ -239,10 +278,107 @@
         }
     }
 
+    private void OnDoNotUseChanged(IdoPropertyRow row, Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        row.DoNotUse = args?.Value is bool b && b;
+    }
+
     private async Task CopySelectedProps()
     {
         await JS.InvokeVoidAsync("copyToClipboard", SelectedPropsCsv);
         StatusMessage = $"Copied {Rows.Count(r => r.IsSelected)} properties to clipboard.";
+    }
+
+    private async Task ExportToCsvAsync()
+    {
+        if (!_csvExportEnabled || string.IsNullOrWhiteSpace(SelectedIdo))
+            return;
+
+        string filePath = Path.Combine(_csvOutputPath, $"{SelectedIdo}_Properties.csv");
+
+        var sb = new StringBuilder();
+        sb.AppendLine("PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse");
+
+        foreach (IdoPropertyRow row in Rows.OrderBy(r => r.PropertyName))
+        {
+            sb.AppendLine(string.Join(",",
+                CsvEscape(row.PropertyName),
+                CsvEscape(row.DefinedInCollection),
+                row.Depth.ToString(),
+                CsvEscape(row.ColumnName),
+                CsvEscape(row.SubCollectionName),
+                CsvEscape(row.DataType),
+                CsvEscape(row.EffectiveDataType),
+                CsvEscape(row.PropertyValue),
+                row.DoNotUse ? "1" : "0"
+            ));
+        }
+
+        await File.WriteAllTextAsync(filePath, sb.ToString(), Encoding.UTF8);
+        StatusMessage = $"CSV saved: {filePath}";
+    }
+
+    private static string CsvEscape(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return "";
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        return value;
+    }
+
+    // Minimal RFC-4180-compatible CSV line parser.
+    private static string[] ParseCsvLine(string line)
+    {
+        var fields = new List<string>();
+        int i = 0;
+
+        while (i <= line.Length)
+        {
+            if (i == line.Length)
+            {
+                fields.Add("");
+                break;
+            }
+
+            if (line[i] == '"')
+            {
+                i++;
+                var sb = new StringBuilder();
+                while (i < line.Length)
+                {
+                    if (line[i] == '"' && i + 1 < line.Length && line[i + 1] == '"')
+                    {
+                        sb.Append('"');
+                        i += 2;
+                    }
+                    else if (line[i] == '"')
+                    {
+                        i++;
+                        break;
+                    }
+                    else
+                    {
+                        sb.Append(line[i]);
+                        i++;
+                    }
+                }
+                fields.Add(sb.ToString());
+                if (i < line.Length && line[i] == ',') i++;
+            }
+            else
+            {
+                int comma = line.IndexOf(',', i);
+                if (comma == -1)
+                {
+                    fields.Add(line.Substring(i));
+                    break;
+                }
+                fields.Add(line.Substring(i, comma - i));
+                i = comma + 1;
+            }
+        }
+
+        return fields.ToArray();
     }
 
     // -------------------------
@@ -337,7 +473,7 @@ FinalProps AS
         SubCollectionName,
         DataType,
         EffectiveDataType,
-PropertyValue,
+        PropertyValue,
         ROW_NUMBER() OVER
         (
             PARTITION BY PropertyName
@@ -387,11 +523,11 @@ ORDER BY PropertyName;
     }
 
     // -------------------------
-    // DTOs
+    // Excel Export Handlers
     // -------------------------
+
     private async Task OnToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
     {
-        // The ID is "GridID_excelexport" — grid ID + "_excelexport"
         if (args.Item.Id == "Grid_excelexport")
         {
             var fileName = $"{SelectedIdo}_Properties.xlsx";
@@ -405,31 +541,26 @@ ORDER BY PropertyName;
                     HeaderRows = 2,
                     Rows = new List<ExcelRow>
                     {
-                        // Row 1: filename
                         new ExcelRow
                         {
                             Cells = new List<ExcelCell>
                             {
                                 new ExcelCell
                                 {
-                                    ColSpan = 5, // adjust to your column count
+                                    ColSpan = 5,
                                     Value = fileName,
                                     Style = new ExcelStyle { Bold = true, FontSize = 14 }
                                 }
                             }
                         },
-
-                        // Row 2: page numbering
-                   
-
                     }
                 }
             };
-            
 
             await GridRef.ExportToExcelAsync(exportProps);
         }
     }
+
     private void ExcelHeaderQueryCellInfoHandler(ExcelHeaderQueryCellInfoEventArgs args)
     {
         if (args.Column.HeaderText == "DerivedCode")
@@ -437,7 +568,7 @@ ORDER BY PropertyName;
             args.Style.WrapText = true;
         }
     }
-    
+
     private void ExcelQueryCellInfoHandler(ExcelQueryCellInfoEventArgs<IdoPropertyRow> args)
     {
         if (args.Column.Field == "PropertyValue")
@@ -445,13 +576,10 @@ ORDER BY PropertyName;
             args.Style.WrapText = true;
         }
     }
-    public void OnExcelQueryCellInfo(Syncfusion.Blazor.Grids.ExcelQueryCellInfoEventArgs<IdoPropertyRow> args)
-    {
-        if (args.Column.Field == "DerivedCode")
-        {
-            args.Style.WrapText = true; // enable wrap
-        }
-    }
+
+    // -------------------------
+    // DTOs
+    // -------------------------
 
     private class IdoCollectionRow
     {
@@ -462,16 +590,14 @@ ORDER BY PropertyName;
     {
         public bool IsSelected { get; set; }
         public string PropertyName { get; set; } = "";
-
         public string? DefinedInCollection { get; set; }
         public int Depth { get; set; }
-
         public string? ColumnName { get; set; }
         public string? SubCollectionName { get; set; }
         public string? DataType { get; set; }
         public string? EffectiveDataType { get; set; }
         public int? SelectedOrder { get; set; }
         public string? PropertyValue { get; set; }
-
+        public bool DoNotUse { get; set; }
     }
 }

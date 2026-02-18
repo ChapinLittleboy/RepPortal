@@ -1,0 +1,618 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+AbcCode,SLItems,0,abc_code,,,String,,0
+AbnormalSize,SLItems,0,PP_abnormal_size,,,Byte,,0
+AcceptReq,SLItems,0,accept_req,,,Byte,,0
+Accessible,AIT_SS_SLItems,2,Accessible,,Byte,Byte,,0
+ActiveForCustomerPortal,SLItems,0,active_for_customer_portal,,,Byte,,0
+ActiveForDataIntegration,SLItems,0,active_for_data_integration,,,Byte,,0
+aes_um,AIT_SS_SLItems,2,aes_um,,String,String,,0
+AIT_PackageType,AIT_SS_SLItems,2,PackageType,,String,String,,0
+AIT_SelfContained,AIT_SS_SLItems,2,IsSelfContained,,Byte,Byte,,0
+AIT_SS_ItemHazMatSubRiskClass,AIT_SS_SLItems,2,,AIT_SS_ItemHazMatSubRiskClass,,,Item=item,0
+AIT_SS_ItemSelfContainSeq,AIT_SS_SLItems,2,,AIT_SS_ItemSelfContainSeq,,,,0
+AITRecordDate,AIT_SS_SLItems,2,RecordDate,,Date,Date,,0
+AITRowPointer,AIT_SS_SLItems,2,RowPointer,,GUID,GUID,,0
+AllowOnPickList,SLItems,0,allow_on_pick_list,,,Byte,,0
+AltItem,SLItems,0,alt_item,,,String,,0
+ApsMode,SLCustomerPortalItems,1,apsmode,,,String,,0
+Area,SLItems,0,PP_area,,,Decimal,,0
+AreaUM,SLItems,0,PP_area_u_m,,,String,,0
+AsmFixed,SLItems,0,asm_fixed,,,Decimal,,0
+AsmFixture,SLItems,0,asm_fixture,,,Decimal,,0
+AsmMatl,SLItems,0,asm_matl,,,Decimal,,0
+AsmOther,SLItems,0,asm_other,,,Decimal,,0
+AsmOutside,SLItems,0,asm_outside,,,Decimal,,0
+AsmRun,SLItems,0,asm_run,,,Decimal,,0
+AsmSetup,SLItems,0,asm_setup,,,Decimal,,0
+AsmTool,SLItems,0,asm_tool,,,Decimal,,0
+AsmVar,SLItems,0,asm_var,,,Decimal,,0
+AttgiDescription,SLItems,0,description,,,String,,0
+AttglDescription,SLItems,0,description,,,String,,0
+AttgpDescription,SLItems,0,description,,,String,,0
+AU_FMEACoreTeam,SLItems,0,description_3,,,String,,0
+AU_FMEADetails,SLItems,0,,AUFMEADetails,,,Item=Item,0
+AU_FMEAModelYear,SLItems,0,description_1,,,String,,0
+AU_FMEAOriginDate,SLItems,0,origin_date,,,Date,,0
+AU_FMEAPreparedBy,SLItems,0,description_4,,,String,,0
+AU_FMEAProgram,SLItems,0,description_2,,,String,,0
+AU_FMEARevisionDate,SLItems,0,revision_date,,,Date,,0
+AU_FMEAs,SLItems,0,,AUFMEAs,,,Item=Item,0
+AutoCreateForConfig,SLItems,0,auto_create_for_config,,,String,,0
+AutoCreateForConfigExternalOrder,SLItems,0,auto_create_for_config_external_order,,,Byte,,0
+AutoJob,SLItems,0,auto_job,,,String,,0
+AutoJobForExternalOrder,SLItems,0,auto_job_for_external_order,,,Byte,,0
+AutoPost,SLItems_FT,1,auto_post,,,Byte,,0
+AvgFovhdCost,SLItems,0,avg_fovhd_cost,,,Decimal,,0
+AvgLbrCost,SLItems,0,avg_lbr_cost,,,Decimal,,0
+AvgMatlCost,SLItems,0,avg_matl_cost,,,Decimal,,0
+AvgOutCost,SLItems,0,avg_out_cost,,,Decimal,,0
+AvgUCost,SLItems,0,avg_u_cost,,,Decimal,,0
+AvgVovhdCost,SLItems,0,avg_vovhd_cost,,,Decimal,,0
+Backflush,SLItems,0,backflush,,,Byte,,0
+batch_release_attribute1,SLItems,0,batch_release_attribute1,,,Float,,0
+batch_release_attribute2,SLItems,0,batch_release_attribute2,,,Float,,0
+batch_release_attribute3,SLItems,0,batch_release_attribute3,,,Float,,0
+BflushLoc,SLItems,0,bflush_loc,,,String,,0
+BomLastImportDate,SLItems,0,bom_last_import_date,,,Date,,0
+BulkMass,SLItems,0,PP_bulk_mass,,,Decimal,,0
+BulkMassUM,SLItems,0,PP_bulk_mass_u_m,,,String,,0
+Buyer,SLItems,0,buyer,,,String,,0
+Caption,SLItems,0,,,String,String,,0
+CfgModel,SLItems,0,cfg_model,,,String,,0
+ChangeDate,SLItems,0,,,,Date,dbo.ItemLastGenDate(ItemChangeDate),0
+Charfld1,SLItems,0,charfld1,,,String,,0
+Charfld2,SLItems,0,charfld2,,,String,,0
+Charfld3,SLItems,0,charfld3,,,String,,0
+Charfld4,SLItems,0,charfld4,,,String,,0
+ChargeItem,SLItems,0,charge_item,,,Byte,,0
+ChgDate,SLItems,0,chg_date,,,Date,,0
+CNCustNum,SLCustomerPortalItems,1,cust_num,,NumSortedString,NumSortedString,,0
+CNItemTaxCategory,SLItems,0,CN_item_tax_category,,,String,,0
+CntryCountry,SLItems,0,country,,,String,,0
+ComCValue_1,SLCustomerPortalItems,1,cvalue##1,,,Decimal,,0
+CommCode,SLItems,0,comm_code,,,String,,0
+CommCodeDescription,SLItems,0,description,,,String,,0
+CommodityJurisdiction,SLItems,0,commodity_jurisdiction,,,String,,0
+CompFixed,SLItems,0,comp_fixed,,,Decimal,,0
+CompFixture,SLItems,0,comp_fixture,,,Decimal,,0
+CompMatl,SLItems,0,comp_matl,,,Decimal,,0
+CompOther,SLItems,0,comp_other,,,Decimal,,0
+CompOutside,SLItems,0,comp_outside,,,Decimal,,0
+CompRun,SLItems,0,comp_run,,,Decimal,,0
+CompSetup,SLItems,0,comp_setup,,,Decimal,,0
+CompTool,SLItems,0,comp_tool,,,Decimal,,0
+CompVar,SLItems,0,comp_var,,,Decimal,,0
+ControlledByExternalIcs,SLItems,0,controlled_by_external_ics,,,Byte,,0
+CostMethod,SLItems,0,cost_method,,,String,,0
+CostType,SLItems,0,cost_type,,,String,,0
+Count,SLItems,0,,,Long Integer,Long Integer,,0
+Country,SLItems,0,country,,,String,,0
+CreateDate,SLItems_FT,1,CreateDate,,Date,Date,,0
+CurBrokerageCost,SLItems,0,cur_brokerage_cost,,,Decimal,,0
+CurDutyCost,SLItems,0,cur_duty_cost,,,Decimal,,0
+CurFovhdCost,SLItems,0,cur_fovhd_cost,,,Decimal,,0
+CurFreightCost,SLItems,0,cur_freight_cost,,,Decimal,,0
+CurInsuranceCost,SLItems,0,cur_insurance_cost,,,Decimal,,0
+CurLbrCost,SLItems,0,cur_lbr_cost,,,Decimal,,0
+CurLocFrtCost,SLItems,0,cur_loc_frt_cost,,,Decimal,,0
+CurMatCost,SLItems,0,cur_mat_cost,,,Decimal,,0
+CurMatlCost,SLItems,0,cur_matl_cost,,,Decimal,,0
+CurOutCost,SLItems,0,cur_out_cost,,,Decimal,,0
+CurUCost,SLItems,0,cur_u_cost,,,Decimal,,0
+CurVovhdCost,SLItems,0,cur_vovhd_cost,,,Decimal,,0
+Datefld,SLItems,0,datefld,,,Date,,0
+DaysSupply,SLItems,0,days_supply,,,Short Integer,,0
+Decifld1,SLItems,0,decifld1,,,Decimal,,0
+Decifld2,SLItems,0,decifld2,,,Decimal,,0
+Decifld3,SLItems,0,decifld3,,,Decimal,,0
+Density,SLItems,0,PP_density,,,Decimal,,0
+DensityUM,SLItems,0,PP_density_u_m,,,String,,0
+DerAccumValue,SLItems,0,,,,Decimal,'',0
+DerB2BCustPricingOptionsExist,SLCustomerPortalItems,1,,,,Byte,"dbo.PortalPricingOptionsExist(Item, IsNULL(RsccaCustNum,CNCustNum))",0
+DerBOMExist,SLItems,0,,,,Byte,"CASE WHEN (EXISTS (SELECT 1 FROM dbo.job WHERE job.job = Job AND job.suffix=1)) THEN 1
+ELSE 0
+END",0
+DerCanChangeKit,SLItems,0,,,,Byte,"CASE WHEN (DerCanChangeKit1 = 1 AND DerCanChangeKit2 = 1)
+THEN 1
+ELSE 0
+END",0
+DerCanChangeKit1,SLItems,0,,,,Byte,"CASE WHEN (EXISTS (SELECT 1 FROM dbo.coitem WHERE coitem.item = Item) OR
+EXISTS (SELECT 1 FROM dbo.co_bln WHERE co_bln.item = Item) OR
+EXISTS (SELECT 1 FROM dbo.citemh WHERE citemh.item = Item))
+THEN 0
+ELSE 1
+END",0
+DerCanChangeKit2,SLItems,0,,,,Byte,"CASE WHEN (EXISTS (SELECT 1 FROM dbo.coh_bl WHERE coh_bl.item = Item) OR
+EXISTS (SELECT 1 FROM dbo.trnitem WHERE trnitem.item = Item) OR
+EXISTS (SELECT 1 FROM dbo.projmatl WHERE projmatl.item = Item))
+THEN 0
+ELSE 1
+END",0
+DerCanChangeRev,SLItems,0,,,,Byte,dbo.CanChangeItemRev(itm.item),0
+DerCanLotSerial,SLItems,0,,,,Byte,dbo.ItemCanLotSerial(itm.item),0
+DerCanPromptCost1,SLItems,0,,,,Byte,0,0
+DerCanPromptCost2,SLItems,0,,,,Byte,0,0
+DerCanUpdateCosts,SLItems,0,,,,Byte,0,0
+DerCanUpdateCur,SLItems,0,,,,Byte,0,0
+DerChangePosted,SLItems,0,,,,Byte,'',0
+DerCheckIfEcnPending,SLItems,0,,,,Byte,,0
+DerCommissionAmount,SLCustomerPortalItems,1,,,,Decimal,"CASE WHEN RsCurrCode <> RscCurrCode
+THEN
+dbo.CurrCnvtSingleAmt2(RsCurrCode,1,0,0,NULL,NULL,0,NULL,NULL,NULL,NULL,NULL,dbo.CurrCnvtSingleAmt2(RscCurrCode,0,0,0,NULL,NULL,0,NULL,NULL,NULL,NULL,NULL,((IPPCustPriceConv * ComCValue_1)/100)))
+WHEN (RscSlsman = RsResellerSlsman OR RscCustNum = RsCustNum)
+THEN (IPPCustPriceConv * ComCValue_1)/100
+ELSE
+0
+END
+
+",0
+DerCostDifference,SLItems,0,,,,Decimal,(UnitCost - CurUCost),0
+DerCostForm,SLItems,0,,,,Byte,"(CASE when exists (select 1 from dbo.invparms as prm where prm.cost_item_at_whse = 0) 
+THEN
+  0
+ELSE
+1
+END)",0
+DerCumPct,SLItems,0,,,,Decimal,'',0
+DerCurFovhdCost,SLItems,0,,,,Decimal,CASE PMTCode  WHEN N'P'  THEN  0  ELSE CurFovhdCost END,0
+DerCurUCost,SLItems,0,,,,Decimal,"(CASE when exists (select 1 from dbo.invparms as prm where prm.cost_item_at_whse = 0) 
+THEN
+     ISNULL(CurUCost, 0)
+ELSE
+NULL
+END)",0
+DerCustSpecUnitPrcExist,SLCustomerPortalItems,1,,,,Byte,"dbo.CustomerSpecificUnitPriceExists(IPPCustNum, Item, IPPCurrCode)",0
+DerDescription,SLItems,0,,,,String,"ISNULL(IlDescription, Description)",0
+DerDimensionGroup,SLItems,0,,,,String,DimensionGroup,0
+DerDisableEnableTaxFreeMatl,SLItems,0,,,,Byte,"dbo.CheckTaxFreeMatlItem ( Item , N'I' , NULL )",0
+DerDisplayUnitCosts,SLItems,0,,,,Byte,0,0
+DerEcnTracked,SLItems,0,,,,Byte,"dbo.CheckIfEcnPending(itm.job, itm.suffix, itm.item)",0
+DerExtUnitCost,SLItems,0,,,,Decimal,(DerQtyOnHand * CurUCost),0
+DerExtValue,SLItems,0,,,,Decimal,'',0
+DerFrzAsmSubtotal,SLItems,0,,,,Decimal,"FrzAsmSetup + FrzAsmRun + FrzAsmMatl + FrzAsmTool + FrzAsmFixture + FrzAsmOther + FrzAsmFixed + FrzAsmVar + FrzAsmOutside 
+
+",0
+DerFrzAsmTotal,SLItems,0,,,,Decimal,DerFrzAsmSubtotal + FrzSubMatl,0
+DerFrzCompTotal,SLItems,0,,,,Decimal,"FrzCompSetup + FrzCompRun + FrzCompMatl + FrzCompTool + FrzCompFixture + FrzCompOther + FrzCompFixed + FrzCompVar + FrzCompOutside
+",0
+DerFrzcostExist,SLItems,0,,,,Byte,CASE WHEN FrzAsmSetup IS NULL THEN 0 ELSE 1 END,0
+DerGenerateLot,SLItems_FT,1,,,,Byte,SELECT invparms.lot_gen_exp FROM dbo.invparms WHERE invparms.parm_key = 0,0
+DerHasAlternateBOM,SLItems,0,,,,Byte,dbo.CheckHasAlternateBOM(itm.item),0
+DerHasException,SLItems,0,,,,Byte,"CASE WHEN (EXISTS (SELECT 1 FROM dbo.exc_mesg WHERE exc_mesg.item = Item)) THEN 1
+ELSE 0
+END",0
+DerHasJobroute,SLItems_FT,1,,,Short Integer,Short Integer,Case when exists(select 1 from dbo.jobroute jrt where Job = jrt.job) then 1 else 0 end,0
+DerHasPSItem,SLItems_FT,1,,,Short Integer,Short Integer,Case when exists(select 1  from dbo.ps  JOIN dbo.psitem ON (psitem.ps_num = ps.ps_num)  WHERE ps.stat = 'R' and Item=psitem.item) then 1 else 0 end,0
+DerHasRsvdInv,SLItems,0,,,,Byte,dbo.HasRsvdInv(itm.item),0
+DerInteractionExists,SLCustomerPortalItems,1,,,,Byte,"CASE WHEN EXISTS(SELECT TOP 1 * FROM interaction WHERE interaction.RefRowPointer = RowPointer AND interaction.interaction_type = 'C' AND interaction.ref_num_id = RscCustNum) THEN 1
+ELSE 0 END",0
+DerItem,SLCustomerPortalItems,1,,,,String,"ISNULL(IcCustItem, Item)",0
+DerItemAttributeGroup,SLItems,0,,,,String,ItemAttributeGroup,0
+DerItemCategoryDescription,SLItems,0,,,,String,"isnull(IclDescription,IcatDescription)",0
+DerItemContentExist,SLItems,0,,,,Byte,CASE WHEN EXISTS (SELECT TOP 1 1 FROM dbo.item_content_ref WHERE item_content_ref.item = Item ) THEN 1 ELSE 0 END,0
+DerItemPct,SLItems,0,,,,Decimal,'',0
+DerItmAsmSubtotal,SLItems,0,,,,Decimal,"AsmSetup + AsmRun + AsmMatl + AsmTool + AsmFixture + AsmOther + AsmFixed + AsmVar + AsmOutside
+",0
+DerItmAsmTotal,SLItems,0,,,,Decimal,"DerItmAsmSubtotal + SubMatl
+",0
+DerItmCompTotal,SLItems,0,,,,Decimal,"CompSetup + CompRun +  CompMatl + CompTool + CompFixture + CompOther + CompFixed + CompVar + CompOutside
+",0
+DerLotLocExists,SLItems,0,,,,Byte,"CASE WHEN (EXISTS (SELECT 1 FROM dbo.lot_loc WHERE lot_loc.item = Item)) THEN 1
+ELSE 0
+END",0
+DerMatCurCost,SLItems,0,,,,Decimal,"CurMatlCost + CurLbrCost + CASE  PMTCode  WHEN N'P' THEN 0 ELSE CurFovhdCost  END + CurVovhdCost + CurOutCost
+",0
+DerMessage,SLItems,0,,,,String,'',0
+DerNetImpact,SLItems,0,,,,Decimal,(DerQtyOnHand * DerCostDifference),0
+DerNewAbcCode,SLItems,0,,,,String,'',0
+DerNewStat,SLItems,0,,,,String,'',0
+DerNonNettableStock,SLItems,0,,,,Decimal,"(Select SUM(IsNull( itmw.qty_mrb, 0) ) from {itemwhse} as itmw where itmw.item = itm.item)",0
+DerNotRsvdOnHand,SLItems,0,,,,Decimal,DerQtyOnHand - DerQtyRsvdCo,0
+DerOperationExists,SLItems_FT,1,,,,Byte,"EXISTS (SELECT 1
+   FROM dbo.jobroute
+   WHERE jobroute.job = Job
+   AND jobroute.suffix = Suffix
+   AND Job IS NOT NULL)",0
+DerOverview,SLItems,0,,,String,String,"ISNULL(IlOverview, Overview)",0
+DerPMTCode,SLItems,0,,,,String,PMTCode,0
+DerPurAvgFovhdCost,SLItems,0,,,,Decimal,CASE PMTCode  WHEN N'P' THEN AvgFovhdCost ELSE 0 END,0
+DerPurCurCost,SLItems,0,,,,Decimal,"CurMatCost + CurFreightCost + CurDutyCost + CurBrokerageCost + CurInsuranceCost + CurLocFrtCost + CASE  PMTCode  WHEN  N'P'  THEN CurFovhdCost ELSE 0 END
+",0
+DerPurCurFovhdCost,SLItems,0,,,,Decimal,CASE PMTCode  WHEN N'P'  THEN CurFovhdCost ELSE 0 END,0
+DerPurFovhdCos,SLItems,0,,,,Decimal,CASE  PMTCode  WHEN  N'P'  THEN FovhdCost ELSE 0 END,0
+DerQtyAllocCo,SLItems,0,,,,Decimal,iwvQtyAllocCo,0
+DerQtyAllocTrn,SLItems,0,,,,Decimal,iwvQtyAllocTrn,0
+DerQtyAvail,SLItems,0,,,,Decimal,(DerQtyOnHand + DerQtyTrans - DerQtyAllocCo - DerQtyAllocTrn),0
+DerQtyAvailable,SLItems,0,,,,Decimal,"CASE WHEN dbo.GetSiteItemQtyAvailable(Item, PortalPricingSite) >= 0 THEN dbo.GetSiteItemQtyAvailable(Item, PortalPricingSite) ELSE 0 END",0
+DerQtyOnHand,SLItems,0,,,,Decimal,iwvQtyOnHand,0
+DerQtyOrdered,SLItems,0,,,,Decimal,iwvQtyOrdered,0
+DerQtyPurYtd,SLItems,0,,,,Decimal,iwvQtyPurYtd,0
+DerQtyReorder,SLItems,0,,,,Decimal,iwvQtyReorder,0
+DerQtyRsvdCo,SLItems,0,,,,Decimal,iwvQtyRsvdCo,0
+DerQtySoldYtd,SLItems,0,,,,Decimal,iwvQtySoldYtd,0
+DerQtyTrans,SLItems,0,,,,Decimal,iwvQtyTrans,0
+DerQtyWip,SLItems,0,,,,Decimal,iwvQtyWip,0
+DerRecursive,SLItems,0,,,,Byte,0,0
+DerRefType,SLItems,0,,,,String,'',0
+DerSafetyStock,SLItems,0,,,,Decimal,"(Select SUM(IsNull( itmw.qty_reorder, 0) ) from {dbo.itemwhse} as itmw inner  join dbo.whse on itmw.whse = whse.whse where itmw.item = itm.item and whse.dedicated_inventory = 0)",0
+DerSSDate,SLItems,0,,,,Date,"CASE WHEN year(SSDATE) <= 1970 
+THEN NULL 
+ELSE SSDATE
+END
+",0
+DerTotCost,SLItems,0,,,,Decimal,UnitCost,0
+DerUnitCost,SLItems,0,,,,Decimal,"(CASE when exists (select 1 from dbo.invparms as prm where prm.cost_item_at_whse = 0) 
+THEN
+  ISNULL(UnitCost, 0)
+ELSE
+NULL
+END)",0
+DerUseGroupOrPieces,SLItems,0,,,Long Integer,Long Integer,"CASE WHEN DimensionGroup IS NOT NULL 
+                       AND (SELECT COUNT(ip.item)
+                       FROM   dbo.item it
+                       INNER JOIN dbo.itempiece ip
+                       ON it.item = ip.item WHERE it.item = Item)  > 0 
+           THEN  0  
+WHEN DimensionGroup IS NOT NULL
+             AND (SELECT COUNT(ip.item)
+             FROM   dbo.item it
+             INNER JOIN dbo.itempiece ip
+             ON it.item = ip.item WHERE it.item = Item) = 0 
+             THEN 1 ELSE -1 END",0
+DerVariance,SLItems,0,,,,Decimal,'',0
+DerVendItem,SLVendorPortalItems,1,,,,String,"ISNULL(IvVendItem, Item)",0
+DerYouSave,SLCustomerPortalItems,1,,,,Decimal,(IPPPriceConv - IPPCustPriceConv),0
+DerYouSaveAmountPercent,SLCustomerPortalItems,1,,,String,String,DerYouSave + ' ' + '(' + DerYouSavePercent + '%' + ')',0
+DerYouSavePercent,SLCustomerPortalItems,1,,,,Decimal,"Round((DerYouSave / IPPPriceConv), 4)",0
+DerZeroQty,SLItems,0,,,,Byte,1,0
+Desc,SLItems,0,,,String,String,,0
+Description,SLItems,0,description,,,String,,0
+DeviceId,MobileItems,1,device_id,,GUID,GUID,,0
+DimensionGroup,SLItems,0,dimension_group,,,String,,0
+DimensionUM,SLItems,0,dimension_u_m,,String,String,,0
+DockTime,SLItems,0,dock_time,,,Short Integer,,0
+DrawingNbr,SLItems,0,drawing_nbr,,,String,,0
+DuePeriod,SLItems,0,due_period,,,Short Integer,,0
+EarliestPlannedPoReceipt,SLItems,0,earliest_planned_po_receipt,,,Date,,0
+EccnUsmlValue,SLItems,0,eccn_usml_value,,,String,,0
+ExciseTaxPercent,SLItems,0,excise_tax_percent,,,Decimal,,0
+ExpLeadTime,SLItems,0,exp_lead_time,,,Short Integer,,0
+ExportComplianceProgram,SLItems,0,export_compliance_program,,,String,,0
+ExportLicenseNo,AIT_SS_SLItems,2,ExportLicenseNo,,String,String,,0
+FamilyCode,SLItems,0,family_code,,,String,,0
+FeatStr,SLItems,0,feat_str,,,String,,0
+FeatTempl,SLItems,0,feat_templ,,,String,,0
+FeatType,SLItems,0,feat_type,,,String,,0
+Featured,SLItems,0,featured,,,Byte,,0
+FirmJobQty,CHAPSLItems,1,FirmJobQty,,,Decimal,,0
+FixedOrderQty,SLItems,0,fixed_order_qty,,,Decimal,,0
+ForecastBOMSupplyFlag,SLItems,0,fcst_bom_supply_flag,,,Byte,,0
+FovhdCost,SLItems,0,fovhd_cost,,,Decimal,,0
+Freight,SLItems,0,freight_amt,,,Decimal,,0
+FreightClass,SLItems,0,freight_class,,String,String,,0
+FrzAsmFixed,SLItems,0,asm_fixed,,,Decimal,,0
+FrzAsmFixture,SLItems,0,asm_fixture,,,Decimal,,0
+FrzAsmMatl,SLItems,0,asm_matl,,,Decimal,,0
+FrzAsmOther,SLItems,0,asm_other,,,Decimal,,0
+FrzAsmOutside,SLItems,0,asm_outside,,,Decimal,,0
+FrzAsmRun,SLItems,0,asm_run,,,Decimal,,0
+FrzAsmSetup,SLItems,0,asm_setup,,,Decimal,,0
+FrzAsmTool,SLItems,0,asm_tool,,,Decimal,,0
+FrzAsmVar,SLItems,0,asm_var,,,Decimal,,0
+FrzCompFixed,SLItems,0,comp_fixed,,,Decimal,,0
+FrzCompFixture,SLItems,0,comp_fixture,,,Decimal,,0
+FrzCompMatl,SLItems,0,comp_matl,,,Decimal,,0
+FrzCompOther,SLItems,0,comp_other,,,Decimal,,0
+FrzCompOutside,SLItems,0,comp_outside,,,Decimal,,0
+FrzCompRun,SLItems,0,comp_run,,,Decimal,,0
+FrzCompSetup,SLItems,0,comp_setup,,,Decimal,,0
+FrzCompTool,SLItems,0,comp_tool,,,Decimal,,0
+FrzCompVar,SLItems,0,comp_var,,,Decimal,,0
+FrzFreezeDate,SLItems,0,freeze_date,,,Date,,0
+FrzSubMatl,SLItems,0,sub_matl,,,Decimal,,0
+Grade,SLItems,0,PP_grade,,,Long Integer,,0
+Hazard,SLItems,0,hazard,,,Byte,,0
+Hazardous,AIT_SS_SLItems,2,Hazardous,,Byte,Byte,,0
+HazardousMatlClass,SLItems,0,hazardous_matl_class,,,String,,0
+HazardousMatlPackageGroup,SLItems,0,hazardous_matl_package_group,,String,String,,0
+HazMatAddlDesc,AIT_SS_SLItems,2,HazMatAddlDesc,,String,String,,0
+HazmatBattery,AIT_SS_SLItems,2,HazmatBattery,,Byte,Byte,,0
+HazMatClassDivisionNumber,AIT_SS_SLItems,2,HazMatClassDivisionNumber,,String,String,,0
+HazMatCommodityRegulatedLevelCode,AIT_SS_SLItems,2,HazMatCommodityRegulatedLevelCode,,String,String,,0
+HazmatContact,SLItems,0,hazmat_contact,,String,String,,0
+HazmatContactPhone,SLItems,0,hazmat_contact_phone,,,String,,0
+HazMatLabelRequired,AIT_SS_SLItems,2,HazMatLabelRequired,,String,String,,0
+HazMatPackageGroupType,AIT_SS_SLItems,2,HazMatPackageGroupType,,String,String,,0
+HazMatPackagingInstructionCode,AIT_SS_SLItems,2,HazMatPackagingInstructionCode,,String,String,,0
+HazmatPicture,AIT_SS_SLItems,2,Picture,,,Binary,,0
+HazmatPlacardRequired,SLItems,0,hazmat_placard_required,,,Byte,,0
+HazMatProperShippingName,AIT_SS_SLItems,2,HazMatProperShippingName,,String,String,,0
+HazMatRegulationSet,AIT_SS_SLItems,2,HazMatRegulationSet,,String,String,,0
+HazMatRQQty,AIT_SS_SLItems,2,HazMatRQQty,,Decimal,Decimal,,0
+HazMatTechnicalName,AIT_SS_SLItems,2,HazMatTechnicalName,,String,String,,0
+HazmatTemplate,AIT_SS_SLItems,2,HazmatTemplate,,String,String,,0
+HazMatTransportationMode,AIT_SS_SLItems,2,HazMatTransportationMode,,String,String,,0
+HazmatTransportCategory,AIT_SS_SLItems,2,HazmatTransportCategory,,String,String,,0
+HazmatTunnelRestrictionCode,AIT_SS_SLItems,2,HazmatTunnelRestrictionCode,,String,String,,0
+HazMatUNNAIDNumber,AIT_SS_SLItems,2,HazMatUNNAIDNumber,,String,String,,0
+Height,SLItems,0,height,,Decimal,Decimal,,0
+HeightLinearDimension,SLItems,0,PP_height_linear_dimension,,,Decimal,,0
+HtsCode,SLItems,0,hts_code,,,String,,0
+HtsDescription,SLItems,0,description,,,String,,0
+IcatDescription,SLItems,0,description,,,String,,0
+IcCustItem,SLCustomerPortalItems,1,cust_item,,,String,,0
+IcCustNum,SLCustomerPortalItems,1,cust_num,,,NumSortedString,,0
+IclDescription,SLItems,0,description,,,String,,0
+IlDescription,SLItems,0,description,,,String,,0
+IlOverview,SLItems,0,overview,,,String,,0
+IncludeInNetChangePlanning,SLItems,0,include_in_net_change_planning,,,Byte,,0
+InfinitePart,SLItems,0,infinite_part,,,Byte,,0
+InventoryLclTolerance,SLItems,0,inventory_lcl_tolerance,,,Decimal,,0
+InventoryUclTolerance,SLItems,0,inventory_ucl_tolerance,,,Decimal,,0
+InWorkflow,SLItems,0,InWorkflow,,,Byte,,0
+IPPBrkPrice_1,SLCustomerPortalItems,1,brk_price##1,,,Decimal,,0
+IPPBrkPrice_2,SLCustomerPortalItems,1,brk_price##2,,,Decimal,,0
+IPPBrkPrice_3,SLCustomerPortalItems,1,brk_price##3,,,Decimal,,0
+IPPBrkPrice_4,SLCustomerPortalItems,1,brk_price##4,,,Decimal,,0
+IPPBrkPrice_5,SLCustomerPortalItems,1,brk_price##5,,,Decimal,,0
+IPPBrkQty_1,SLCustomerPortalItems,1,brk_qty##1,,,Decimal,,0
+IPPBrkQty_2,SLCustomerPortalItems,1,brk_qty##2,,,Decimal,,0
+IPPBrkQty_3,SLCustomerPortalItems,1,brk_qty##3,,,Decimal,,0
+IPPBrkQty_4,SLCustomerPortalItems,1,brk_qty##4,,,Decimal,,0
+IPPBrkQty_5,SLCustomerPortalItems,1,brk_qty##5,,,Decimal,,0
+IPPContractPriceExists,SLCustomerPortalItems,1,contract_price_exists,,,Byte,,0
+IPPCurrCode,SLCustomerPortalItems,1,curr_code,,,String,,0
+IPPCustNum,SLCustomerPortalItems,1,cust_num,,,NumSortedString,,0
+IPPCustPrice,SLCustomerPortalItems,1,cust_price,,,Decimal,,0
+IPPCustPriceConv,SLCustomerPortalItems,1,cust_price_conv,,,Decimal,,0
+IPPPriceConv,SLCustomerPortalItems,1,price_conv,,,Decimal,,0
+IPPSiteRef,SLCustomerPortalItems,1,site_ref,,,String,,0
+IPPUM,SLCustomerPortalItems,1,u_m,,,String,,0
+IppUMIsoUM,SLCustomerPortalItems,1,iso_u_m,,,String,,0
+IsBOMExisted,SLItems,0,,,,Byte,dbo.IsItemBOMExisted(Item),0
+IssueBy,SLItems,0,issue_by,,,String,,0
+Item,SLItems,0,item,,,String,,0
+ItemAttributeGroup,SLItems,0,attr_group,,,String,,0
+ItemCategory,SLItems,0,item_category,,,String,,0
+ItemChangeDate,SLItems,0,change_date,,,Date,,0
+ItemContent,SLItems,0,item_content,,,Byte,,0
+ItmEstMatlUseUpDate,SLItems,0,estimated_matl_use_up_date,,,Date,,0
+ItmLastMatlUseUpReportDate,SLItems,0,last_matl_use_up_report_date,,,Date,,0
+ItmOrderConfigurable,SLCustomerPortalItems,1,order_configurable,,,Byte,,0
+ITWHQtyAllocCo,SLItems,0,qty_alloc_co,,,Decimal,,0
+ITWHQtyOnHand,SLItems,0,qty_on_hand,,,Decimal,,0
+ITWHQtyOrdered,SLItems,0,qty_ordered,,,Decimal,,0
+ITWHQtyReorder,SLItems,0,qty_reorder,,,Decimal,,0
+ITWHQtyWip,SLItems,0,qty_wip,,,Decimal,,0
+ITWHWhse,SLItems,0,whse,,,String,,0
+IvVendItem,SLVendorPortalItems,1,vend_item,,,String,,0
+iwvQtyAllocCo,SLItems,0,QtyAllocCo,,,Decimal,,0
+iwvQtyAllocTrn,SLItems,0,QtyAllocTrn,,,Decimal,,0
+iwvQtyOnHand,SLItems,0,QtyOnHand,,,Decimal,,0
+iwvQtyOrdered,SLItems,0,QtyOrdered,,,Decimal,,0
+iwvQtyPurYtd,SLItems,0,QtyPurYtd,,,Decimal,,0
+iwvQtyReorder,SLItems,0,QtyReorder,,,Decimal,,0
+iwvQtyRsvdCo,SLItems,0,QtyRsvdCo,,,Decimal,,0
+iwvQtySoldYtd,SLItems,0,QtySoldYtd,,,Decimal,,0
+iwvQtyTrans,SLItems,0,QtyTrans,,,Decimal,,0
+iwvQtyWip,SLItems,0,QtyWip,,,Decimal,,0
+Job,SLItems,0,job,,,NumSortedString,,0
+JobConfigurable,SLItems,0,job_configurable,,,Byte,,0
+JobRollupDate,SLItems,0,rollup_date,,,Date,,0
+Kit,SLItems,0,kit,,,Byte,,0
+KPIAmount,SLItems,0,,,Decimal,Decimal,,0
+KPIItem,SLItems,0,,,String,String,,0
+LanLocaleID,SLItems,0,LocaleID,,,Long Integer,,0
+LastInv,SLItems,0,last_inv,,,Date,,0
+LbrCost,SLItems,0,lbr_cost,,,Decimal,,0
+LCDTItem_DTIcon,LCDTSLItems-Item-DTIcon,3,,,String,String,"dbo.lc_dt_GetDTIconFN('Items', Item, NULL, NULL, NULL, NULL, NULL)",0
+LCDTItemDynamicAssociations,LCDTSLItems-Item-DTIcon,3,,,Byte,Byte,dbo.lc_dt_GetDynamicAssociationsFn(),0
+LCDTItemDynamicVirtuals,LCDTSLItems-Item-DTIcon,3,,,Byte,Byte,dbo.lc_dt_GetDynamicVirtualFn(),0
+LCDTItemRunVirtsOnClient,LCDTSLItems-Item-DTIcon,3,,,String,String,dbo.lc_dt_GetRunVirtsOnClientFN(),0
+LCPFIsDOD,LCPFSLItemsIsDOD,4,ref_num,,String,String,,0
+LeadTime,SLItems,0,lead_time,,,Short Integer,,0
+Length,SLItems,0,length,,Decimal,Decimal,,0
+LengthLinearDimension,SLItems,0,PP_length_linear_dimension,,,Decimal,,0
+LinearDimensionUM,SLItems,0,PP_linear_dimension_u_m,,,String,,0
+Logifld,SLItems,0,logifld,,,Byte,,0
+LotAttrGroup,SLItems,0,lot_attr_group,,,String,,0
+LotGenExp,SLItems,0,lot_gen_exp,,,Byte,,0
+LotPrefix,SLItems,0,lot_prefix,,,String,,0
+LotSize,SLItems,0,lot_size,,,Decimal,,0
+LotTracked,SLItems,0,lot_tracked,,,Byte,,0
+Lowdate,SLItems_FT,1,lowdate,,Date,Date,,0
+LowLevel,SLItems,0,low_level,,,Byte,,0
+LstLotSize,SLItems,0,lst_lot_size,,,Decimal,,0
+LstUCost,SLItems,0,lst_u_cost,,,Decimal,,0
+Markup,SLItems,0,markup,,,Decimal,,0
+MatlCost,SLItems,0,matl_cost,,,Decimal,,0
+MatlType,SLItems,0,matl_type,,,String,,0
+MfgSupplySwitchingActive,SLItems,0,mfg_supply_switching_active,,,Byte,,0
+MpsFlag,SLItems,0,mps_flag,,,Byte,,0
+MpsPlanFence,SLItems,0,mps_plan_fence,,,Short Integer,,0
+MrpPart,SLItems,0,mrp_part,,,Byte,,0
+MustUseFutureRcptsBeforePLN,SLItems,0,must_use_future_rcpts_before_pln,,,Byte,,0
+NAFTACountryOfOrigin,SLItems,0,nafta_country_of_origin,,String,String,,0
+NAFTAPreferenceCriterion,SLItems,0,nafta_pref_crit,,String,String,,0
+NationalMotorFreightClass,SLItems,0,national_motor_freight_class,,,String,,0
+NextConfig,SLItems,0,next_config,,,Short Integer,,0
+NMFC,AIT_SS_SLItems,2,NMFC,,String,String,,0
+NoteExistsFlag,SLItems,0,NoteExistsFlag,,,Byte,,0
+OrderConfigurable,SLItems,0,order_configurable,,,Byte,,0
+OrderMax,SLItems,0,order_max,,,Decimal,,0
+OrderMin,SLItems,0,order_min,,,Decimal,,0
+OrderMult,SLItems,0,order_mult,,,Decimal,,0
+Origin,SLItems,0,origin,,,String,,0
+OriginCriterion,AIT_SS_SLItems,2,OriginCriterion,,String,String,,0
+OutCost,SLItems,0,out_cost,,,Decimal,,0
+Overview,SLItems,0,overview,,,String,,0
+pack_backdepth,AIT_SS_SLItems,2,pack_backdepth,,Decimal,Decimal,,0
+pack_bottomonly,AIT_SS_SLItems,2,pack_bottomonly,,Byte,Byte,,0
+pack_endupok,AIT_SS_SLItems,2,pack_endupok,,Byte,Byte,,0
+pack_flatok,AIT_SS_SLItems,2,pack_flatok,,Byte,Byte,,0
+pack_height,AIT_SS_SLItems,2,pack_height,,Decimal,Decimal,,0
+pack_length,AIT_SS_SLItems,2,pack_length,,Decimal,Decimal,,0
+pack_seatheight,AIT_SS_SLItems,2,pack_seatheight,,Decimal,Decimal,,0
+pack_sideupok,AIT_SS_SLItems,2,pack_sideupok,,Byte,Byte,,0
+pack_toponly,AIT_SS_SLItems,2,pack_toponly,,Byte,Byte,,0
+pack_turnable,AIT_SS_SLItems,2,pack_turnable,,Byte,Byte,,0
+pack_type,AIT_SS_SLItems,2,pack_type,,String,String,,0
+pack_weight,AIT_SS_SLItems,2,pack_weight,,Decimal,Decimal,,0
+pack_width,AIT_SS_SLItems,2,pack_width,,Decimal,Decimal,,0
+PackageType,SLItems,0,package_type,,,String,,0
+PackageTypeMaxQty,SLItems,0,package_type_max_qty,,Decimal,Decimal,,0
+PaperMassBasis,SLItems,0,PP_paper_mass_basis,,,String,,0
+PaperTime,SLItems,0,paper_time,,,Short Integer,,0
+ParmCurrCode,SLItems,0,curr_code,,,String,,0
+ParmsSiteSiteName,SLCustomerPortalItems,1,site_name,,,String,,0
+PassReq,SLItems,0,pass_req,,,Byte,,0
+PhantomFlag,SLItems,0,phantom_flag,,,Byte,,0
+Picture,SLItems,0,picture,,,Binary,,0
+PictureExistsFlag,SLItems,0,,,,Byte,CASE WHEN Picture IS NULL THEN 0 ELSE 1 END,0
+PlanCode,SLItems,0,plan_code,,,String,,0
+PlanFlag,SLItems,0,plan_flag,,,Byte,,0
+PMTCode,SLItems,0,p_m_t_code,,,String,,0
+PortalPricingEnabled,SLItems,0,portal_pricing_enabled,,,Byte,,0
+PortalPricingSite,SLCustomerPortalItems,1,portal_pricing_site,,,String,,0
+PreassignLots,SLItems,0,preassign_lots,,,Byte,,0
+PreassignSerials,SLItems,0,preassign_serials,,,Byte,,0
+PrintKitComponents,SLItems,0,print_kit_components,,,Byte,,0
+PriUnitPrice1,SLItems,0,unit_price1,,,Decimal,,0
+PriUnitPrice2,SLItems,0,unit_price2,,,Decimal,,0
+PriUnitPrice3,SLItems,0,unit_price3,,,Decimal,,0
+PriUnitPrice4,SLItems,0,unit_price4,,,Decimal,,0
+PriUnitPrice5,SLItems,0,unit_price5,,,Decimal,,0
+PriUnitPrice6,SLItems,0,unit_price6,,,Decimal,,0
+ProdMix,SLItems,0,prod_mix,,,NumSortedString,,0
+ProdType,SLItems,0,prod_type,,,String,,0
+Producer,SLItems,0,producer,,,Byte,,0
+ProductCode,SLItems,0,product_code,,,String,,0
+PullUpSafetyStockRule,SLItems,0,pull_up_safety_stock_rule,,,Short Integer,,0
+PullUpSafetyStockValue,SLItems,0,pull_up_safety_stock_value,,,Float,,0
+Qty,SLItems,0,,,Decimal,Decimal,,0
+QtyAllocjob,SLItems,0,qty_allocjob,,,Decimal,,0
+QtyMfgYtd,SLItems,0,qty_mfg_ytd,,,Decimal,,0
+QtyUsedYtd,SLItems,0,qty_used_ytd,,,Decimal,,0
+RatePerDay,SLItems,0,rate_per_day,,,Decimal,,0
+RcptRqmt,SLItems_FT,1,rcpt_rqmt,,String,String,,0
+RcvdOverPoQtyTolerance,SLItems,0,rcvd_over_po_qty_tolerance,,,Decimal,,0
+RcvdUnderPoQtyTolerance,SLItems,0,rcvd_under_po_qty_tolerance,,,Decimal,,0
+ReamMass,SLItems,0,PP_ream_mass,,,Decimal,,0
+ReamMassUM,SLItems,0,PP_ream_mass_u_m,,,String,,0
+ReasonCode,SLItems,0,reason_code,,,String,,0
+RecordDate,SLItems,0,RecordDate,,,Date,,0
+ReorderPoint,SLItems,0,reorder_point,,,Decimal,,0
+Reservable,SLItems,0,reservable,,,Byte,,0
+Revision,SLItems,0,revision,,,String,,0
+RowPointer,SLItems,0,RowPointer,,,GUID,,0
+RsccaCustNum,SLCustomerPortalItems,1,cust_num,,NumSortedString,NumSortedString,,0
+RscCurrCode,SLCustomerPortalItems,1,curr_code,,,String,,0
+RscCustNum,SLCustomerPortalItems,1,cust_num,,,NumSortedString,,0
+RscSlsman,SLCustomerPortalItems,1,slsman,,,String,,0
+RsCurrCode,SLCustomerPortalItems,1,curr_code,,,String,,0
+RsCustNum,SLCustomerPortalItems,1,cust_num,,,NumSortedString,,0
+RsResellerSlsman,SLCustomerPortalItems,1,reseller_slsman,,,String,,0
+RsSlsman,SLCustomerPortalItems,1,slsman,,,String,,0
+SafetyStockPercent,SLItems,0,safety_stock_percent,,,Decimal,,0
+SafetyStockRule,SLItems_FT,1,safety_stock_rule,,Short Integer,Short Integer,,0
+SaveCurrentRevUponBomImport,SLItems,0,save_current_rev_upon_bom_import,,,Byte,,0
+SchedBNum,SLItems,0,sched_b_num,,,String,,0
+SelfContainedQty,AIT_SS_SLItems,2,SelfContainedQty,,Decimal,Decimal,,0
+SeparationAttribute,SLItems,0,separation_attribute,,,String,,0
+SerialLength,SLItems,0,serial_length,,,Byte,,0
+SerialPrefix,SLItems,0,serial_prefix,,,String,,0
+SerialTracked,SLItems,0,serial_tracked,,,Byte,,0
+Setupgroup,SLItems,0,setupgroup,,,String,,0
+ShelfLife,SLItems,0,shelf_life,,,Short Integer,,0
+ShippingName,SLItems,0,shipping_name,,String,String,,0
+ShowInDropDownList,SLItems,0,show_in_drop_down_list,,,Byte,,0
+ShrinkFact,SLItems,0,shrink_fact,,,Decimal,,0
+SLAttributes,SLItems,0,,SLAttributes,,,,0
+SLCfgUis,SLItems,0,,SL.SLCfgUis,Object,Object,,0
+SLControllers,SLItems,0,,SLControllers,,,,0
+SLItemCategoryItems,SLItems,0,,SLItemCategoryItems,,,Item=Item,0
+SLItemCompliances,SLItems,0,,SLItemCompliances,,,Item=Item,0
+SLItemPictures,SLItems,0,,SLItemPictures,,,Item=Item,0
+SLJobmatls,SLItems,0,,SL.SLJobmatls,Object,Object,,0
+SLJobRoutes,SLItems,0,,SL.SLJobRoutes,Object,Object,,0
+SLMatltrans,SLItems,0,,SLMatltrans,,,,0
+SLPlanningDetails,SLItems,0,,SLPlanningDetails,,,,0
+SLPlanningDetailSummaries,SLItems,0,,SLPlanningDetailSummaries,,,,0
+SLRelatedItems,SLItems,0,,SLRelatedItems,,,Item=Item,0
+SLSupDems,SLItems,0,,SL.SLSupDems,Object,Object,,0
+SSDATE,SLItems,0,SSDATE,,,Date,,0
+Stat,SLItems,0,stat,,,String,,0
+StatusChgUserCode,SLItems,0,status_chg_user_code,,,String,,0
+Stocked,SLItems,0,stocked,,,Byte,,0
+SubjectToExciseTax,SLItems,0,subject_to_excise_tax,,,Byte,,0
+SubjectToNAFTARvc,SLItems,0,subject_to_nafta_rvc,,,Byte,,0
+SubMatl,SLItems,0,sub_matl,,,Decimal,,0
+Suffix,SLItems,0,suffix,,,Short Integer,,0
+Sup7Qty,CHAPSLItems,1,Sup7Qty,,,Decimal,,0
+SupplySite,SLItems,0,supply_site,,,String,,0
+SupplyToleranceHrs,SLItems,0,supply_tolerance_hrs,,,Decimal,,0
+SupplyWhse,SLItems,0,supply_whse,,,String,,0
+SupQty,CHAPSLItems,1,SupQty,,,Decimal,,0
+TariffClassification,SLItems,0,tariff_classification,,,String,,0
+TaxCode1,SLItems,0,tax_code1,,,String,,0
+TaxCode1Description,SLItems,0,description,,,String,,0
+TaxCode2,SLItems,0,tax_code2,,,String,,0
+TaxCode2Description,SLItems,0,description,,,String,,0
+TaxedImportedMatl,SLItems,0,taxed_matl,,,Byte,,0
+TaxFreeDays,SLItems,0,tax_free_days,,,Short Integer,,0
+TaxFreeMatl,SLItems,0,tax_free_matl,,,Byte,,0
+Taxsys1TaxMode,SLItems,0,tax_mode,,,String,,0
+Taxsys2TaxMode,SLItems,0,tax_mode,,,String,,0
+TimeFenceRule,SLItems,0,time_fence_rule,,,Short Integer,,0
+TimeFenceValue,SLItems,0,time_fence_value,,,Float,,0
+TopSeller,SLItems,0,top_seller,,,Byte,,0
+TrackEcn,SLItems,0,track_ecn,,,Byte,,0
+TrackPieces,SLItems,0,track_pieces,,,Byte,,0
+UbAlternateDesc,SLItems,0,,,,String,,0
+UbAlternateID,SLItems,0,,,,String,,0
+UbAtlernateJobSuffix,SLItems,0,,,,Short Integer,,0
+UbCardType,SLItems,0,,,String,String,,0
+UbItemDesc,SLItems,0,,,String,String,,0
+UbMatlQty,SLItems,0,,,Decimal,Decimal,,0
+UbNoDrag,SLItems,0,,,,Byte,,0
+UbOperNum,SLItems,0,,,Short Integer,Short Integer,,0
+UbParentItem,SLItems,0,,,String,String,,0
+UbParentOper,SLItems,0,,,Short Integer,Short Integer,,0
+UbParentSeq,SLItems,0,,,Short Integer,Short Integer,,0
+UbParentSubTreeLevel,SLItems,0,,,Short Integer,Short Integer,,0
+UbQtyPerFormat,SLItems,0,,,,String,,0
+UbRefType,SLItems,0,,,,String,I,0
+UbSelect,SLItems,0,,,,Byte,,0
+UbSequence,SLItems,0,,,Short Integer,Short Integer,,0
+UbSpIndicator,SLItems,0,,,String,String,,0
+UbSubTreeLevel,SLItems,0,,,Short Integer,Short Integer,,0
+UbTreeLevel,SLItems,0,,,Short Integer,Short Integer,,0
+UBUnitMatCostForGridCol,SLItems,0,,,,Decimal,0,0
+UbUnits,SLItems,0,,,String,String,,0
+UbUOM,SLItems,0,,,String,String,,0
+UbUpdateAcctAndUC,SLItems,0,,,,Byte,,0
+UBViewType,SLItems,0,,,,Byte,,0
+UbWc,SLItems,0,,,String,String,,0
+UbWcDesc,SLItems,0,,,String,String,,0
+UM,SLItems,0,u_m,,,String,,0
+UmISOUM,SLItems,0,iso_u_m,,,String,,0
+UmPrecision,SLCustomerPortalItems,1,precision_,,,Byte,,0
+unit_weight,AIT_SS_SLItems,2,unit_weight,,Decimal,Decimal,,0
+UnitBrokerageCost,SLItems,0,unit_brokerage_cost,,,Decimal,,0
+UnitCost,SLItems,0,unit_cost,,,Decimal,,0
+UnitDutyCost,SLItems,0,unit_duty_cost,,,Decimal,,0
+UnitFreightCost,SLItems,0,unit_freight_cost,,,Decimal,,0
+UnitInsuranceCost,SLItems,0,unit_insurance_cost,,,Decimal,,0
+UnitLocFrtCost,SLItems,0,unit_loc_frt_cost,,,Decimal,,0
+UnitMatCost,SLItems,0,unit_mat_cost,,,Decimal,,0
+UnitWeight,SLItems,0,unit_weight,,,Decimal,,0
+UNNum,SLItems,0,un_num,,String,String,,0
+UseReorderPoint,SLItems,0,use_reorder_point,,,Byte,,0
+UWsPrice,SLItems,0,u_ws_price,,,Decimal,,0
+VarExpLead,SLItems,0,var_exp_lead,,,Decimal,,0
+VarLead,SLItems,0,var_lead,,,Decimal,,0
+VenVendNum,SLVendorPortalItems,1,vend_num,,,NumSortedString,,0
+VovhdCost,SLItems,0,vovhd_cost,,,Decimal,,0
+WeightUnits,SLItems,0,weight_units,,,String,,0
+Width,SLItems,0,width,,Decimal,Decimal,,0
+WidthLinearDimension,SLItems,0,PP_width_linear_dimension,,,Decimal,,0

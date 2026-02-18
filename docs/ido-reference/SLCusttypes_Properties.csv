@@ -1,0 +1,11 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+CatalogId,SLCusttypes,0,catalog_id,,String,String,,0
+CustType,SLCusttypes,0,cust_type,,,String,,0
+Description,SLCusttypes,0,description,,,String,,0
+DunningGroup,SLCusttypes,0,dunning_group,,,String,,0
+DunningGroupDesc,SLCusttypes,0,description,,,String,,0
+InWorkflow,SLCusttypes,0,InWorkflow,,,Byte,,0
+NoteExistsFlag,SLCusttypes,0,NoteExistsFlag,,,Byte,,0
+RecordDate,SLCusttypes,0,RecordDate,,,Date,,0
+RowPointer,SLCusttypes,0,RowPointer,,,GUID,,0
+TaxablePrice,SLCusttypes,0,taxable_price,,,String,,0

@@ -1,0 +1,261 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+AllocToRent,ERS_RentalItemLocs,1,AllocToRent,,Decimal,Decimal,,0
+AssignedToBePickedQty,SLItemLocs,0,assigned_to_be_picked_qty,,,Decimal,,0
+AvailToRent,ERS_RentalItemLocs,1,AvailToRent,,Decimal,Decimal,,0
+CreateDate,SLItemLocs_FT,1,CreateDate,,Date,Date,,0
+CreatedBy,ERS_RentalItemLocs,1,CreatedBy,,String,String,,0
+DerASPSearch,SLItemLocs,0,,,,String,"ISNULL(Loc,{''}) + '|' + STR(ISNULL(QtyOnHand,0), 19, 8) + '|' + STR(ISNULL(QtyRsvd,0), 19, 8) + '|' + ISNULL(ItmUM,{''})",0
+DerAvailToRent,ERS_RentalItemLocs,1,,,,Decimal,AvailToRent,0
+DerCurUCost,SLItemLocs,0,,,,Decimal,"(CASE when exists (select 1 from dbo.invparms as prm where prm.cost_item_at_whse = 0) 
+THEN
+  ItmCurUCost
+ELSE
+WhsCurUCost
+END)",0
+DerILocTotalAvailToRent1,ERS_RentalItemLocs,1,,,Decimal,Decimal,,0
+DerItemLocRentalStock,ERS_RentalItemLocs,1,,,,Decimal,(CASE WHEN RentalInventory = 1 THEN QtyOnHand ELSE 0 END),0
+DerItemOnHoldVar,ERS_RentalItemLocs,1,,,Decimal,Decimal,"(Select sum(unt.Hold_flag) from fs_unit unt 
+join ers_unit eunt on unt.item=eunt.item and unt.ser_num=eunt.ser_num
+join  ERS_itemloc ersloc ON unt.item=ersloc.item and unt.whse= ersloc.whse and eunt.Loc = ersloc.loc
+where unt.item=Item  and unt.whse=Whse and ersloc.RentalInventory=1)",0
+DerItemRentalStock,ERS_RentalItemLocs,1,,,,Decimal,(Select SUM(loc.qty_on_hand) from itemloc loc left join ers_itemloc ersloc on loc.item=ersloc.item and loc.whse=ersloc.whse and loc.loc=ersloc.loc  where loc.whse=Whse and loc.item=Item and loc.mrb_flag=1 and ersloc.RentalInventory=1),0
+DerItemTotalAvailToRent,ERS_RentalItemLocs,1,,,,Decimal,DerItemRentalStock - DerItemTotalQtyOnRent,0
+DerItemTotalAvailToRent1,ERS_RentalItemLocs,1,,,Decimal,Decimal,,0
+DerItemTotalQtyOnRent,ERS_RentalItemLocs,1,,,,Decimal,(Select SUM(ersloc.QtyOnRent) from itemloc loc left join ers_itemloc ersloc on loc.item=ersloc.item and loc.whse=ersloc.whse and loc.loc=ersloc.loc  where loc.whse=Whse and loc.item=Item AND ERSLOC.RentalInventory=1 AND loc.mrb_flag=1 ),0
+DerIWhseQtyOnHand,SLItemLocs,0,QtyOnHand,,,Decimal,,0
+DerIWhseTotalNonNetStock,SLItemLocs,0,QtyMrb,,,Decimal,,0
+DerIWhseTotalRsvdCO,SLItemLocs,0,QtyRsvdCo,,,Decimal,,0
+DerLocQtyAvailable,SLItemLocs_FT,1,,,Decimal,Decimal,"ISNULL(QtyOnHand, 0) - ISNULL(QtyRsvd, 0) - ISNULL(QtyContained, 0)",0
+DerOnHand,SLItemLocs,0,,,,Decimal,"(CASE when LotLocLot IS NULL
+THEN
+  QtyOnHand
+ELSE
+  LotLocQtyOnHand
+END)
+",0
+DerOnHoldVar,ERS_RentalItemLocs,1,,,,Decimal,"(Select Sum(unt.Hold_flag) from fs_unit unt
+inner join ers_unit eunt on unt.item=eunt.item and unt.ser_num=eunt.ser_num where unt.item=Item  and unt.whse=Whse  and eunt.loc=Loc)",0
+DerQtyAvailable,SLItemLocs_FT,1,,,,Decimal,CASE WHEN ItmLotTracked = 1 THEN LotLocQtyOnHand - LotLocQtyRsvd ELSE QtyOnHand - QtyRsvd END,0
+DerQtyOnRent,ERS_RentalItemLocs,1,,,,Decimal,QtyOnRent,0
+DerQtyUnitFormat,SLItemLocs,0,,,,String,"dbo.FixMaskForCrystal(QtyUnitFormat, dbo.GetWinRegDecGroup() )",0
+DerRntAlloc,ERS_RentalItemLocs,1,,,,Decimal,"(Select (Sum(cntln.qty)-1) from fs_cont_line cntln 
+inner join fs_contract cnt on cntln.contract=cnt.contract
+inner join ERS_fs_contract erscnt on cntln.contract=erscnt.Contract
+inner join ers_fs_cont_line erscntln on cntln.contract=  erscntln.contract and cntln.cont_line=  erscntln.cont_line
+where  cnt.cont_stat<>'CLOSED' 
+and  ERScntln.CheckOutDate is null
+and cntln.item=Item
+and erscnt.status <> 'E')",0
+DerSerNum,ERS_RentalItemLocs,1,,,String,String,'',0
+DerSiteOnHoldVar,ERS_RentalItemLocs,1,,,Decimal,Decimal,"(Select sum(unt.Hold_flag) from fs_unit unt 
+join ers_unit eunt on unt.item=eunt.item and unt.ser_num=eunt.ser_num
+join  ERS_itemloc ersloc ON unt.item=ersloc.item and unt.whse= ersloc.whse and eunt.Loc = ersloc.loc
+where unt.item=Item  and ersloc.RentalInventory=1)",0
+DerSiteQtyOnHand,ERS_RentalItemLocs,1,,,Decimal,Decimal,DerIWhseQtyOnHand,0
+DerSiteRentalStock,ERS_RentalItemLocs,1,,,Decimal,Decimal,(Select SUM(loc.qty_on_hand) from itemloc loc left join ers_itemloc ersloc on loc.item=ersloc.item and loc.whse=ersloc.whse and loc.loc=ersloc.loc  where  loc.item=Item and loc.mrb_flag=1 and ersloc.RentalInventory=1),0
+DerSiteTotalAvailToRent,ERS_RentalItemLocs,1,,,Decimal,Decimal,,0
+DerSiteTotalQtyOnRent,ERS_RentalItemLocs,1,,,Decimal,Decimal,(Select SUM(ersloc.QtyOnRent) from itemloc loc left join ers_itemloc ersloc on loc.item=ersloc.item and loc.whse=ersloc.whse and loc.loc=ersloc.loc  where  loc.item=Item and loc.mrb_flag=1 and ersloc.RentalInventory=1),0
+DerTotalCost,SLItemLocs,0,,,,Decimal,(MatlCost+LbrCost+FovhdCost+VovhdCost+OutCost)*QtyOnHand,0
+DerUM,SLItemLocs,0,,,,String,ItmUM,0
+DerUnitCost,SLItemLocs,0,,,,Decimal,"(CASE when exists (select 1 from dbo.invparms as prm where prm.cost_item_at_whse = 0) 
+THEN
+  ItmUnitCost
+ELSE
+ WhsUnitCost
+END)",0
+DerZeroQty,SLItemLocs,0,,,,Byte,'',0
+DeviceId,MobileItemLocs,1,device_id,,GUID,GUID,,0
+ERS_RentalContLines,ERS_RentalItemLocs,1,,ERS_RentalContLines,,,,0
+FovaccAccessUnit1,SLItemLocs,0,access_unit1,,,String,,0
+FovaccAccessUnit2,SLItemLocs,0,access_unit2,,,String,,0
+FovaccAccessUnit3,SLItemLocs,0,access_unit3,,,String,,0
+FovaccAccessUnit4,SLItemLocs,0,access_unit4,,,String,,0
+FovaccDescription,SLItemLocs,0,description,,,String,,0
+FovhdAcct,SLItemLocs,0,fovhd_acct,,,String,,0
+FovhdAcctUnit1,SLItemLocs,0,fovhd_acct_unit1,,,String,,0
+FovhdAcctUnit2,SLItemLocs,0,fovhd_acct_unit2,,,String,,0
+FovhdAcctUnit3,SLItemLocs,0,fovhd_acct_unit3,,,String,,0
+FovhdAcctUnit4,SLItemLocs,0,fovhd_acct_unit4,,,String,,0
+FovhdCost,SLItemLocs,0,fovhd_cost,,,Decimal,,0
+FovhdInProcAcct,SLItemLocs,0,fovhd_in_proc_acct,,,String,,0
+FovhdInProcAcctDescription,SLItemLocs,0,description,,,String,,0
+FovhdInProcAcctUnit1,SLItemLocs,0,fovhd_in_proc_acct_unit1,,,String,,0
+FovhdInProcAcctUnit2,SLItemLocs,0,fovhd_in_proc_acct_unit2,,,String,,0
+FovhdInProcAcctUnit3,SLItemLocs,0,fovhd_in_proc_acct_unit3,,,String,,0
+FovhdInProcAcctUnit4,SLItemLocs,0,fovhd_in_proc_acct_unit4,,,String,,0
+FovhdipchtAccessUnit1,SLItemLocs,0,access_unit1,,,String,,0
+FovhdipchtAccessUnit2,SLItemLocs,0,access_unit2,,,String,,0
+FovhdipchtAccessUnit3,SLItemLocs,0,access_unit3,,,String,,0
+FovhdipchtAccessUnit4,SLItemLocs,0,access_unit4,,,String,,0
+InvaccAccessUnit1,SLItemLocs,0,access_unit1,,,String,,0
+InvaccAccessUnit2,SLItemLocs,0,access_unit2,,,String,,0
+InvaccAccessUnit3,SLItemLocs,0,access_unit3,,,String,,0
+InvaccAccessUnit4,SLItemLocs,0,access_unit4,,,String,,0
+InvaccDescription,SLItemLocs,0,description,,,String,,0
+InvAcct,SLItemLocs,0,inv_acct,,,String,,0
+InvAcctUnit1,SLItemLocs,0,inv_acct_unit1,,,String,,0
+InvAcctUnit2,SLItemLocs,0,inv_acct_unit2,,,String,,0
+InvAcctUnit3,SLItemLocs,0,inv_acct_unit3,,,String,,0
+InvAcctUnit4,SLItemLocs,0,inv_acct_unit4,,,String,,0
+InvInProcAcct,SLItemLocs,0,inv_in_proc_acct,,,String,,0
+InvInProcAcctDescription,SLItemLocs,0,description,,,String,,0
+InvInProcAcctUnit1,SLItemLocs,0,inv_in_proc_acct_unit1,,,String,,0
+InvInProcAcctUnit2,SLItemLocs,0,inv_in_proc_acct_unit2,,,String,,0
+InvInProcAcctUnit3,SLItemLocs,0,inv_in_proc_acct_unit3,,,String,,0
+InvInProcAcctUnit4,SLItemLocs,0,inv_in_proc_acct_unit4,,,String,,0
+InvipchtAccessUnit1,SLItemLocs,0,access_unit1,,,String,,0
+InvipchtAccessUnit2,SLItemLocs,0,access_unit2,,,String,,0
+InvipchtAccessUnit3,SLItemLocs,0,access_unit3,,,String,,0
+InvipchtAccessUnit4,SLItemLocs,0,access_unit4,,,String,,0
+InvpBflushLoc,SLItemLocs,0,bflush_loc,,,String,,0
+InWorkflow,SLItemLocs,0,InWorkflow,,,Byte,,0
+InWorkflow_1,ERS_RentalItemLocs,1,InWorkflow,,Byte,Byte,,0
+Item,SLItemLocs,0,item,,,String,,0
+item_1,ERS_RentalItemLocs,1,item,,String,String,,0
+ItmAbcCode,SLItemLocs,0,abc_code,,,String,,0
+ItmBflushLoc,SLItemLocs,0,bflush_loc,,,String,,0
+ItmCostMethod,SLItemLocs,0,cost_method,,,String,,0
+ItmCostType,SLItemLocs,0,cost_type,,,String,,0
+ItmCurUCost,SLItemLocs,0,cur_u_cost,,,Decimal,,0
+ItmDescription,SLItemLocs,0,description,,,String,,0
+ItmDimGroup,SLItemLocs,0,dimension_group,,,String,,0
+ItmIssueBy,SLItemLocs,0,issue_by,,,String,,0
+ItmItem,SLItemLocs,0,item,,,String,,0
+ItmLotTracked,SLItemLocs,0,lot_tracked,,,Byte,,0
+ItmMatlType,SLItemLocs,0,matl_type,,,String,,0
+ItmPMTCode,SLItemLocs,0,p_m_t_code,,,String,,0
+ItmProductCode,SLItemLocs,0,product_code,,,String,,0
+ItmSerialTracked,SLItemLocs,0,serial_tracked,,,Byte,,0
+ItmStocked,SLItemLocs,0,stocked,,,Byte,,0
+ItmTrackPieces,SLItemLocs,0,track_pieces,,,Byte,,0
+ItmUM,SLItemLocs,0,u_m,,,String,,0
+ItmUnitCost,SLItemLocs,0,unit_cost,,,Decimal,,0
+ItmwhseQtyOnHand,SLItemLocs,0,qty_on_hand,,,Decimal,,0
+JmatlJob,SLItemLocs,0,,,,NumSortedString,(select top 1 jobmatl.job from jobmatl where jobmatl.item = iloc.item and jobmatl.bflush_loc = iloc.loc),0
+LbraccAccessUnit1,SLItemLocs,0,access_unit1,,,String,,0
+LbraccAccessUnit2,SLItemLocs,0,access_unit2,,,String,,0
+LbraccAccessUnit3,SLItemLocs,0,access_unit3,,,String,,0
+LbraccAccessUnit4,SLItemLocs,0,access_unit4,,,String,,0
+LbraccDescription,SLItemLocs,0,description,,,String,,0
+LbrAcct,SLItemLocs,0,lbr_acct,,,String,,0
+LbrAcctUnit1,SLItemLocs,0,lbr_acct_unit1,,,String,,0
+LbrAcctUnit2,SLItemLocs,0,lbr_acct_unit2,,,String,,0
+LbrAcctUnit3,SLItemLocs,0,lbr_acct_unit3,,,String,,0
+LbrAcctUnit4,SLItemLocs,0,lbr_acct_unit4,,,String,,0
+LbrCost,SLItemLocs,0,lbr_cost,,,Decimal,,0
+LbrInProcAcct,SLItemLocs,0,lbr_in_proc_acct,,,String,,0
+LbrInProcAcctDescription,SLItemLocs,0,description,,,String,,0
+LbrInProcAcctUnit1,SLItemLocs,0,lbr_in_proc_acct_unit1,,,String,,0
+LbrInProcAcctUnit2,SLItemLocs,0,lbr_in_proc_acct_unit2,,,String,,0
+LbrInProcAcctUnit3,SLItemLocs,0,lbr_in_proc_acct_unit3,,,String,,0
+LbrInProcAcctUnit4,SLItemLocs,0,lbr_in_proc_acct_unit4,,,String,,0
+LbripchtAccessUnit1,SLItemLocs,0,access_unit1,,,String,,0
+LbripchtAccessUnit2,SLItemLocs,0,access_unit2,,,String,,0
+LbripchtAccessUnit3,SLItemLocs,0,access_unit3,,,String,,0
+LbripchtAccessUnit4,SLItemLocs,0,access_unit4,,,String,,0
+Loc,SLItemLocs,0,loc,,,String,,0
+loc_1,ERS_RentalItemLocs,1,loc,,String,String,,0
+LocDescription,SLItemLocs,0,description,,,String,,0
+LocLoc,SLItemLocs,0,loc,,,String,,0
+LocType,SLItemLocs,0,loc_type,,,String,,0
+LocWc,SLItemLocs,0,wc,,,String,,0
+LotLocLot,SLItemLocs,0,lot,,,String,,0
+LotLocQtyOnHand,SLItemLocs,0,qty_on_hand,,,Decimal,,0
+LotLocQtyRsvd,SLItemLocs,0,qty_rsvd,,,Decimal,,0
+MatlCost,SLItemLocs,0,matl_cost,,,Decimal,,0
+MrbFlag,SLItemLocs,0,mrb_flag,,,Byte,,0
+NewRank,SLItemLocs,0,NewRank,,,Short Integer,,0
+NoteExistsFlag,SLItemLocs,0,NoteExistsFlag,,Byte,Byte,,0
+NoteExistsFlag_1,ERS_RentalItemLocs,1,NoteExistsFlag,,Byte,Byte,,0
+OutaccAccessUnit1,SLItemLocs,0,access_unit1,,,String,,0
+OutaccAccessUnit2,SLItemLocs,0,access_unit2,,,String,,0
+OutaccAccessUnit3,SLItemLocs,0,access_unit3,,,String,,0
+OutaccAccessUnit4,SLItemLocs,0,access_unit4,,,String,,0
+OutaccDescription,SLItemLocs,0,description,,,String,,0
+OutAcct,SLItemLocs,0,out_acct,,,String,,0
+OutAcctUnit1,SLItemLocs,0,out_acct_unit1,,,String,,0
+OutAcctUnit2,SLItemLocs,0,out_acct_unit2,,,String,,0
+OutAcctUnit3,SLItemLocs,0,out_acct_unit3,,,String,,0
+OutAcctUnit4,SLItemLocs,0,out_acct_unit4,,,String,,0
+OutCost,SLItemLocs,0,out_cost,,,Decimal,,0
+OutInProcAcct,SLItemLocs,0,out_in_proc_acct,,,String,,0
+OutInProcAcctDescription,SLItemLocs,0,description,,,String,,0
+OutInProcAcctUnit1,SLItemLocs,0,out_in_proc_acct_unit1,,,String,,0
+OutInProcAcctUnit2,SLItemLocs,0,out_in_proc_acct_unit2,,,String,,0
+OutInProcAcctUnit3,SLItemLocs,0,out_in_proc_acct_unit3,,,String,,0
+OutInProcAcctUnit4,SLItemLocs,0,out_in_proc_acct_unit4,,,String,,0
+OutipchtAccessUnit1,SLItemLocs,0,access_unit1,,,String,,0
+OutipchtAccessUnit2,SLItemLocs,0,access_unit2,,,String,,0
+OutipchtAccessUnit3,SLItemLocs,0,access_unit3,,,String,,0
+OutipchtAccessUnit4,SLItemLocs,0,access_unit4,,,String,,0
+PermFlag,SLItemLocs,0,perm_flag,,,Byte,,0
+PlacesQtyUnit,SLItemLocs,0,places_qty_unit,,,Byte,,0
+QtyContained,SLItemLocs,0,qty_contained,,Decimal,Decimal,,0
+QtyOnHand,SLItemLocs,0,qty_on_hand,,,Decimal,,0
+QtyOnRent,ERS_RentalItemLocs,1,QtyOnRent,,Decimal,Decimal,,0
+QtyRsvd,SLItemLocs,0,qty_rsvd,,,Decimal,,0
+QtyUnitFormat,SLItemLocs,0,qty_unit_format,,,String,,0
+Rank,SLItemLocs,0,rank,,,Short Integer,,0
+RecordDate,SLItemLocs,0,RecordDate,,Date,Date,,0
+RecordDate_1,ERS_RentalItemLocs,1,RecordDate,,Date,Date,,0
+RecordState,SLItemLocs,0,,,String,String,NULL,0
+RefRowPointer,ERS_RentalItemLocs,1,RefRowPointer,,GUID,GUID,,0
+RentalInventory,ERS_RentalItemLocs,1,RentalInventory,,Byte,Byte,,0
+RowPointer,SLItemLocs,0,RowPointer,,GUID,GUID,,0
+RowPointer_1,ERS_RentalItemLocs,1,RowPointer,,GUID,GUID,,0
+SLContainerItems,SLItemLocs,0,,SLContainerItems,,,,0
+SLItempieces,SLItemLocs,0,,SLItempieces,,,,0
+SLSerials,SLItemLocs,0,,SL.SLSerials,Object,Object,,0
+StagingLoc,AIT_SS_SLItemLocs,1,StagingLoc,,Byte,Byte,,0
+UbFromLotTrxRestrictCode,SLItemLocs,0,,,,String,,0
+UbRecordCount,SLItemLocs,0,,,,Long Integer,,0
+UbToLoc,SLItemLocs,0,,,,String,,0
+UbToLot,SLItemLocs,0,,,,String,,0
+UbToLotTrxRestrictCode,SLItemLocs,0,,,,String,,0
+UbTrnAccessUnit1,SLItemLocs,0,,,,String,,0
+UbTrnAccessUnit2,SLItemLocs,0,,,,String,,0
+UbTrnAccessUnit3,SLItemLocs,0,,,,String,,0
+UbTrnAccessUnit4,SLItemLocs,0,,,,String,,0
+UBTrnAccount,SLItemLocs,0,,,,String,,0
+UbTrnAccountDesc,SLItemLocs,0,,,,String,,0
+UBTrnDate,SLItemLocs,0,,,,Date,,0
+UBTrnDesc,SLItemLocs,0,,,,String,,0
+UbTrnIsControl,SLItemLocs,0,,,,Byte,,0
+UBTrnReasonCode,SLItemLocs,0,,,,String,,0
+UBTrnType,SLItemLocs,0,,,,String,,0
+UBTrnUnit1,SLItemLocs,0,,,,String,,0
+UBTrnUnit2,SLItemLocs,0,,,,String,,0
+UBTrnUnit3,SLItemLocs,0,,,,String,,0
+UBTrnUnit4,SLItemLocs,0,,,,String,,0
+UmDescription,SLItemLocs,0,description,,,String,,0
+UnitCost,SLItemLocs,0,unit_cost,,,Decimal,,0
+UpdatedBy,ERS_RentalItemLocs,1,UpdatedBy,,String,String,,0
+VovacctAccessUnit1,SLItemLocs,0,access_unit1,,,String,,0
+VovacctAccessUnit2,SLItemLocs,0,access_unit2,,,String,,0
+VovacctAccessUnit3,SLItemLocs,0,access_unit3,,,String,,0
+VovacctAccessUnit4,SLItemLocs,0,access_unit4,,,String,,0
+VovacctDescription,SLItemLocs,0,description,,,String,,0
+VovhdAcct,SLItemLocs,0,vovhd_acct,,,String,,0
+VovhdAcctUnit1,SLItemLocs,0,vovhd_acct_unit1,,,String,,0
+VovhdAcctUnit2,SLItemLocs,0,vovhd_acct_unit2,,,String,,0
+VovhdAcctUnit3,SLItemLocs,0,vovhd_acct_unit3,,,String,,0
+VovhdAcctUnit4,SLItemLocs,0,vovhd_acct_unit4,,,String,,0
+VovhdCost,SLItemLocs,0,vovhd_cost,,,Decimal,,0
+VovhdInProcAcct,SLItemLocs,0,vovhd_in_proc_acct,,,String,,0
+VovhdInProcAcctDescription,SLItemLocs,0,description,,,String,,0
+VovhdInProcAcctUnit1,SLItemLocs,0,vovhd_in_proc_acct_unit1,,,String,,0
+VovhdInProcAcctUnit2,SLItemLocs,0,vovhd_in_proc_acct_unit2,,,String,,0
+VovhdInProcAcctUnit3,SLItemLocs,0,vovhd_in_proc_acct_unit3,,,String,,0
+VovhdInProcAcctUnit4,SLItemLocs,0,vovhd_in_proc_acct_unit4,,,String,,0
+VovhdipchtAccessUnit1,SLItemLocs,0,access_unit1,,,String,,0
+VovhdipchtAccessUnit2,SLItemLocs,0,access_unit2,,,String,,0
+VovhdipchtAccessUnit3,SLItemLocs,0,access_unit3,,,String,,0
+VovhdipchtAccessUnit4,SLItemLocs,0,access_unit4,,,String,,0
+Wc,SLItemLocs,0,wc,,,String,,0
+WhsControlledByExternalWms,SLItemLocs,0,controlled_by_external_wms,,,Byte,,0
+WhsCurUCost,SLItemLocs,0,cur_u_cost,,,Decimal,,0
+Whse,SLItemLocs,0,whse,,,String,,0
+whse_1,ERS_RentalItemLocs,1,whse,,String,String,,0
+WhsName,SLItemLocs,0,name,,,String,,0
+WhsUnitCost,SLItemLocs,0,unit_cost,,,Decimal,,0
+WhsWhse,SLItemLocs,0,whse,,,String,,0

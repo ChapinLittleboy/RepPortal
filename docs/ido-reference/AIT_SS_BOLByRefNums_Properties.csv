@@ -1,0 +1,6 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+ref_num,AIT_SS_BOLByRefNums,0,ref_num,,String,String,,0
+ref_type,AIT_SS_BOLByRefNums,0,ref_type,,String,String,,0
+ship_date,AIT_SS_BOLByRefNums,0,ship_date,,Date,Date,,0
+shipment_id,AIT_SS_BOLByRefNums,0,shipment_id,,Decimal,Decimal,,0
+status,AIT_SS_BOLByRefNums,0,status,,String,String,,0

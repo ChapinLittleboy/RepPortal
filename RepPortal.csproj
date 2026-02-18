@@ -65,6 +65,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="docs\ido-reference\" />
     <Folder Include="Logs\" />
     <Folder Include="wwwroot\images\" />
   </ItemGroup>

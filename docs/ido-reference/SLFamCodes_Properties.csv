@@ -1,0 +1,16 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+Charfld1,SLFamCodes,0,charfld1,,,String,,0
+Charfld2,SLFamCodes,0,charfld2,,,String,,0
+Charfld3,SLFamCodes,0,charfld3,,,String,,0
+Datefld,SLFamCodes,0,datefld,,,Date,,0
+Decifld1,SLFamCodes,0,decifld1,,,Decimal,,0
+Decifld2,SLFamCodes,0,decifld2,,,Decimal,,0
+Decifld3,SLFamCodes,0,decifld3,,,Decimal,,0
+Description,SLFamCodes,0,description,,,String,,0
+FamilyCode,SLFamCodes,0,family_code,,,String,,0
+InWorkflow,SLFamCodes,0,InWorkflow,,,Byte,,0
+Logifld,SLFamCodes,0,logifld,,,Byte,,0
+MpsPlanFence,SLFamCodes,0,mps_plan_fence,,,Short Integer,,0
+NoteExistsFlag,SLFamCodes,0,NoteExistsFlag,,Byte,Byte,,0
+RecordDate,SLFamCodes,0,RecordDate,,Date,Date,,0
+RowPointer,SLFamCodes,0,RowPointer,,GUID,GUID,,0

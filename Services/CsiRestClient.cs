@@ -24,6 +24,9 @@ public class CsiRestClient : ICsiRestClient
         _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(
             "Authorization",
             options.Value.Authorization);
+        _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(
+            "X-Infor-MongooseSessionType",
+            "CustomUser");
     }
 
     public Task<string> GetAsync(
