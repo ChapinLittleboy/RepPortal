@@ -397,7 +397,7 @@ EXEC dbo.SetSiteSp @SetSite, NULL;
 SELECT
     CollectionName
 FROM BAT_App.dbo.IdoCollectionsView
-WHERE CollectionName LIKE 'SL%' or CollectionName Like 'AIT%'
+WHERE CollectionName LIKE 'SL%' or CollectionName Like 'AIT%' or CollectionName like 'Chap_InvoiceLines'
 ORDER BY CollectionName;
 ";
 

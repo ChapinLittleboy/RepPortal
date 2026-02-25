@@ -1,0 +1,52 @@
+﻿PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse
+BillToState,Chap_InvoiceLines,0,state,,String,String,,0
+co_line,Chap_InvoiceLines,0,co_line,,Short Integer,Short Integer,,0
+co_num,Chap_InvoiceLines,0,co_num,,String,String,,0
+co_release,Chap_InvoiceLines,0,co_release,,Short Integer,Short Integer,,0
+cons_num,Chap_InvoiceLines,0,cons_num,,Long Integer,Long Integer,,0
+cost,Chap_InvoiceLines,0,cost,,Decimal,Decimal,,0
+CreateDate,Chap_InvoiceLines,0,CreateDate,,Date,Date,,0
+CreatedBy,Chap_InvoiceLines,0,CreatedBy,,String,String,,0
+cust_po,Chap_InvoiceLines,0,cust_po,,String,String,,0
+CustNum,Chap_InvoiceLines,0,cust_num,,String,String,,0
+CustSeq,Chap_InvoiceLines,0,cust_seq,,Long Integer,Long Integer,,0
+disc,Chap_InvoiceLines,0,disc,,Decimal,Decimal,,0
+do_line,Chap_InvoiceLines,0,do_line,,Long Integer,Long Integer,,0
+do_num,Chap_InvoiceLines,0,do_num,,String,String,,0
+do_seq,Chap_InvoiceLines,0,do_seq,,Short Integer,Short Integer,,0
+excise_tax_percent,Chap_InvoiceLines,0,excise_tax_percent,,Decimal,Decimal,,0
+ExtPrice,Chap_InvoiceLines,0,,,Decimal,Decimal,inv_item_mst.qty_invoiced * inv_item_mst.price,0
+inv_line,Chap_InvoiceLines,0,inv_line,,Long Integer,Long Integer,,0
+inv_num,Chap_InvoiceLines,0,inv_num,,String,String,,0
+inv_seq,Chap_InvoiceLines,0,inv_seq,,Long Integer,Long Integer,,0
+InvDate,Chap_InvoiceLines,0,inv_date,,Date,Date,,0
+InWorkflow,Chap_InvoiceLines,0,InWorkflow,,Byte,Byte,,0
+item,Chap_InvoiceLines,0,item,,String,String,,0
+new_price,Chap_InvoiceLines,0,new_price,,Decimal,Decimal,,0
+NoteExistsFlag,Chap_InvoiceLines,0,NoteExistsFlag,,Byte,Byte,,0
+old_price,Chap_InvoiceLines,0,old_price,,Decimal,Decimal,,0
+orig_inv_num,Chap_InvoiceLines,0,orig_inv_num,,String,String,,0
+Period,Chap_InvoiceLines,0,,,String,String,"FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR)",0
+PeriodSort,Chap_InvoiceLines,0,,,String,String,"CONVERT(VARCHAR, DATEFROMPARTS(YEAR(ih.inv_date), MONTH(ih.inv_date), 1), 112)",0
+price,Chap_InvoiceLines,0,price,,Decimal,Decimal,,0
+process_ind,Chap_InvoiceLines,0,process_ind,,String,String,,0
+qty_invoiced,Chap_InvoiceLines,0,qty_invoiced,,Decimal,Decimal,,0
+reason_text,Chap_InvoiceLines,0,reason_text,,String,String,,0
+RecordDate,Chap_InvoiceLines,0,RecordDate,,Date,Date,,0
+RegionName,Chap_InvoiceLines,0,RegionName,,String,String,,0
+restock_fee_amt,Chap_InvoiceLines,0,restock_fee_amt,,Decimal,Decimal,,0
+RowPointer,Chap_InvoiceLines,0,RowPointer,,GUID,GUID,,0
+sales_acct,Chap_InvoiceLines,0,sales_acct,,String,String,,0
+sales_acct_unit1,Chap_InvoiceLines,0,sales_acct_unit1,,String,String,,0
+sales_acct_unit2,Chap_InvoiceLines,0,sales_acct_unit2,,String,String,,0
+sales_acct_unit3,Chap_InvoiceLines,0,sales_acct_unit3,,String,String,,0
+sales_acct_unit4,Chap_InvoiceLines,0,sales_acct_unit4,,String,String,,0
+SalesRegion,Chap_InvoiceLines,0,Uf_SalesRegion,,String,String,,0
+ShipToCity,Chap_InvoiceLines,0,city,,String,String,,0
+ShipToState,Chap_InvoiceLines,0,state,,String,String,,0
+site_ref,Chap_InvoiceLines,0,site_ref,,String,String,,0
+Slsman,Chap_InvoiceLines,0,slsman,,String,String,,0
+tax_code1,Chap_InvoiceLines,0,tax_code1,,String,String,,0
+tax_code2,Chap_InvoiceLines,0,tax_code2,,String,String,,0
+tax_date,Chap_InvoiceLines,0,tax_date,,Date,Date,,0
+UpdatedBy,Chap_InvoiceLines,0,UpdatedBy,,String,String,,0
