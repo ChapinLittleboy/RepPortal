@@ -2090,14 +2090,14 @@ public class SalesService : ISalesService
       fc.MonthShort, fc.DayOfMonth, fc.DayShort, fc.FiscalYear, fc.QuarterOfFiscalYear, fc.MonthOfFiscalYear
       ,rn.RegionName
       ,ca.City, ca.State, ca.Zip
-  FROM inv_hdr_mst_all ih
-  JOIN inv_item_mst_all ii ON ih.inv_num = ii.inv_num AND ih.inv_seq = ii.inv_seq
-  --JOIN co_mst co        ON ih.co_num = co.co_num
-  --JOIN coitem_mst ci    ON co.co_num = ci.co_num AND ii.co_line = ci.co_line
-  JOIN custaddr_mst ca  ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
-  join custaddr_mst ca0 on ih.cust_num = ca0.cust_num and ca0.cust_seq = 0
-  JOIN customer_mst cu on ih.cust_num=cu.cust_num and cu.cust_seq = ih.cust_seq
-  JOIN item_mst im      ON ii.item = im.item
+  FROM DEMOinv_hdr_mst ih
+  JOIN DEMOinv_item_mst ii ON ih.inv_num = ii.inv_num AND ih.inv_seq = ii.inv_seq
+  --JOIN DEMOco_mst co        ON ih.co_num = co.co_num
+  --JOIN DEMOcoitem_mst ci    ON co.co_num = ci.co_num AND ii.co_line = ci.co_line
+  JOIN DEMOcustaddr_mst ca  ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
+  join DEMOcustaddr_mst ca0 on ih.cust_num = ca0.cust_num and ca0.cust_seq = 0
+  JOIN DEMOcustomer_mst cu on ih.cust_num=cu.cust_num and cu.cust_seq = ih.cust_seq
+  JOIN DEMOitem_mst im      ON ii.item = im.item
 LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
   Join tempwork.dbo.FiscalCalendarVw fc on Cast(ih.inv_date as date)=fc.[Date]
             WHERE 1 = 1 
