@@ -38,6 +38,7 @@
     <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="dbup-sqlserver" Version="6.0.0" />
+    <PackageReference Include="Dumpify" Version="0.7.0" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.21" />
     <PackageReference Include="Hangfire.Core" Version="1.8.21" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.8.21" />

@@ -126,6 +126,14 @@
                                 HeaderText="DerivedCode"
                                 Width="250" />
 
+                    <GridColumn Field=@nameof(IdoPropertyRow.TableName)
+                                HeaderText="TableName"
+                                Width="250" />
+
+                    <GridColumn Field=@nameof(IdoPropertyRow.JoinText)
+                                HeaderText="JoinText"
+                                Width="250" />
+
                     <GridColumn HeaderText="Do Not Use" Width="100" TextAlign="TextAlign.Center">
                         <Template Context="rowObj">
                             @{
@@ -297,7 +305,7 @@
         string filePath = Path.Combine(_csvOutputPath, $"{SelectedIdo}_Properties.csv");
 
         var sb = new StringBuilder();
-        sb.AppendLine("PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse");
+        sb.AppendLine("PropertyName,DefinedInCollection,Depth,ColumnName,SubCollectionName,DataType,EffectiveDataType,PropertyValue,DoNotUse, TableAlias, TableName, JoinText");
 
         foreach (IdoPropertyRow row in Rows.OrderBy(r => r.PropertyName))
         {
@@ -310,7 +318,11 @@
                 CsvEscape(row.DataType),
                 CsvEscape(row.EffectiveDataType),
                 CsvEscape(row.PropertyValue),
-                row.DoNotUse ? "1" : "0"
+                row.DoNotUse ? "1" : "0",
+                CsvEscape(row.TableAlias),
+                CsvEscape(row.TableName),
+                CsvEscape(row.JoinText)
+
             ));
         }
 
@@ -429,6 +441,7 @@ DECLARE @SetSite SiteType;
 SELECT @SetSite = site FROM parms_mst WITH (READUNCOMMITTED);
 EXEC dbo.SetSiteSp @SetSite, NULL;
 
+
 ;WITH ExtTree AS
 (
     SELECT
@@ -441,7 +454,7 @@ EXEC dbo.SetSiteSp @SetSite, NULL;
     UNION ALL
 
     SELECT
-        Child.CollectionName,
+        Child.CollectionName as childcollectionname,
         Child.Extends,
         ExtTree.Depth + 1 AS Depth
     FROM BAT_App.dbo.IdoCollectionsView Child
@@ -458,17 +471,21 @@ Props AS
         p.SubCollectionName,
         p.DataType,
         p.EffectiveDataType,
-        p.PropertyValue
+        p.PropertyValue,
+				p.ColumnTableAlias
+
     FROM BAT_App.dbo.IdoPropertiesView p
     INNER JOIN ExtTree t
         ON p.CollectionName = t.CollectionName
 ),
+
 FinalProps AS
 (
     SELECT
         PropertyName,
         CollectionName,
         Depth,
+				ColumnTableAlias,
         ColumnName,
         SubCollectionName,
         DataType,
@@ -482,17 +499,24 @@ FinalProps AS
     FROM Props
 )
 SELECT
-    PropertyName,
-    CollectionName AS DefinedInCollection,
-    Depth,
-    ColumnName,
-    SubCollectionName,
-    DataType,
-    EffectiveDataType,
-    PropertyValue
-FROM FinalProps
+    F.PropertyName,
+    F.CollectionName AS DefinedInCollection,
+    F.Depth,
+
+    F.ColumnName,
+    F.SubCollectionName,
+    F.DataType,
+    F.EffectiveDataType,
+    F.PropertyValue,
+	F.ColumnTableAlias,
+	tv.TableName,
+    ISNULL(tv.JoinText, 'BaseTable') AS JoinText
+		
+FROM FinalProps F
+join dbo.IdoColumnWithAliasView tv on tv.CollectionName = F.CollectionName and tv.TableAlias =  F.ColumnTableAlias and F.ColumnName = tv.ColumnName
 WHERE rn = 1
 ORDER BY PropertyName;
+
 ";
 
         using var conn = new SqlConnection(_connectionString);
@@ -516,6 +540,9 @@ ORDER BY PropertyName;
                 DataType = rdr.IsDBNull(5) ? null : rdr.GetString(5),
                 EffectiveDataType = rdr.IsDBNull(6) ? null : rdr.GetString(6),
                 PropertyValue = rdr.IsDBNull(7) ? null : rdr.GetString(7),
+                TableAlias = rdr.IsDBNull(8) ? null : rdr.GetString(8),
+                TableName = rdr.IsDBNull(9) ? null : rdr.GetString(9),
+                JoinText = rdr.IsDBNull(10) ? null : rdr.GetString(10)
             });
         }
 
@@ -599,5 +626,9 @@ ORDER BY PropertyName;
         public int? SelectedOrder { get; set; }
         public string? PropertyValue { get; set; }
         public bool DoNotUse { get; set; }
+        public string? TableName { get; set; }  
+        public string? JoinText { get; set; }
+        public string? ColumnTableAlias { get; set; }
+        public string? TableAlias { get; set; }
     }
 }

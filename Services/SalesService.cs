@@ -13,6 +13,7 @@ using RepPortal.Data;
 using RepPortal.Models;
 using static RepPortal.Pages.MonthlyItemSalesPivot;
 using RegionInfo = RepPortal.Models.RegionInfo;
+using Dumpify;
 
 namespace RepPortal.Services;
 
@@ -229,6 +230,9 @@ public class SalesService : ISalesService
     {
         EnsureRepContext();
 
+        if (_csiOptions.UseApi)
+            return await GetItemSalesReportDataWithQtyApiAsync();
+
         var repCode = _repCodeContext!.CurrentRepCode;
         var allowedRegions = _repCodeContext.CurrentRegions;
 
@@ -348,8 +352,488 @@ public class SalesService : ISalesService
         if (allowedRegions != null && allowedRegions.Any())
             param.Add("@AllowedRegions", allowedRegions);
 
+
+        _logger?.LogInformation("GetItemSalesReportDataWithQty SQL:\n{Sql}", sql);
+
+        _logger?.LogInformation("GetItemSalesReportDataWithQty SQL:\n{Sql}", sql);
+
+        // Build a readable dictionary of parameters
+        var paramDict = new Dictionary<string, object?>();
+
+        foreach (var name in param.ParameterNames)
+        {
+            paramDict[name] = param.Get<dynamic>(name);
+        }
+
+        _logger?.LogInformation(
+            "GetItemSalesReportDataWithQty PARAMETERS:\n{@Parameters}",
+            paramDict);
+
+
         var rows = await connection.QueryAsync(sql, param, commandType: CommandType.Text);
         return MaterializeToDictionaries(rows);
+    }
+
+    /// <summary>
+    /// Fetches invoice line data from the Chap_InvoiceLines IDO and pivots it into the
+    /// same fiscal-year + monthly column format that the SQL version produces.
+    /// Field names verified against Chap_InvoiceLines_Properties.csv.
+    /// Customer names come from a secondary SLCustomers call (CustSeq=0);
+    /// item descriptions from a secondary SLItems call.
+    /// </summary>
+    public async Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQtyApiAsync()
+    {
+        EnsureRepContext();
+
+        if (_csiRestClient == null)
+            throw new InvalidOperationException("CSI REST client is not available.");
+
+        var repCode = _repCodeContext!.CurrentRepCode;
+        var allowedRegions = _repCodeContext.CurrentRegions;
+
+        var today = DateTime.Today;
+        int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+
+        var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
+        var fyCurrentEnd   = new DateTime(fiscalYear,     8, 31);
+        var fyMinus3Start  = new DateTime(fiscalYear - 4, 9, 1);
+        var fyMinus3End    = new DateTime(fiscalYear - 3, 8, 31);
+        var fyMinus2Start  = new DateTime(fiscalYear - 3, 9, 1);
+        var fyMinus2End    = new DateTime(fiscalYear - 2, 8, 31);
+        var fyMinus1Start  = new DateTime(fiscalYear - 2, 9, 1);
+        var fyMinus1End    = new DateTime(fiscalYear - 1, 8, 31);
+
+        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
+
+        var currentFYMonths = Enumerable.Range(0, currentFiscalMonth)
+            .Select(i => fyCurrentStart.AddMonths(i))
+            .Select(d => d.ToString("MMM") + d.Year)
+            .ToList();
+
+        // ── 1. Chap_InvoiceLines IDO call ──
+        // ExtPrice on this IDO = qty_invoiced * price (no discount).
+        // We request price + disc separately to compute net revenue correctly.
+        // Period is pre-computed by the IDO as "Sep2024" etc.
+        var filters = new List<string>
+        {
+            Eq("Slsman", repCode),
+            $"InvDate >= '{fyMinus3Start:yyyyMMdd}'",
+            $"InvDate <= '{fyCurrentEnd:yyyyMMdd}'"
+        };
+
+        if (allowedRegions is { Count: > 0 })
+            filters.Add(In("SalesRegion", allowedRegions));
+
+        var props = string.Join(",", new[]
+        {
+            "InvDate", "CustNum", "CustSeq",
+            "ShipToCity", "ShipToState", "BillToState",
+            "Slsman", "SalesRegion", "RegionName",
+            "item", "qty_invoiced", "price", "disc", "Period"
+        });
+
+        var query = new Dictionary<string, string>
+        {
+            ["props"]    = props,
+            ["filter"]   = string.Join(" AND ", filters),
+            ["rowcap"]   = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        // Query both BAT and KENT sites — mirrors the SQL UNION ALL across Bat_App and Kent_App.
+        var siteAuths = new List<(string Site, string? AuthOverride)> { ("BAT", null) };
+        if (!string.IsNullOrWhiteSpace(_csiOptions.KentAuthorization))
+            siteAuths.Add(("KENT", _csiOptions.KentAuthorization));
+
+        var lines = new List<InvLineRawRow>();
+
+        foreach (var (site, authOverride) in siteAuths)
+        {
+            string siteJson = authOverride != null
+                ? await _csiRestClient.GetAsync("json/Chap_InvoiceLines/adv", query, authOverride)
+                : await _csiRestClient.GetAsync("json/Chap_InvoiceLines/adv", query);
+
+            var siteResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(siteJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+            if (siteResponse.MessageCode == 0)
+            {
+                lines.AddRange(siteResponse.Items
+                    .Select(row => MapRow<InvLineRawRow>(row))
+                    .Where(l => l.InvDate.HasValue));
+            }
+            else if (authOverride != null)
+            {
+                // Chap_InvoiceLines is a custom IDO that may not be deployed on KENT.
+                // Fall back to standard SLInvHdrs + SLInvItemAlls which exist on all instances.
+                _logger?.LogInformation(
+                    "Chap_InvoiceLines not available on {Site} ({Msg}); falling back to SLInvHdrs + SLInvItemAlls",
+                    site, siteResponse.Message);
+                lines.AddRange(await FetchKentLinesViaStandardIdosAsync(
+                    repCode, fyMinus3Start, fyCurrentEnd, authOverride));
+            }
+            else
+            {
+                _logger?.LogWarning("Chap_InvoiceLines failed for {Site}: {Msg}", site, siteResponse.Message);
+            }
+        }
+
+        _logger?.LogInformation(
+            "GetItemSalesReportDataWithQtyApiAsync: {Count} raw lines fetched for rep {RepCode} (BAT + KENT)",
+            lines.Count, repCode);
+
+        // ── 2. Customer names — SLCustomers, CustSeq=0 (billing/corporate address) ──
+        var uniqueCustNums = lines
+            .Where(l => !string.IsNullOrWhiteSpace(l.CustNum))
+            .Select(l => l.CustNum!)
+            .Distinct()
+            .ToList();
+
+        var custNameLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // Populated alongside custNameLookup; used to backfill SalesRegion on KENT fallback lines.
+        var regionFromCustLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (uniqueCustNums.Count > 0)
+        {
+            var custQuery = new Dictionary<string, string>
+            {
+                ["props"]    = "CustNum,CustSeq,Name,Uf_SalesRegion",
+                ["filter"]   = $"CustSeq = 0 AND {In("CustNum", uniqueCustNums)}",
+                ["rowcap"]   = "0",
+                ["loadtype"] = "FIRST",
+                ["bookmark"] = "0",
+                ["readonly"] = "1"
+            };
+
+            var custJson = await _csiRestClient.GetAsync("json/SLCustomers/adv", custQuery);
+            var custResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(custJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+            if (custResponse.MessageCode == 0)
+            {
+                foreach (var custRow in custResponse.Items.Select(r => MapRow<CustNameInfo>(r)))
+                {
+                    if (!string.IsNullOrWhiteSpace(custRow.CustNum))
+                    {
+                        custNameLookup[custRow.CustNum] = custRow.Name ?? "";
+                        if (!string.IsNullOrWhiteSpace(custRow.UfSalesRegion))
+                            regionFromCustLookup[custRow.CustNum] = custRow.UfSalesRegion;
+                    }
+                }
+            }
+            else
+            {
+                _logger?.LogWarning("SLCustomers lookup failed: {Msg}", custResponse.Message);
+            }
+        }
+
+        // ── 3. Item descriptions — SLItems ──
+        var uniqueItems = lines
+            .Where(l => !string.IsNullOrWhiteSpace(l.Item))
+            .Select(l => l.Item!)
+            .Distinct()
+            .ToList();
+
+        var itemDescLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (uniqueItems.Count > 0)
+        {
+            var itemQuery = new Dictionary<string, string>
+            {
+                ["props"]    = "Item,Description",
+                ["filter"]   = In("Item", uniqueItems),
+                ["rowcap"]   = "0",
+                ["loadtype"] = "FIRST",
+                ["bookmark"] = "0",
+                ["readonly"] = "1"
+            };
+
+            var itemJson = await _csiRestClient.GetAsync("json/SLItems/adv", itemQuery);
+            var itemResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(itemJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+            if (itemResponse.MessageCode == 0)
+            {
+                foreach (var itemRow in itemResponse.Items.Select(r => MapRow<ItemDescInfo>(r)))
+                {
+                    if (!string.IsNullOrWhiteSpace(itemRow.Item))
+                        itemDescLookup[itemRow.Item] = itemRow.Description ?? "";
+                }
+            }
+            else
+            {
+                _logger?.LogWarning("SLItems lookup failed: {Msg}", itemResponse.Message);
+            }
+        }
+
+        // ── 3b. Backfill SalesRegion on KENT fallback lines and apply allowedRegions filter ──
+        // KENT lines fetched via SLInvHdrs have SalesRegion = "" because that field is not on SLInvHdrs.
+        // Use the Uf_SalesRegion values retrieved in step 2 to fill it in.
+        foreach (var line in lines.Where(l => string.IsNullOrEmpty(l.SalesRegion)
+                                              && !string.IsNullOrWhiteSpace(l.CustNum)))
+        {
+            if (regionFromCustLookup.TryGetValue(line.CustNum!, out string? region))
+                line.SalesRegion = region;
+        }
+
+        // Re-apply the allowedRegions filter now that KENT lines have SalesRegion populated.
+        // BAT lines were already filtered at the IDO level; this catches any KENT lines that slipped through.
+        if (allowedRegions is { Count: > 0 })
+        {
+            lines = lines
+                .Where(l => !string.IsNullOrEmpty(l.SalesRegion) && allowedRegions.Contains(l.SalesRegion))
+                .ToList();
+        }
+
+        // ── Helper: determine fiscal year label from invoice date ──
+        string GetFyLabel(DateTime d)
+        {
+            if (d >= fyMinus3Start && d <= fyMinus3End) return $"FY{fiscalYear - 3}";
+            if (d >= fyMinus2Start && d <= fyMinus2End) return $"FY{fiscalYear - 2}";
+            if (d >= fyMinus1Start && d <= fyMinus1End) return $"FY{fiscalYear - 1}";
+            if (d >= fyCurrentStart && d <= fyCurrentEnd) return $"FY{fiscalYear}";
+            return string.Empty;
+        }
+
+        // ── 4. Group by customer + ship-to + item, then pivot ──
+        var grouped = lines
+            .GroupBy(l => (
+                CustNum: l.CustNum ?? "",
+                CustSeq: l.CustSeq,
+                Item: l.Item ?? ""
+            ))
+            .ToList();
+
+        var result = new List<Dictionary<string, object>>(grouped.Count);
+
+        foreach (var group in grouped)
+        {
+            var first = group.First();
+            custNameLookup.TryGetValue(first.CustNum ?? "", out string? custName);
+            itemDescLookup.TryGetValue(first.Item ?? "", out string? itemDesc);
+
+            var row = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Customer"]        = first.CustNum ?? "",
+                ["Customer Name"]   = custName ?? "",
+                ["Ship To Num"]     = first.CustSeq,
+                ["Ship To City"]    = first.ShipToCity ?? "",
+                ["Ship To State"]   = first.ShipToState ?? "",
+                ["slsman"]          = first.Slsman ?? "",
+                ["name"]            = custName ?? "",
+                ["Bill To State"]   = first.BillToState ?? "",
+                ["Uf_SalesRegion"]  = first.SalesRegion ?? "",
+                ["RegionName"]      = first.RegionName ?? "",
+                ["Item"]            = first.Item ?? "",
+                ["ItemDescription"] = itemDesc ?? ""
+            };
+
+            // Fiscal year total columns (4 years)
+            foreach (int offset in new[] { 3, 2, 1, 0 })
+            {
+                string fyLabel = $"FY{fiscalYear - offset}";
+                var fyLines = group.Where(l => GetFyLabel(l.InvDate!.Value) == fyLabel).ToList();
+                row[$"{fyLabel}_Rev"] = fyLines.Sum(l => l.NetRevenue);
+                row[$"{fyLabel}_Qty"] = fyLines.Sum(l => l.QtyInvoiced);
+            }
+
+            // Monthly columns for current FY — use the Period field pre-computed by the IDO
+            foreach (var monthKey in currentFYMonths)
+            {
+                var monthLines = group
+                    .Where(l => string.Equals(l.Period, monthKey, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                row[$"{monthKey}_Rev"] = monthLines.Sum(l => l.NetRevenue);
+                row[$"{monthKey}_Qty"] = monthLines.Sum(l => l.QtyInvoiced);
+            }
+
+            result.Add(row);
+        }
+ //       result.Dump();
+
+        await LogReportUsageAsync(repCode, "GetItemSalesReportDataWithQtyApi");
+        return result;
+    }
+
+    // Maps to Chap_InvoiceLines IDO — field names verified against Chap_InvoiceLines_Properties.csv.
+    // ExtPrice on that IDO is qty*price with NO discount, so we compute NetRevenue manually.
+    private class InvLineRawRow
+    {
+        [CsiField("InvDate")]       public DateTime? InvDate { get; set; }
+        [CsiField("CustNum")]       public string? CustNum { get; set; }
+        [CsiField("CustSeq")]       public int CustSeq { get; set; }
+        [CsiField("ShipToCity")]    public string? ShipToCity { get; set; }
+        [CsiField("ShipToState")]   public string? ShipToState { get; set; }
+        [CsiField("BillToState")]   public string? BillToState { get; set; }
+        [CsiField("Slsman")]        public string? Slsman { get; set; }
+        [CsiField("SalesRegion")]   public string? SalesRegion { get; set; }  // maps to Uf_SalesRegion
+        [CsiField("RegionName")]    public string? RegionName { get; set; }
+        [CsiField("item")]          public string? Item { get; set; }
+        [CsiField("qty_invoiced")]  public decimal QtyInvoiced { get; set; }
+        [CsiField("price")]         public decimal Price { get; set; }
+        [CsiField("disc")]          public decimal Disc { get; set; }         // header-level discount %
+        [CsiField("Period")]        public string? Period { get; set; }        // pre-computed: e.g. "Sep2024"
+
+        // Net revenue on invoice lines ignoring any header level discount.
+        public decimal NetRevenueNoDiscount => QtyInvoiced * Price ;
+
+
+
+        // Net revenue after discount: matches SQL formula qty * (price * (100-disc%) / 100)  We apply the header-level discount to the each line.
+
+        public decimal NetRevenue => QtyInvoiced * Price * (100m - Disc) / 100m;
+    }
+
+    // Used for the secondary SLCustomers call to look up billing/corporate name (CustSeq = 0)
+    // and Uf_SalesRegion for KENT fallback lines that need SalesRegion backfilled.
+    private class CustNameInfo
+    {
+        [CsiField("CustNum")]        public string? CustNum { get; set; }
+        [CsiField("CustSeq")]        public int CustSeq { get; set; }
+        [CsiField("Name")]           public string? Name { get; set; }
+        [CsiField("Uf_SalesRegion")] public string? UfSalesRegion { get; set; }
+    }
+
+    // Used for the secondary SLItems call to look up item descriptions.
+    private class ItemDescInfo
+    {
+        [CsiField("Item")]        public string? Item { get; set; }
+        [CsiField("Description")] public string? Description { get; set; }
+    }
+
+    // Used by FetchKentLinesViaStandardIdosAsync — standard SLInvHdrs is on all Syteline instances.
+    private class KentInvHdrRaw
+    {
+        [CsiField("InvNum")]  public string? InvNum { get; set; }
+        [CsiField("InvSeq")]  public int InvSeq { get; set; }
+        [CsiField("CustNum")] public string? CustNum { get; set; }
+        [CsiField("CustSeq")] public int CustSeq { get; set; }
+        [CsiField("InvDate")] public DateTime? InvDate { get; set; }
+        [CsiField("State")]   public string? State { get; set; }   // ship-to state
+        [CsiField("Disc")]    public decimal Disc { get; set; }    // header-level discount %
+        [CsiField("Slsman")]  public string? Slsman { get; set; }
+    }
+
+    // Used by FetchKentLinesViaStandardIdosAsync — standard SLInvItemAlls is on all Syteline instances.
+    private class KentInvItemRaw
+    {
+        [CsiField("InvNum")]      public string? InvNum { get; set; }
+        [CsiField("InvSeq")]      public int InvSeq { get; set; }
+        [CsiField("Item")]        public string? Item { get; set; }
+        [CsiField("QtyInvoiced")] public decimal QtyInvoiced { get; set; }
+        [CsiField("Price")]       public decimal Price { get; set; }
+    }
+
+    /// <summary>
+    /// KENT fallback: Chap_InvoiceLines is a custom IDO that may not be deployed on KENT.
+    /// This method replicates the same data shape using standard SLInvHdrs + SLInvItemAlls.
+    /// ShipToCity, BillToState, SalesRegion, and RegionName are backfilled by the caller.
+    /// </summary>
+    private async Task<List<InvLineRawRow>> FetchKentLinesViaStandardIdosAsync(
+        string repCode,
+        DateTime dateFrom,
+        DateTime dateTo,
+        string kentAuth)
+    {
+        // ── SLInvHdrs (KENT) ──
+        var hdrQuery = new Dictionary<string, string>
+        {
+            ["props"]    = "InvNum,InvSeq,CustNum,CustSeq,InvDate,State,Disc,Slsman",
+            ["filter"]   = $"{Eq("Slsman", repCode)} AND InvDate >= '{dateFrom:yyyyMMdd}' AND InvDate <= '{dateTo:yyyyMMdd}'",
+            ["rowcap"]   = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var hdrJson = await _csiRestClient!.GetAsync("json/SLInvHdrs/adv", hdrQuery, kentAuth);
+        var hdrResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(hdrJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        if (hdrResponse.MessageCode != 0)
+        {
+            _logger?.LogWarning("SLInvHdrs (KENT fallback) failed: {Msg}", hdrResponse.Message);
+            return new List<InvLineRawRow>();
+        }
+
+        var headers = hdrResponse.Items
+            .Select(row => MapRow<KentInvHdrRaw>(row))
+            .Where(h => !string.IsNullOrWhiteSpace(h.InvNum) && h.InvDate.HasValue)
+            .ToList();
+
+        if (headers.Count == 0)
+            return new List<InvLineRawRow>();
+
+        var hdrLookup = headers
+            .GroupBy(h => (h.InvNum!, h.InvSeq))
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var invNums = headers.Select(h => h.InvNum!).Distinct().ToList();
+
+        // ── SLInvItemAlls (KENT) — batched ──
+        const int batchSize = 30;
+        var rawItems = new List<KentInvItemRaw>();
+
+        foreach (var batch in invNums.Chunk(batchSize))
+        {
+            var itemQuery = new Dictionary<string, string>
+            {
+                ["props"]    = "InvNum,InvSeq,Item,QtyInvoiced,Price",
+                ["filter"]   = In("InvNum", batch),
+                ["rowcap"]   = "0",
+                ["loadtype"] = "FIRST",
+                ["bookmark"] = "0",
+                ["readonly"] = "1"
+            };
+
+            var itemJson = await _csiRestClient!.GetAsync("json/SLInvItemAlls/adv", itemQuery, kentAuth);
+            var itemResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(itemJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+            if (itemResponse.MessageCode == 0)
+                rawItems.AddRange(itemResponse.Items.Select(r => MapRow<KentInvItemRaw>(r)));
+            else
+                _logger?.LogWarning("SLInvItemAlls (KENT fallback) batch failed: {Msg}", itemResponse.Message);
+        }
+
+        // ── Join headers + items into InvLineRawRow ──
+        var result = new List<InvLineRawRow>();
+
+        foreach (var item in rawItems)
+        {
+            if (string.IsNullOrWhiteSpace(item.InvNum) || string.IsNullOrWhiteSpace(item.Item))
+                continue;
+
+            var key = (item.InvNum!, item.InvSeq);
+            if (!hdrLookup.TryGetValue(key, out KentInvHdrRaw? hdr) || !hdr.InvDate.HasValue)
+                continue;
+
+            result.Add(new InvLineRawRow
+            {
+                InvDate     = hdr.InvDate,
+                CustNum     = hdr.CustNum,
+                CustSeq     = hdr.CustSeq,
+                ShipToCity  = "",               // not on SLInvHdrs
+                ShipToState = hdr.State ?? "",
+                BillToState = "",               // not on SLInvHdrs
+                Slsman      = hdr.Slsman ?? repCode,
+                SalesRegion = "",               // backfilled by caller via SLCustomers lookup
+                RegionName  = "",               // backfilled by caller via SLCustomers lookup
+                Item        = item.Item,
+                QtyInvoiced = item.QtyInvoiced,
+                Price       = item.Price,
+                Disc        = hdr.Disc,
+                Period      = hdr.InvDate.Value.ToString("MMM") + hdr.InvDate.Value.Year
+            });
+        }
+
+        _logger?.LogInformation(
+            "KENT fallback (SLInvHdrs + SLInvItemAlls): {Count} lines for rep {RepCode}",
+            result.Count, repCode);
+
+        return result;
     }
 
     public async Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQtyOLD()
