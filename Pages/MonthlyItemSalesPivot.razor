@@ -32,8 +32,20 @@
         {
             <!-- Option B: pivot appears only once data is ready -->
 
+            <div class="pivot-actions">
+                
+                <label for="rowLevelSelect">Row Level</label>
+                <select id="rowLevelSelect" @bind="_selectedRowLevel">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                </select>
+                <button @onclick="ApplySelectedLevel">Apply Level</button>
+            </div>
+
             <div class="pivot-wrap">
-                <SfPivotView @ref="PivotRef" ID="PivotView" TValue="SaleRow" Height="600"
+                <SfPivotView @key="_pivotRenderKey" @ref="PivotRef" ID="PivotView" TValue="SaleRow" Height="600"
                              AllowCalculatedField="true"
                              ShowFieldList="true"
                              ShowGroupingBar="true"
@@ -90,10 +102,10 @@
                         </PivotViewFieldMappings>
 
                         <PivotViewRows>
-                            <PivotViewRow Name="CorpNumWithName" Caption="CorpNum-Name" ExpandAll="true" AllowDragAndDrop=true/>
+                            <PivotViewRow Name="CorpNumWithName" Caption="CorpNum-Name" ExpandAll="@_expandCorpLevel" AllowDragAndDrop=true/>
                             
-                            <PivotViewRow Name="ItemNumWithProduct" Caption="Item-Description" />
-                            <PivotViewRow Name="CustomerNameAddr" Caption="ShipTo" ExpandAll="false" />
+                            <PivotViewRow Name="ItemNumWithProduct" Caption="Item-Description" ExpandAll="@_expandItemLevel" />
+                            <PivotViewRow Name="CustomerNameAddr" Caption="ShipTo" ExpandAll="@_expandShipToLevel" />
 
                         </PivotViewRows>
 
@@ -127,8 +139,7 @@
                                      FetchReport="OnFetchReport"
                                      RenameReport="OnRenameReport"
                                      RemoveReport="OnRemoveReport"
-                                     NewReport="OnNewReport"
-                                     AggregateCell="OnAggregateCell" />
+                                     NewReport="OnNewReport" />
                 </SfPivotView>
             </div>
         }
@@ -152,6 +163,30 @@
 
     .pivot-wrap {
         position: relative;
+    }
+
+    .pivot-actions {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .pivot-actions button {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        line-height: 1.1;
+        border-radius: 4px;
+    }
+
+    .pivot-actions label,
+    .pivot-actions select {
+        font-size: 0.65rem;
+        line-height: 1.1;
+    }
+
+    .pivot-actions select {
+        padding: 1px 4px;
+        height: 22px;
     }
 
     /* Compact font and row height for header + data cells */
@@ -250,6 +285,11 @@
     public List<SaleRow>? Sales { get; set; }
     private bool isLoading = true;
     private bool _pivotLayoutsEnabled;
+    private bool _expandCorpLevel = true;
+    private bool _expandItemLevel = true;
+    private bool _expandShipToLevel;
+    private int _selectedRowLevel = 2;
+    private int _pivotRenderKey;
     private List<string> _cachedReportNames = new();
 
     public List<Syncfusion.Blazor.PivotView.ToolbarItems> PivotToolbar = new();
@@ -361,14 +401,42 @@
         // User can use SaveAs to persist the new layout.
     }
 
-    // Treat empty pivot cells as zero so they sort below real values.
-    public void OnAggregateCell(AggregateEventArgs args)
+    private async Task CollapseAll()
     {
-        if (args.Value == null)
-            args.Value = 0;
+        await SetRowLevelAsync(2);
     }
 
+    private async Task ExpandAll()
+    {
+        await SetRowLevelAsync(3);
+    }
 
+    private async Task ApplySelectedLevel()
+    {
+        await SetRowLevelAsync(_selectedRowLevel);
+    }
+
+    private async Task SetRowLevelAsync(int rowLevel)
+    {
+        int clampedLevel = Math.Clamp(rowLevel, 0, 3);
+
+        bool expandCorp = clampedLevel >= 1;
+        bool expandItem = clampedLevel >= 2;
+        bool expandShipTo = clampedLevel >= 3;
+
+        if (_expandCorpLevel == expandCorp &&
+            _expandItemLevel == expandItem &&
+            _expandShipToLevel == expandShipTo)
+        {
+            return;
+        }
+
+        _expandCorpLevel = expandCorp;
+        _expandItemLevel = expandItem;
+        _expandShipToLevel = expandShipTo;
+        _pivotRenderKey++;
+        await InvokeAsync(StateHasChanged);
+    }
 
     // (Optional) If you still have logic in OnInitializedAsync,
     // keep it light and non-blocking. Don't fetch data here.
