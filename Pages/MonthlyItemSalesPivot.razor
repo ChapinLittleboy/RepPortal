@@ -127,7 +127,8 @@
                                      FetchReport="OnFetchReport"
                                      RenameReport="OnRenameReport"
                                      RemoveReport="OnRemoveReport"
-                                     NewReport="OnNewReport" />
+                                     NewReport="OnNewReport"
+                                     AggregateCell="OnAggregateCell" />
                 </SfPivotView>
             </div>
         }
@@ -358,6 +359,13 @@
     {
         // PivotView handles resetting to default internally.
         // User can use SaveAs to persist the new layout.
+    }
+
+    // Treat empty pivot cells as zero so they sort below real values.
+    public void OnAggregateCell(AggregateEventArgs args)
+    {
+        if (args.Value == null)
+            args.Value = 0;
     }
 
 
