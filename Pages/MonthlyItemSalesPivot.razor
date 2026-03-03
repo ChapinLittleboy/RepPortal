@@ -32,23 +32,39 @@
         {
             <!-- Option B: pivot appears only once data is ready -->
 
+            <div class="pivot-actions">
+                
+                <label for="rowLevelSelect">Row Level</label>
+                <select id="rowLevelSelect" @bind="_selectedRowLevel">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                </select>
+                <button @onclick="ApplySelectedLevel">Apply Level</button>
+            </div>
+
             <div class="pivot-wrap">
-                <SfPivotView @ref="PivotRef" ID="PivotView" TValue="SaleRow" Height="600"
-                             AllowCalculatedField="true"
+                <SfPivotView @key="_pivotRenderKey" @ref="PivotRef" ID="PivotView" TValue="SaleRow" Height="600"
+                             AllowCalculatedField="false"
                              ShowFieldList="true"
                              ShowGroupingBar="true"
+                            
                              ShowToolbar="true"
                              Toolbar="@PivotToolbar"
                              EnableValueSorting="true"
-                             EnableVirtualization="true"
+                             
                              AllowExcelExport="true"
-                             ExportAllPages="false"
+                             ExportAllPages="true"
+                             
                              
                              >
 
                     <PivotViewDataSourceSettings DataSource="@Sales"
                                                  ShowAggregationOnValueField="false"
-                                                 ExpandAll="false">
+                          EmptyCellsTextContent=""        
+                        
+                    >
                         <PivotViewTemplates>
                             <CellTemplate>
                                 @{
@@ -90,10 +106,10 @@
                         </PivotViewFieldMappings>
 
                         <PivotViewRows>
-                            <PivotViewRow Name="CorpNumWithName" Caption="CorpNum-Name" ExpandAll="true" AllowDragAndDrop=true/>
+                            <PivotViewRow Name="CorpNumWithName" Caption="CompanyName" ExpandAll="@_expandCorpLevel" AllowDragAndDrop=true/>
                             
-                            <PivotViewRow Name="ItemNumWithProduct" Caption="Item-Description" />
-                            <PivotViewRow Name="CustomerNameAddr" Caption="ShipTo" ExpandAll="false" />
+                            <PivotViewRow Name="ItemNumWithProduct" Caption="Item-Description" ExpandAll="@_expandItemLevel" />
+                            <PivotViewRow Name="CustomerNameAddr" Caption="ShipTo" ExpandAll="@_expandShipToLevel" />
 
                         </PivotViewRows>
 
@@ -105,7 +121,7 @@
 
                         <PivotViewValues>
                             <PivotViewValue Name="Quantity" Type="SummaryTypes.Sum" Caption="Qty"  ShowValueTypeIcon="false"  />
-                            <PivotViewValue Name="SalesAmount" Type="SummaryTypes.Sum"  Caption="Amount" />
+                            <PivotViewValue Name="SalesAmount" Type="SummaryTypes.Sum" Caption="Amount" ShowSortIcon="true"  />
                         </PivotViewValues>
 
                         <PivotViewFormatSettings>
@@ -117,7 +133,7 @@
                     <PivotViewGridSettings RowHeight="24" ColumnWidth="80" />
 
                     <PivotViewGroupingBarSettings ShowFilterIcon="true"
-                                                  ShowSortIcon="false"
+                                                  ShowSortIcon="true"
                                                   ShowRemoveIcon="true"
                                                   ShowValueTypeIcon="false" />
                     <PivotViewEvents TValue="SaleRow"
@@ -127,7 +143,8 @@
                                      FetchReport="OnFetchReport"
                                      RenameReport="OnRenameReport"
                                      RemoveReport="OnRemoveReport"
-                                     NewReport="OnNewReport" />
+                                     NewReport="OnNewReport" 
+                                     EnginePopulated="OnEnginePopulated"/>
                 </SfPivotView>
             </div>
         }
@@ -151,6 +168,30 @@
 
     .pivot-wrap {
         position: relative;
+    }
+
+    .pivot-actions {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .pivot-actions button {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        line-height: 1.1;
+        border-radius: 4px;
+    }
+
+    .pivot-actions label,
+    .pivot-actions select {
+        font-size: 0.65rem;
+        line-height: 1.1;
+    }
+
+    .pivot-actions select {
+        padding: 1px 4px;
+        height: 22px;
     }
 
     /* Compact font and row height for header + data cells */
@@ -179,9 +220,12 @@
     /* Wider minimum for value (Qty / Amount) columns */
     #PivotView .e-valuescontent,
     #PivotView .e-valuesheader {
-        min-width: 70px !important;
+        min-width: 60px !important;
     }
 
+    #PivotView .e-frozen-left-content {
+        min-width: 220px !important;
+    }
     /* Your existing styling */
     .e-pivotview {
         min-height: 200px;
@@ -249,6 +293,11 @@
     public List<SaleRow>? Sales { get; set; }
     private bool isLoading = true;
     private bool _pivotLayoutsEnabled;
+    private bool _expandCorpLevel = true;
+    private bool _expandItemLevel = true;
+    private bool _expandShipToLevel;
+    private int _selectedRowLevel = 2;
+    private int _pivotRenderKey;
     private List<string> _cachedReportNames = new();
 
     public List<Syncfusion.Blazor.PivotView.ToolbarItems> PivotToolbar = new();
@@ -360,6 +409,70 @@
         // User can use SaveAs to persist the new layout.
     }
 
+    private async Task CollapseAll()
+    {
+        await SetRowLevelAsync(2);
+    }
+
+    private async Task ExpandAll()
+    {
+        await SetRowLevelAsync(3);
+    }
+
+    private async Task ApplySelectedLevel()
+    {
+        await SetRowLevelAsync(_selectedRowLevel);
+    }
+
+    private async Task SetRowLevelAsync(int rowLevel)
+    {
+        int clampedLevel = Math.Clamp(rowLevel, 0, 3);
+
+        bool expandCorp = clampedLevel >= 1;
+        bool expandItem = clampedLevel >= 2;
+        bool expandShipTo = clampedLevel >= 3;
+
+        if (_expandCorpLevel == expandCorp &&
+            _expandItemLevel == expandItem &&
+            _expandShipToLevel == expandShipTo)
+        {
+            return;
+        }
+
+        _expandCorpLevel = expandCorp;
+        _expandItemLevel = expandItem;
+        _expandShipToLevel = expandShipTo;
+        _pivotRenderKey++;
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+
+    private void OnEnginePopulated(EnginePopulatedEventArgs args)
+    {
+        var pivotValues = args.PivotValues;
+        if (pivotValues == null) return;
+
+        for (int r = 0; r < pivotValues.Count(); r++)
+        {
+            var row = pivotValues[r];
+            if (row == null) continue;
+
+            for (int c = 0; c < row.Count(); c++)
+            {
+                var cell = row[c];
+                if (cell == null) continue;
+
+                if (!string.Equals(cell.Axis, "value", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (cell.Value == null)
+                {
+                    cell.Value = 0d;
+                }
+            }
+        }
+    }
 
 
     // (Optional) If you still have logic in OnInitializedAsync,
@@ -371,6 +484,7 @@
         public string ShipToName { get; set; } = "";
         public string CustomerName { get; set; } = "";
         public string ProductName { get; set; } = "";
+      
         public int Quantity { get; set; }
         public decimal SalesAmount { get; set; }
         public string CustNum { get; set; } = "";

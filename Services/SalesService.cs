@@ -2086,7 +2086,7 @@ public class SalesService : ISalesService
       im.description AS ProductName,
       ii.item     AS ItemNum,
       ii.qty_invoiced AS Quantity,
-      (ii.qty_invoiced * ii.price) AS SalesAmount,
+      ISNULL((ii.qty_invoiced * ii.price),0) AS SalesAmount,
       fc.MonthShort, fc.DayOfMonth, fc.DayShort, fc.FiscalYear, fc.QuarterOfFiscalYear, fc.MonthOfFiscalYear
       ,rn.RegionName
       ,ca.City, ca.State, ca.Zip
