@@ -36,10 +36,10 @@
                 
                 <label for="rowLevelSelect">Row Level</label>
                 <select id="rowLevelSelect" @bind="_selectedRowLevel">
-                    <option value="0">0</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
+                    <option value="0">1</option>
+                    <option value="1">2</option>
+                    <option value="2">3</option>
+                    
                 </select>
                 <button @onclick="ApplySelectedLevel">Apply Level</button>
             </div>
@@ -49,7 +49,7 @@
                              AllowCalculatedField="false"
                              ShowFieldList="true"
                              ShowGroupingBar="true"
-                            
+                            AllowPdfExport="false"
                              ShowToolbar="true"
                              Toolbar="@PivotToolbar"
                              EnableValueSorting="true"
@@ -100,16 +100,16 @@
                             <PivotViewFieldOptions Name="CustomerName" ShowInFieldList="false" />
                             <PivotViewFieldOptions Name="ShipToName" ShowInFieldList="false" />
                             <PivotViewFieldOptions Name="CustNum" ShowInFieldList="false" />
-                            <PivotViewFieldOptions Name="CustomerNameAddr" Caption="ShipTo-CustNum" />
+                            <PivotViewFieldOptions Name="ShipToNameAddr" Caption="ShipTo-CustNum" />
                             <PivotViewFieldOptions Name="CityStateZip" Caption="ShipTo" />
 
                         </PivotViewFieldMappings>
 
                         <PivotViewRows>
-                            <PivotViewRow Name="CorpNumWithName" Caption="CompanyName" ExpandAll="@_expandCorpLevel" AllowDragAndDrop=true/>
+                            <PivotViewRow Name="CustNumWithName" Caption="CustNumName" ExpandAll="@_expandCorpLevel" AllowDragAndDrop=true/>
                             
                             <PivotViewRow Name="ItemNumWithProduct" Caption="Item-Description" ExpandAll="@_expandItemLevel" />
-                            <PivotViewRow Name="CustomerNameAddr" Caption="ShipTo" ExpandAll="@_expandShipToLevel" />
+                            <PivotViewRow Name="ShipToNameAddr" Caption="ShipTo" ExpandAll="@_expandShipToLevel" />
 
                         </PivotViewRows>
 
@@ -128,6 +128,9 @@
                             <PivotViewFormatSetting Name="SalesAmount" Format="C0" />
                             <PivotViewFormatSetting Name="Quantity" Format="N0" />
                         </PivotViewFormatSettings>
+
+                        @* <PivotViewValueSortSettings HeaderText="Grand Total##SalesAmount" HeaderDelimiter="##" SortOrder=Sorting.Descending></PivotViewValueSortSettings> *@
+
                     </PivotViewDataSourceSettings>
 
                     <PivotViewGridSettings RowHeight="24" ColumnWidth="80" />
@@ -285,7 +288,10 @@
     #PivotView .e-grouping-bar .e-right-axis-fields {
         display: none !important;
     }
-</style>
+
+    .e-pivotview .e-menu-item.e-pdfexport {
+        display: none;
+    }</style>
 
 @code {
     private const string PageKey = "MonthlyItemSalesPivot";
@@ -294,9 +300,11 @@
     private bool isLoading = true;
     private bool _pivotLayoutsEnabled;
     private bool _expandCorpLevel = true;
-    private bool _expandItemLevel = true;
+    private bool _expandItemLevel = false;
     private bool _expandShipToLevel;
-    private int _selectedRowLevel = 2;
+    private bool _expandLevel3;
+
+    private int _selectedRowLevel = 1;
     private int _pivotRenderKey;
     private List<string> _cachedReportNames = new();
 
@@ -358,7 +366,7 @@
     {
         ExcelExportProperties ExcelProperties = new ExcelExportProperties();
         var repCode = RepCodeContext.CurrentRepCode;
-        ExcelProperties.FileName = $"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}";
+        ExcelProperties.FileName = $"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}.xlsx";
         args.ExcelExportProperties = ExcelProperties;
         args.FileName = ExcelProperties.FileName;
     }
@@ -431,10 +439,12 @@
         bool expandCorp = clampedLevel >= 1;
         bool expandItem = clampedLevel >= 2;
         bool expandShipTo = clampedLevel >= 3;
+        bool expandLastLevelTo = clampedLevel >= 4;
 
         if (_expandCorpLevel == expandCorp &&
             _expandItemLevel == expandItem &&
-            _expandShipToLevel == expandShipTo)
+            _expandShipToLevel == expandShipTo &&
+            _expandLevel3 == expandLastLevelTo)
         {
             return;
         }
@@ -442,6 +452,7 @@
         _expandCorpLevel = expandCorp;
         _expandItemLevel = expandItem;
         _expandShipToLevel = expandShipTo;
+        _expandLevel3 = expandLastLevelTo;
         _pivotRenderKey++;
         await InvokeAsync(StateHasChanged);
     }
@@ -504,11 +515,12 @@
    
 
     public string ItemNumWithProduct => $"{ItemNum} - {ProductName}";
-    public string CustomerNameWithNum => $"{ShipToName} ({CustNum.Trim()})";
-    public string CustomerNameAddr => $"{ShipToName} ({CityStateZip})";
+    public string ShipToNameWithNum => $"{ShipToName} ({CustNum.Trim()})";
+    public string ShipToNameAddr => $"{ShipToName} ({CityStateZip})";
         public string NumberedMonthShort => $"{MonthOfFiscalYear} - {MonthShort}";
         public string QuarterOfFiscalYearLabel => $"Fiscal Q{QuarterOfFiscalYear}";
-        public string CorpNumWithName => $"{CustNum} - {CustomerName}";
+        public string CustNumWithName => $"{CustNum} - {CustomerName}";
+        public string CustNameWithNum => $"{CustomerName} - {CustNum}";
         public string FiscalYearLabel => $"FY{FiscalYear}";
     public string CityStateZip => $"{City}, {State} {Zip}";
 
