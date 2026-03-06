@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## Build & Run Commands
 
@@ -22,7 +22,7 @@ Launch profiles: `http` (port 5197), `https` (port 7143), `IIS Express` (port 43
 
 ## Architecture Overview
 
-**ASP.NET Core 8 Blazor Server** app for Chapin Manufacturing's sales rep portal. Uses Syncfusion Blazor 32 for UI components (grids, charts, dropdowns).
+**ASP.NET Core 8 Blazor Server** app for Chapin Manufacturing's sales rep portal. Uses Syncfusion Blazor 30 for UI components (grids, charts, dropdowns).
 
 ### Multi-Database Pattern
 
