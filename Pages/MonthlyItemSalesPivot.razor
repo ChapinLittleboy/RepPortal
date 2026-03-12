@@ -17,7 +17,7 @@
 
 <PageTitle>Pivot Table Sales by Item</PageTitle>
 <meta name="referrer" content="never" />
-
+<PivotTourButton />
 <div class="control-section">
     <div class="content-wrapper">
         
@@ -31,7 +31,7 @@
         else
         {
             <!-- Option B: pivot appears only once data is ready -->
-
+            
             <div class="pivot-actions">
                 
                 <label for="rowLevelSelect">Row Level</label>
@@ -150,6 +150,8 @@
                                      EnginePopulated="OnEnginePopulated"/>
                 </SfPivotView>
             </div>
+            @* Somewhere near the bottom of the page markup *@
+<PivotTourButton />
         }
     </div>
 </div>
