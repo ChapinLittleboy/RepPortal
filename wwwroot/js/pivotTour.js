@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // pivotTour.js  —  Shepherd.js guided tour for
 //                  Pivot Table Sales by Item (Rep Portal)
 //
@@ -24,13 +24,13 @@ window.pivotTour = (() => {
         style.textContent = `
             /* ── Shepherd container ── */
             .shepherd-theme-portal {
-                --portal-bg:      #1e293b;
-                --portal-border:  #3b82f6;
-                --portal-text:    #ffffff;
-                --portal-muted:   #94a3b8;
-                --portal-btn-bg:  #3b82f6;
-                --portal-btn-txt: #fff;
-                --portal-btn-sec: #334155;
+                --portal-bg:      #0f172a;   /* main popup background */
+                --portal-border:  #2563eb;   /* accent color */
+                --portal-text:    #f8fafc;   /* main text */
+                --portal-muted:   #94a3b8;   /* subtle text */
+                --portal-btn-bg:  #2563eb;   /* primary button */
+                --portal-btn-txt: #ffffff;
+                --portal-btn-sec: #1e293b;   /* secondary button */
                 font-family: 'Segoe UI', system-ui, sans-serif;
             }
 
@@ -39,7 +39,7 @@ window.pivotTour = (() => {
                 font-weight: 700;
                 letter-spacing: .06em;
                 text-transform: uppercase;
-                color: var(--portal-border);
+                color: #fecaca;
             }
 
             .shepherd-theme-portal .shepherd-cancel-icon {
@@ -61,18 +61,18 @@ window.pivotTour = (() => {
             }
 
             .shepherd-theme-portal .shepherd-element {
-                border: 1px solid #3b82f6;
-                border-radius: 10px;
-                box-shadow: 0 8px 32px rgba(0,0,0,.45);
+                border: 1px solid var(--portal-border);
+                border-radius: 14px;
+                box-shadow: 0 18px 50px rgba(0,0,0,.45);
                 max-width: 360px;
             }
 
-            .shepherd-theme-portal .shepherd-header {
-                background: #1e293b !important;
-                padding: 14px 16px 0;
-                border-bottom: 1px solid #334155;
-                margin-bottom: 2px;
-            }
+.shepherd-theme-portal .shepherd-header {
+    background: #991b1b !important;
+    padding: 14px 16px 0;
+    border-bottom: 1px solid #7f1d1d;
+    margin-bottom: 2px;
+}
 
             .shepherd-theme-portal .shepherd-text {
                 padding: 12px 16px;
@@ -130,7 +130,10 @@ window.pivotTour = (() => {
                 cursor: pointer;
                 transition: opacity .15s;
             }
-            .shepherd-theme-portal .shepherd-button:hover { opacity: .85; }
+            .shepherd-theme-portal .shepherd-button:hover {
+    opacity: .92;
+    transform: translateY(-1px);
+}
 
             .shepherd-theme-portal .shepherd-button-primary {
                 background: var(--portal-btn-bg);
@@ -144,16 +147,17 @@ window.pivotTour = (() => {
 
             /* Arrow */
             .shepherd-theme-portal .shepherd-arrow:before {
-                background: var(--portal-bg);
-                border-color: var(--portal-border);
-            }
+    background: var(--portal-bg);
+    border: 1px solid var(--portal-border);
+}
 
             /* Highlight ring on attached elements */
             .shepherd-highlight-pulse {
-                outline: 2px solid #3b82f6 !important;
-                outline-offset: 3px !important;
-                border-radius: 4px;
-                transition: outline .2s;
+                   outline: 2px solid var(--portal-border) !important;
+                    outline-offset: 4px !important;
+                border-radius: 6px;
+                box-shadow: 0 0 0 6px rgba(37,99,235,.15);
+                transition: all .2s ease;
             }
         `;
         document.head.appendChild(style);
@@ -163,23 +167,16 @@ window.pivotTour = (() => {
     // HELPERS
     // ----------------------------------------------------------
 
-    /** Wait up to `ms` for a selector to appear in the DOM */
-    function waitFor(selector, ms = 3000) {
-        return new Promise((resolve, reject) => {
-            const el = document.querySelector(selector);
-            if (el) return resolve(el);
-            const observer = new MutationObserver(() => {
-                const found = document.querySelector(selector);
-                if (found) { observer.disconnect(); resolve(found); }
-            });
-            observer.observe(document.body, { childList: true, subtree: true });
-            setTimeout(() => { observer.disconnect(); reject(new Error(`Timeout waiting for ${selector}`)); }, ms);
-        });
-    }
-
     /** Build the step-counter string shown in the footer */
     function progress(tour, current) {
         return `<span class="shepherd-progress">Step ${current} of ${tour.steps.length}</span>`;
+    }
+
+    /** Resolve a target passed as a selector string or a function returning an element */
+    function resolveTarget(target) {
+        if (!target) return null;
+        if (typeof target === 'function') return target();
+        return document.querySelector(target);
     }
 
     /** Standard back / next button pair */
@@ -223,33 +220,60 @@ window.pivotTour = (() => {
     // ----------------------------------------------------------
 
     function buildSteps(tour) {
-        const S = (n, title, html, selector, placement, extraButtons, beforeShowPromise) => {
+        // `popupMarginTop` / `popupMarginLeft` are used for fine-grained visual tweaks
+        // when Popper placement alone doesn't land a step exactly where we want it.
+        const S = (n, title, html, target, placement, extraButtons, beforeShowPromise, offset = [0, 12], popupMarginTop = 0, popupMarginLeft = 0) => {
             const step = {
                 id: `step-${n}`,
                 title,
                 text: `${html}<div style="height:2px"></div>`,
-                attachTo: selector ? { element: selector, on: placement || 'auto' } : undefined,
+                attachTo: target ? { element: target, on: placement || 'auto' } : undefined,
                 scrollTo: { behavior: 'smooth', block: 'center' },
                 cancelIcon: { enabled: true },
                 classes: 'shepherd-theme-portal',
                 buttons: extraButtons || navButtons(tour, n - 1),
                 when: {
                     show() {
+                        if (popupMarginTop && this.el) {
+                            this.el.style.marginTop = `${popupMarginTop}px`;
+                        }
+                        if (popupMarginLeft && this.el) {
+                            this.el.style.marginLeft = `${popupMarginLeft}px`;
+                        }
                         const footer = this.el?.querySelector('.shepherd-footer');
                         if (footer && !footer.querySelector('.shepherd-progress')) {
                             footer.insertAdjacentHTML('afterbegin', progress(tour, n));
                         }
-                        if (selector) {
-                            document.querySelector(selector)
-                                ?.classList.add('shepherd-highlight-pulse');
+                        const resolvedTarget = resolveTarget(target);
+                        if (resolvedTarget) {
+                            resolvedTarget.classList.add('shepherd-highlight-pulse');
                         }
                     },
                     hide() {
-                        if (selector) {
-                            document.querySelector(selector)
-                                ?.classList.remove('shepherd-highlight-pulse');
+                        if (this.el) {
+                            this.el.style.marginTop = '';
+                            this.el.style.marginLeft = '';
+                        }
+                        const resolvedTarget = resolveTarget(target);
+                        if (resolvedTarget) {
+                            resolvedTarget.classList.remove('shepherd-highlight-pulse');
                         }
                     }
+                }, popperOptions: {
+                    modifiers: [
+                        {
+                            name: 'offset',
+                            options: {
+                                offset: offset
+                            }
+                        },
+                        {
+                            name: 'computeStyles',
+                            options: {
+                                adaptive: false
+                            }
+                        }
+                    ]
                 }
             };
             // Only set beforeShowPromise if provided — Shepherd v14 throws on null
@@ -279,7 +303,7 @@ window.pivotTour = (() => {
                 `<p>Down the left side you'll see your <strong>customer accounts</strong>, like <em>40607 – Iron Industries LLC 029</em>. Under each account are the <strong>products</strong> they ordered.</p>
                  <p>There are three drill-down levels here: Company → Product → Ship-To location.</p>`,
                 '#PivotView .e-rowsheader',
-                'right'
+                'right',
             ),
 
             // ── Step 3: Orient — Columns ─────────────────────────────
@@ -288,7 +312,12 @@ window.pivotTour = (() => {
                 `<p>Across the top you'll see <strong>fiscal years</strong> (FY2023, FY2024…). Right now each year is <em>collapsed</em> — you're seeing the full-year total.</p>
                  <div class="tip">💡 Chapin's fiscal year runs Sep–Aug. FY2023 starts September 2022.</div>`,
                 '#PivotView .e-columnsheader',
-                'bottom'
+                'bottom',
+                undefined,
+                undefined,
+                [-60, 30],
+                24,
+                24
             ),
 
             // ── Step 4: Expand a Year ────────────────────────────────
@@ -298,7 +327,11 @@ window.pivotTour = (() => {
                  <p>Click the same arrow again to collapse back to the summary.</p>
                  <div class="tip">💡 Think of it like a folder — click to open, click again to close.</div>`,
                 '#PivotView .e-expand',
-                'right'
+                'top',
+                undefined,
+                undefined,
+                [0, 24],
+                20
             ),
 
             // ── Step 5: Expand a Customer Row ───────────────────────
@@ -307,7 +340,12 @@ window.pivotTour = (() => {
                 `<p>The <strong>row arrows</strong> work the same way. Click › next to a product row to see the individual <strong>ship-to locations</strong> receiving that product.</p>
                  <p>This is useful when a customer has multiple warehouses — you can see exactly which site is ordering what.</p>`,
                 '#PivotView .e-rowsheader .e-expand',
-                'left'
+                'left',
+                undefined,
+                undefined,
+                [0, 12],
+                0,
+                144
             ),
 
             // ── Step 6: Sorting ──────────────────────────────────────
@@ -315,8 +353,12 @@ window.pivotTour = (() => {
                 'Sorting — Find Your Top Performers',
                 `<p>Click any <strong>Amount</strong> or <strong>Qty</strong> column header to sort the table by that value. Click again to reverse the sort.</p>
                  <div class="warn">⚠ Accounts with zero sales in a year may float to the top when sorting descending. Scroll past them — your real top performers will be the first rows with dollar amounts showing.</div>`,
-                '#PivotView .e-valuescontent',
-                'top'
+                '#PivotView .e-valuesheader .e-headercelldiv',
+                'bottom',
+                undefined,
+                undefined,
+                [0, 12],
+                96
             ),
 
             // ── Step 7: Filter ───────────────────────────────────────
@@ -325,8 +367,13 @@ window.pivotTour = (() => {
                 `<p>Click the <strong>funnel icon (▾)</strong> next to the CompanyName label to filter the table down to specific customers.</p>
                  <p>Uncheck the accounts you don't need, click OK, and the entire table — including totals — rebuilds automatically.</p>
                  <div class="tip">💡 Perfect for a customer meeting — filter to just that account before you walk in.</div>`,
-                '#PivotView .e-columnsheader',
-                'bottom'
+                '#PivotView .e-group-rows .e-pivot-button',
+                'bottom',
+                undefined,
+                undefined,
+                [0, 12],
+                0,
+                36
             ),
 
             // ── Step 8: Field List ───────────────────────────────────
@@ -335,7 +382,11 @@ window.pivotTour = (() => {
                 `<p>The <strong>⊞ grid icon</strong> (top-right of the pivot table) opens the <strong>Field List</strong> — the control panel for the table.</p>
                  <p>From here you can add or remove fields and rearrange the <strong>Rows</strong>, <strong>Columns</strong>, and <strong>Values</strong> zones.</p>`,
                 '#PivotView .e-toolbar-fieldlist',
-                'bottom'
+                'bottom',
+                undefined,
+                undefined,
+                [0, 12],
+                36
             ),
 
             // ── Step 9: Reorder Rows ─────────────────────────────────
@@ -344,7 +395,7 @@ window.pivotTour = (() => {
                 `<p>Inside the Field List, the <strong>Rows zone</strong> shows chips stacked top-to-bottom: CompanyName → Item-Description → ShipTo.</p>
                  <p>Drag any chip up or down to change the nesting order. The table rebuilds instantly.</p>
                  <div class="tip">💡 Moving ShipTo above Item-Description lets you see warehouse-first, then products within each location.</div>`,
-                '#PivotView .e-rowsheader',
+                '#PivotView .e-group-rows',
                 'right'
             ),
 
@@ -355,14 +406,16 @@ window.pivotTour = (() => {
                  <p>Next time, open the <strong>Report List</strong> dropdown and load your saved layout in one click.</p>
                  <div class="tip">💡 Great for weekly account reviews — set it up once, load it every week.</div>`,
                 '#PivotView .e-saveas-report',
-                'right',
+                'bottom',
                 undefined,
                 () => new Promise(resolve => {
                     if (!document.querySelector('#PivotView .e-saveas-report')) {
                         tour.next(); // PivotLayouts feature is disabled — skip this step
                     }
                     resolve();
-                })
+                }),
+                [0, 12],
+                30
             ),
 
             // ── Step 11: Export ──────────────────────────────────────
@@ -371,7 +424,11 @@ window.pivotTour = (() => {
                 `<p>Click the <strong>Export icon (⤴)</strong> in the toolbar to download the current view as an Excel or CSV file.</p>
                  <p>The export captures exactly what you see — whatever rows are expanded and whatever filters are applied.</p>`,
                 '#PivotView .e-export',
-                'right'
+                'bottom',
+                undefined,
+                undefined,
+                [0, 12],
+                30
             ),
 
             // ── Step 12: Done ────────────────────────────────────────
