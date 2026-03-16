@@ -353,6 +353,10 @@ AND (
             {
                 headerResult.RepAgency = "Chapin Administrator";
             }
+            if (_repCodeContext.CurrentRepCode == "XYZ") // The Demo Rep
+            {
+                headerResult.RepAgency = "Pavlov Group";
+            }
 
         }
 

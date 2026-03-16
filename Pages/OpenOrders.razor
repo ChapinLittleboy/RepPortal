@@ -141,7 +141,7 @@ else
 				FileName = $"OpenOrders_{DateTime.Now:yyyyMMdd}.xlsx"
 			};
 
-			await DetailsGrid.ExcelExport(exportProperties);
+			await DetailsGrid.ExportToExcelAsync(exportProperties);
 
 		}
 	}

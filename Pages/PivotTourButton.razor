@@ -1,0 +1,124 @@
+﻿@* ================================================================
+   PivotTourButton.razor
+   Floating "?" button that launches the Shepherd.js pivot tour.
+   
+   Usage — drop anywhere inside your pivot table page:
+       <PivotTourButton />
+   ================================================================ *@
+
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<button class="pivot-tour-btn @(_completed ? "completed" : "")"
+        @onclick="LaunchTour"
+        title="@(_completed ? "Replay Tutorial" : "Start Tutorial")">
+    @if (_completed)
+    {
+        <span class="tour-icon">✓</span>
+    }
+    else
+    {
+        <span class="tour-icon">?</span>
+    }
+    <span class="tour-label">@(_completed ? "Replay" : "Tutorial")</span>
+</button>
+
+<style>
+    .pivot-tour-btn {
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #1e40af;
+        color: #fff;
+        border: 2px solid #3b82f6;
+        border-radius: 50px;
+        padding: 10px 18px 10px 14px;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 18px rgba(59,130,246,.45);
+        transition: background .2s, transform .15s, box-shadow .2s;
+        user-select: none;
+    }
+
+        .pivot-tour-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(59,130,246,.6);
+        }
+
+        .pivot-tour-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Completed state — subtle green tint */
+        .pivot-tour-btn.completed {
+            background: #166534;
+            border-color: #22c55e;
+            box-shadow: 0 4px 18px rgba(34,197,94,.35);
+        }
+
+            .pivot-tour-btn.completed:hover {
+                background: #15803d;
+                box-shadow: 0 6px 24px rgba(34,197,94,.5);
+            }
+
+    .tour-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(255,255,255,.2);
+        font-size: 13px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .tour-label {
+        white-space: nowrap;
+    }
+</style>
+
+@code {
+    private bool _completed;
+    private IJSObjectReference? _module;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // Check if the user has already completed the tour
+        try
+        {
+            var stored = await JS.InvokeAsync<string>("localStorage.getItem", "pivotTourComplete");
+            _completed = stored == "1";
+            if (_completed) StateHasChanged();
+        }
+        catch { /* localStorage unavailable — ignore */ }
+    }
+
+    private async Task LaunchTour()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("pivotTour.start");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[PivotTourButton] Could not start tour: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null)
+            await _module.DisposeAsync();
+    }
+}
