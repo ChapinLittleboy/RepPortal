@@ -8,6 +8,7 @@
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.PivotView
 @inject ISalesService SalesService
+@inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
@@ -32,28 +33,67 @@
         {
             <!-- Option B: pivot appears only once data is ready -->
 
-            <div class="pivot-actions">
-                
-                <label for="rowLevelSelect">Row Level</label>
-                <select id="rowLevelSelect" @bind="_selectedRowLevel">
-                    <option value="0">1</option>
-                    <option value="1">2</option>
-                    <option value="2">3</option>
-                    
-                </select>
-                <button @onclick="ApplySelectedLevel">Apply Level</button>
-            </div>
-
             <div class="pivot-wrap">
+                @if (_pivotLayoutsEnabled)
+                {
+                    <div class="pivot-layout-toolbar">
+                        <label class="pivot-layout-label" for="saved-layouts">Saved layout</label>
+                        <select id="saved-layouts"
+                                class="form-select form-select-sm pivot-layout-select"
+                                @bind="_selectedReportName">
+                            <option value="">Select a saved layout</option>
+                            @foreach (string reportName in _cachedReportNames)
+                            {
+                                <option value="@reportName">@reportName</option>
+                            }
+                        </select>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                @onclick="LoadSelectedReportAsync"
+                                disabled="@string.IsNullOrWhiteSpace(_selectedReportName)">
+                            Load
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                @onclick="SaveLayoutAsync">
+                            Save Layout
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                @onclick="RenameSelectedReportAsync"
+                                disabled="@string.IsNullOrWhiteSpace(TargetReportName)">
+                            Rename
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                @onclick="DeleteSelectedReportAsync"
+                                disabled="@string.IsNullOrWhiteSpace(TargetReportName)">
+                            Delete
+                        </button>
+                        <span class="pivot-layout-current">@CurrentLayoutLabel</span>
+                    </div>
+                }
+                <div class="pivot-layout-toolbar pivot-secondary-toolbar">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary pivot-compact-btn"
+                            @onclick="OpenFieldListAsync">
+                        Pivot Layout
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary pivot-compact-btn"
+                            @onclick="ExportPivotAsync">
+                        Export to Excel
+                    </button>
+                </div>
+
                 <SfPivotView @key="_pivotRenderKey" @ref="PivotRef" ID="PivotView" TValue="SaleRow" Height="600"
                              AllowCalculatedField="false"
                              ShowFieldList="true"
                              ShowGroupingBar="true"
-                            AllowPdfExport="false"
-                             ShowToolbar="true"
-                             Toolbar="@PivotToolbar"
+                             AllowPdfExport="false"
+                             ShowToolbar="false"
                              EnableValueSorting="true"
-                             
+                             ShowTooltip="false"
                              AllowExcelExport="true"
                              ExportAllPages="true"
                              
@@ -140,16 +180,11 @@
                                                   ShowRemoveIcon="true"
                                                   ShowValueTypeIcon="false" />
                     <PivotViewEvents TValue="SaleRow"
-                                     BeforeExport="beforeExport"
-                                     SaveReport="OnSaveReport"
-                                     LoadReport="OnLoadReport"
-                                     FetchReport="OnFetchReport"
-                                     RenameReport="OnRenameReport"
-                                     RemoveReport="OnRemoveReport"
-                                     NewReport="OnNewReport" 
                                      EnginePopulated="OnEnginePopulated"/>
                 </SfPivotView>
             </div>
+            @* Somewhere near the bottom of the page markup *@
+
         }
     </div>
 </div>
@@ -173,28 +208,33 @@
         position: relative;
     }
 
-    .pivot-actions {
+    .pivot-layout-toolbar {
         display: flex;
-        gap: 8px;
-        margin-bottom: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
     }
 
-    .pivot-actions button {
-        font-size: 0.65rem;
-        padding: 2px 6px;
-        line-height: 1.1;
-        border-radius: 4px;
+    .pivot-secondary-toolbar {
+        margin-top: -0.25rem;
     }
 
-    .pivot-actions label,
-    .pivot-actions select {
-        font-size: 0.65rem;
-        line-height: 1.1;
+    .pivot-compact-btn {
+        font-size: 0.75rem;
+        padding: 0.125rem 0.4rem;
+        line-height: 1.2;
     }
 
-    .pivot-actions select {
-        padding: 1px 4px;
-        height: 22px;
+    .pivot-layout-label,
+    .pivot-layout-current {
+        font-size: 0.8rem;
+        color: #4b5563;
+        margin: 0;
+    }
+
+    .pivot-layout-select {
+        width: min(320px, 100%);
     }
 
     /* Compact font and row height for header + data cells */
@@ -291,7 +331,17 @@
 
     .e-pivotview .e-menu-item.e-pdfexport {
         display: none;
-    }</style>
+    }
+
+    /* Center Syncfusion Pivot Field List dialog on the screen */
+    body .e-pivotfieldlist-container {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        margin: 0 !important;
+    }
+</style>
 
 @code {
     private const string PageKey = "MonthlyItemSalesPivot";
@@ -307,28 +357,16 @@
     private int _selectedRowLevel = 1;
     private int _pivotRenderKey;
     private List<string> _cachedReportNames = new();
-
-    public List<Syncfusion.Blazor.PivotView.ToolbarItems> PivotToolbar = new();
+    private string? _activeReportName;
+    private string? _selectedReportName;
+    private string? TargetReportName => !string.IsNullOrWhiteSpace(_selectedReportName) ? _selectedReportName : _activeReportName;
+    private string CurrentLayoutLabel => string.IsNullOrWhiteSpace(_activeReportName)
+        ? "Current: Unsaved layout"
+        : $"Current: {_activeReportName}";
 
     protected override void OnInitialized()
     {
         _pivotLayoutsEnabled = Configuration.GetValue<bool>("Features:PivotLayouts");
-
-        if (_pivotLayoutsEnabled)
-        {
-            PivotToolbar.AddRange(new[]
-            {
-                Syncfusion.Blazor.PivotView.ToolbarItems.New,
-                Syncfusion.Blazor.PivotView.ToolbarItems.Save,
-                Syncfusion.Blazor.PivotView.ToolbarItems.SaveAs,
-                Syncfusion.Blazor.PivotView.ToolbarItems.Rename,
-                Syncfusion.Blazor.PivotView.ToolbarItems.Remove,
-                Syncfusion.Blazor.PivotView.ToolbarItems.Load,
-            });
-        }
-
-        PivotToolbar.Add(Syncfusion.Blazor.PivotView.ToolbarItems.FieldList);
-        PivotToolbar.Add(Syncfusion.Blazor.PivotView.ToolbarItems.Export);
     }
 
     // IMPORTANT: Let the page render first, then fetch.
@@ -362,59 +400,150 @@
 
 
 
-    public void beforeExport(BeforeExportEventArgs args)
-    {
-        ExcelExportProperties ExcelProperties = new ExcelExportProperties();
-        var repCode = RepCodeContext.CurrentRepCode;
-        ExcelProperties.FileName = $"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}.xlsx";
-        args.ExcelExportProperties = ExcelProperties;
-        args.FileName = ExcelProperties.FileName;
-    }
-
-    public async void OnSaveReport(SaveReportArgs args)
+    private async Task SaveLayoutAsync()
     {
         if (!_pivotLayoutsEnabled) return;
-        if (string.IsNullOrWhiteSpace(args.ReportName)) return;
-        if (args.ReportName == "Sample Report") return; // ignore Syncfusion's auto-generated default
-        await PivotLayoutService.SaveReportAsync(PageKey, args.ReportName, args.Report);
-        _cachedReportNames = await PivotLayoutService.GetReportNamesAsync(PageKey);
-    }
+        if (PivotRef is null) return;
 
-    public void OnFetchReport(FetchReportArgs args)
-    {
-        if (!_pivotLayoutsEnabled) return;
-        args.ReportName = _cachedReportNames.ToArray();
-    }
+        string defaultName = _activeReportName ?? _selectedReportName ?? string.Empty;
+        string? reportName = await JS.InvokeAsync<string?>("prompt", "Save current layout as:", defaultName);
+        if (string.IsNullOrWhiteSpace(reportName)) return;
 
-    public async void OnLoadReport(LoadReportArgs args)
-    {
-        if (!_pivotLayoutsEnabled) return;
-        string? report = await PivotLayoutService.GetReportAsync(PageKey, args.ReportName);
-        if (!string.IsNullOrEmpty(report))
+        reportName = reportName.Trim();
+
+        bool nameExists = _cachedReportNames.Any(name =>
+            string.Equals(name, reportName, StringComparison.OrdinalIgnoreCase));
+
+        if (nameExists && !string.Equals(_activeReportName, reportName, StringComparison.OrdinalIgnoreCase))
         {
-            await PivotRef.LoadPersistDataAsync(report);
+            bool overwriteConfirmed = await JS.InvokeAsync<bool>("confirm", $"A saved layout named '{reportName}' already exists. Replace it?");
+            if (!overwriteConfirmed)
+            {
+                return;
+            }
         }
+
+        string report = await PivotRef.GetPersistDataAsync();
+        await PivotLayoutService.SaveReportAsync(PageKey, reportName, report);
+        await RefreshAvailableReportsAsync(reportName);
     }
 
-    public async void OnRenameReport(RenameReportArgs args)
+    private async Task RenameSelectedReportAsync()
     {
         if (!_pivotLayoutsEnabled) return;
-        if (string.IsNullOrWhiteSpace(args.Rename)) return;
-        await PivotLayoutService.RenameReportAsync(PageKey, args.ReportName, args.Rename);
-        _cachedReportNames = await PivotLayoutService.GetReportNamesAsync(PageKey);
+        if (string.IsNullOrWhiteSpace(TargetReportName)) return;
+
+        string existingName = TargetReportName;
+        string? newName = await JS.InvokeAsync<string?>("prompt", $"Rename layout '{existingName}' to:", existingName);
+        if (string.IsNullOrWhiteSpace(newName)) return;
+
+        newName = newName.Trim();
+
+        if (string.Equals(existingName, newName, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        bool nameExists = _cachedReportNames.Any(name =>
+            string.Equals(name, newName, StringComparison.OrdinalIgnoreCase));
+
+        if (nameExists)
+        {
+            await JS.InvokeVoidAsync("alert", $"A saved layout named '{newName}' already exists.");
+            return;
+        }
+
+        await PivotLayoutService.RenameReportAsync(PageKey, existingName, newName);
+
+        if (string.Equals(_activeReportName, existingName, StringComparison.OrdinalIgnoreCase))
+        {
+            _activeReportName = newName;
+        }
+
+        await RefreshAvailableReportsAsync(newName);
     }
 
-    public async void OnRemoveReport(RemoveReportArgs args)
+    private async Task LoadSelectedReportAsync()
     {
         if (!_pivotLayoutsEnabled) return;
-        await PivotLayoutService.RemoveReportAsync(PageKey, args.ReportName);
-        _cachedReportNames = await PivotLayoutService.GetReportNamesAsync(PageKey);
+        if (string.IsNullOrWhiteSpace(_selectedReportName)) return;
+
+        string? report = await PivotLayoutService.GetReportAsync(PageKey, _selectedReportName);
+        if (string.IsNullOrWhiteSpace(report))
+        {
+            return;
+        }
+
+        await PivotRef.LoadPersistDataAsync(report);
+        _activeReportName = _selectedReportName;
+        await InvokeAsync(StateHasChanged);
     }
 
-    public void OnNewReport(NewReportArgs args)
+    private async Task DeleteSelectedReportAsync()
     {
-        // PivotView handles resetting to default internally.
-        // User can use SaveAs to persist the new layout.
+        if (!_pivotLayoutsEnabled) return;
+        if (string.IsNullOrWhiteSpace(TargetReportName)) return;
+
+        string reportName = TargetReportName;
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete saved layout '{reportName}'?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await PivotLayoutService.RemoveReportAsync(PageKey, reportName);
+
+        if (string.Equals(_activeReportName, reportName, StringComparison.OrdinalIgnoreCase))
+        {
+            _activeReportName = null;
+        }
+
+        _selectedReportName = null;
+        await RefreshAvailableReportsAsync();
+    }
+
+    private async Task OpenFieldListAsync()
+    {
+        if (PivotRef is null) return;
+        await PivotRef.ShowFieldListDialogAsync();
+    }
+
+    private async Task ExportPivotAsync()
+    {
+        if (PivotRef is null) return;
+
+        string repCode = RepCodeContext.CurrentRepCode;
+        ExcelExportProperties excelProperties = new ExcelExportProperties
+        {
+            FileName = $"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}.xlsx"
+        };
+
+        await PivotRef.ExportToExcelAsync(excelProperties, null, null, null, false);
+    }
+
+    private async Task RefreshAvailableReportsAsync(string? activeReportName = null)
+    {
+        _cachedReportNames = await PivotLayoutService.GetReportNamesAsync(PageKey);
+
+        if (!string.IsNullOrWhiteSpace(activeReportName))
+        {
+            _activeReportName = _cachedReportNames.FirstOrDefault(name =>
+                string.Equals(name, activeReportName, StringComparison.OrdinalIgnoreCase));
+            _selectedReportName = _activeReportName;
+        }
+        else if (!string.IsNullOrWhiteSpace(_activeReportName) &&
+                 !_cachedReportNames.Any(name => string.Equals(name, _activeReportName, StringComparison.OrdinalIgnoreCase)))
+        {
+            _activeReportName = null;
+            _selectedReportName = null;
+        }
+        else if (!string.IsNullOrWhiteSpace(_selectedReportName) &&
+                 !_cachedReportNames.Any(name => string.Equals(name, _selectedReportName, StringComparison.OrdinalIgnoreCase)))
+        {
+            _selectedReportName = null;
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task CollapseAll()

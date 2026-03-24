@@ -648,8 +648,7 @@ Prices and product availability are also subject to change at any time due to ma
             SizeF footerTextSize = footerFont.MeasureString(sampleFooterText);
             float footerX = (clientSize.Width - footerTextSize.Width) / 2;
             // Correction: Use PdfStringFormat for alignment within the Draw method if needed,
-            // or calculate position manually as done here. Draw within the template bounds.
-            // Draw slightly above the bottom edge of the footer bounds.
+            // or calculate position manually as done here. Draw slightly above the bottom edge of the footer bounds.
             compositeField.Draw(footerTemplate.Graphics, new PointF(footerX, footerBounds.Height - footerTextSize.Height - 5));
             pdfDocument.Template.Bottom = footerTemplate;
             // --- End Header & Footer Setup ---
@@ -697,6 +696,7 @@ Prices and product availability are also subject to change at any time due to ma
             }
             // --- End Helper ---
 
+            ////////////////////////////////////////////////////////////////////////////
             // --- 1. PCF Header Details Section (Draw using helper - remains the same) ---
             graphics.DrawString("PCF Header Details", titleFont, PdfBrushes.Black, margin, currentY);
             currentY += titleFont.MeasureString("PCF Header Details").Height + 15;
@@ -729,6 +729,11 @@ Prices and product availability are also subject to change at any time due to ma
             // Column 3
             y3 = DrawLabelAndValue(graphics, "PCF Number:", pcfHeader.PcfNumber, labelFont, valueFont, col3X, y3, colWidth);
             y3 = DrawLabelAndValue(graphics, "End Date:", pcfHeader.EndDate.ToString("MM-dd-yyyy"), labelFont, valueFont, col3X, y3, colWidth);
+
+
+
+
+
             y3 += (labelFont.MeasureString("X").Height + labelValueSpacing + lineSpacing) * 2; // Spacers
             y3 = DrawLabelAndValue(graphics, "Rep Agency:", pcfHeader.RepAgency, labelFont, valueFont, col3X, y3, colWidth);
 
@@ -737,9 +742,29 @@ Prices and product availability are also subject to change at any time due to ma
             float conditionalY = Math.Max(y1, Math.Max(y2, y3)) + 5;
             if (pcfHeader.PcfType == "PD" || pcfHeader.PcfType == "PW")
             {
-                conditionalY = DrawLabelAndValue(graphics, "Promo Payment Terms:", pcfHeader.PromoPaymentTermsDescription, labelFont, valueFont, col1X, conditionalY, contentWidth);
-                conditionalY = DrawLabelAndValue(graphics, "Promo Freight Terms:", pcfHeader.PromoFreightTerms, labelFont, valueFont, col1X, conditionalY, contentWidth);
-                conditionalY = DrawLabelAndValue(graphics, "Promo Freight Minimums:", pcfHeader.PromoFreightMinimums, labelFont, valueFont, col1X, conditionalY, contentWidth);
+                float labelRowHeight = labelFont.MeasureString("X").Height;
+                float valueRowHeight = valueFont.MeasureString("X").Height;
+
+                float labelRowY = conditionalY;
+                float valueRowY = labelRowY + labelRowHeight + labelValueSpacing;
+
+                // Labels (row 1)
+                graphics.DrawString("Promo Payment Terms:", labelFont, PdfBrushes.Black,
+                    new RectangleF(col1X, labelRowY, colWidth, labelRowHeight), leftAlignFormat);
+                graphics.DrawString("Freight Terms:", labelFont, PdfBrushes.Black,
+                    new RectangleF(col2X, labelRowY, colWidth, labelRowHeight), leftAlignFormat);
+                graphics.DrawString("Freight Minimums:", labelFont, PdfBrushes.Black,
+                    new RectangleF(col3X, labelRowY, colWidth, labelRowHeight), leftAlignFormat);
+
+                // Values (row 2)
+                graphics.DrawString(pcfHeader.PromoPaymentTermsText ?? string.Empty, valueFont, PdfBrushes.Black,
+                    new RectangleF(col1X, valueRowY, colWidth, valueRowHeight), leftAlignFormat);
+                graphics.DrawString(pcfHeader.PromoFreightTerms ?? string.Empty, valueFont, PdfBrushes.Black,
+                    new RectangleF(col2X, valueRowY, colWidth, valueRowHeight), leftAlignFormat);
+                graphics.DrawString(pcfHeader.FreightMinimums ?? string.Empty, valueFont, PdfBrushes.Black,
+                    new RectangleF(col3X, valueRowY, colWidth, valueRowHeight), leftAlignFormat);
+
+                conditionalY = valueRowY + valueRowHeight + lineSpacing;
             }
 
             currentY = conditionalY + sectionSpacing;
