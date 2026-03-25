@@ -107,7 +107,7 @@ public sealed class ExpiringPcfNotificationsJob : IExpiringPcfNotificationsJob
             {
                 pcfHeader.RepEmail,          // or SalesRepEmailList
                 pcfHeader.SalesMgrEmail,
-                "wlittleboy@chapinmfg.com",
+                "wlittleboy@chapinusa.com",
                 "fnolan@chapinusa.com"
             }
             .Where(e => !string.IsNullOrWhiteSpace(e));

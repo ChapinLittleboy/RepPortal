@@ -164,10 +164,14 @@ namespace RepPortal.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
+                var normalizedRegistrationEmail = NormalizeCompanyRegistrationEmail(Input.Email);
                 var user = CreateUser();
 
-                await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-                await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+                
+                await _userStore.SetUserNameAsync(user, normalizedRegistrationEmail, CancellationToken.None);
+                await _emailStore.SetEmailAsync(user, normalizedRegistrationEmail, CancellationToken.None);
+
+
 
                 // Set the RepCode found from RegistrationCode
                 user.RepCode = repCode;
@@ -181,9 +185,9 @@ namespace RepPortal.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User created a new account with password.");
 
-                    var internalDomains = new[] { "@chapinmfg.com", "@heathmfg.com", "@ChapinCustomMolding.com" };
+                    var internalDomains = new[] { "@chapinmfg.com", "@chapinusa.com", "@ChapinCustomMolding.com" };
 
-                    string role = internalDomains.Any(d => Input.Email.EndsWith(d, StringComparison.OrdinalIgnoreCase))
+                    string role = internalDomains.Any(d => normalizedRegistrationEmail.EndsWith(d, StringComparison.OrdinalIgnoreCase))
                         ? "User"
                         : "SalesRep";
 
@@ -208,12 +212,13 @@ namespace RepPortal.Areas.Identity.Pages.Account
                         values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
                         protocol: Request.Scheme);
 
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
+                    await _emailSender.SendEmailAsync(normalizedRegistrationEmail, "Confirm your email",
                         $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {
-                        return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
+                        
+                        return RedirectToPage("RegisterConfirmation", new { email = normalizedRegistrationEmail, returnUrl = returnUrl });
                     }
                     else
                     {
@@ -230,7 +235,32 @@ namespace RepPortal.Areas.Identity.Pages.Account
             await LoadOptionsAsync();
             return Page();
         }
+        private static string NormalizeCompanyRegistrationEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return email;
+            }
 
+            email = email.Trim();
+
+            var atIndex = email.IndexOf('@');
+            if (atIndex < 0)
+            {
+                return email;
+            }
+
+            var localPart = email.Substring(0, atIndex);
+            var domain = email.Substring(atIndex + 1);
+
+            if (domain.Equals("chapinmfg.com", StringComparison.OrdinalIgnoreCase) ||
+                domain.Equals("chapinusa.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{localPart}@chapinusa.com";
+            }
+
+            return email;
+        }
         private ApplicationUser CreateUser()
         {
             try

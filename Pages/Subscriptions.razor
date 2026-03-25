@@ -201,7 +201,12 @@ else
                 rt != ReportType.ExpiringPCFNotications
                 || _currentUserEmail.Equals(
                     "wlittleboy@chapinmfg.com",
-                    StringComparison.OrdinalIgnoreCase))
+                    StringComparison.OrdinalIgnoreCase)
+                || _currentUserEmail.Equals(
+                    "wlittleboy@chapinusa.com",
+                    StringComparison.OrdinalIgnoreCase)
+                
+                )
             .Select(rt => new ReportTypeOption
             {
                 Text = GetReportDisplay(rt),

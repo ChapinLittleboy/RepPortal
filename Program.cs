@@ -275,6 +275,7 @@ builder.Services.AddSingleton<IExcelReportExporter, ExcelReportExporter>();
 
 builder.Services.AddScoped<IPcfNotificationLogRepository, PcfNotificationLogRepository>();
 builder.Services.AddScoped<IExpiringPcfNotificationsJob, ExpiringPcfNotificationsJob>();
+builder.Services.AddTransient<IdentityEmailDomainMigration>();
 
 var app = builder.Build();
 
@@ -357,6 +358,11 @@ app.MapFallbackToPage("/_Host");
 
 //RunDbUp(connectionString);
 await RunConfigureRoles();
+if (builder.Configuration.GetValue<bool>("RunIdentityEmailMigration"))
+{
+    await RunMigrateIdentityEmails();
+}
+
 
 
 
@@ -404,7 +410,12 @@ async Task RunConfigureRoles()
     }
 
 }
-
+async Task RunMigrateIdentityEmails()
+{
+    using var scope = app.Services.CreateScope();
+    var migration = scope.ServiceProvider.GetRequiredService<IdentityEmailDomainMigration>();
+    await migration.RunAsync();
+}
 static void EnsureHangfireSchema(string connectionString, string schemaName)
 {
     using var con = new SqlConnection(connectionString);

@@ -106,7 +106,7 @@ public class InsuranceRequestService : IInsuranceRequestService
         int requestId, InsuranceRequest req, IList<IFormFile> files)
     {
         var financeAddress = _config["Finance:InsuranceRequestEmail"] ??
-                             "smeyers@chapinmfg.com";
+                             "mwinter@chapinusa.com";
 
         var sb = new StringBuilder()
             .AppendLine($"New Certificate of Insurance request #{requestId}")
