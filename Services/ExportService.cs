@@ -1,6 +1,8 @@
 ﻿using System.Data;
+using System.Globalization;
 using System.Net;
 using System.Net.Mail;
+using System.Text.RegularExpressions;
 using Microsoft.IdentityModel.Tokens;
 using RepPortal.Models;
 using Syncfusion.Pdf;
@@ -738,6 +740,9 @@ Prices and product availability are also subject to change at any time due to ma
             y3 = DrawLabelAndValue(graphics, "Rep Agency:", pcfHeader.RepAgency, labelFont, valueFont, col3X, y3, colWidth);
 
 
+            var freightTermsDisplay = GetFreightTermsDisplay(pcfHeader);
+            var freightMinimumsDisplay = GetFreightMinimumsDisplay(pcfHeader);
+
             // Conditional Promo Fields
             float conditionalY = Math.Max(y1, Math.Max(y2, y3)) + 5;
             if (pcfHeader.PcfType == "PD" || pcfHeader.PcfType == "PW")
@@ -759,9 +764,9 @@ Prices and product availability are also subject to change at any time due to ma
                 // Values (row 2)
                 graphics.DrawString(pcfHeader.PromoPaymentTermsText ?? string.Empty, valueFont, PdfBrushes.Black,
                     new RectangleF(col1X, valueRowY, colWidth, valueRowHeight), leftAlignFormat);
-                graphics.DrawString(pcfHeader.PromoFreightTerms ?? string.Empty, valueFont, PdfBrushes.Black,
+                graphics.DrawString(freightTermsDisplay, valueFont, PdfBrushes.Black,
                     new RectangleF(col2X, valueRowY, colWidth, valueRowHeight), leftAlignFormat);
-                graphics.DrawString(pcfHeader.FreightMinimums ?? string.Empty, valueFont, PdfBrushes.Black,
+                graphics.DrawString(freightMinimumsDisplay, valueFont, PdfBrushes.Black,
                     new RectangleF(col3X, valueRowY, colWidth, valueRowHeight), leftAlignFormat);
 
                 conditionalY = valueRowY + valueRowHeight + lineSpacing;
@@ -848,21 +853,89 @@ Prices and product availability are also subject to change at any time due to ma
         }
     }
 
+    private static string GetFreightTermsDisplay(PCFHeader pcfHeader)
+    {
+        var freightTerms = pcfHeader.PromoFreightTerms;
+        if (string.IsNullOrWhiteSpace(freightTerms))
+        {
+            return string.Empty;
+        }
 
+        var label = string.Equals(
+            freightTerms.Trim(),
+            pcfHeader.ActualStandardFreightTerms?.Trim(),
+            StringComparison.OrdinalIgnoreCase)
+            ? "standard"
+            : "promo";
 
+        return $"{freightTerms} ({label})";
+    }
 
+    private static string GetFreightMinimumsDisplay(PCFHeader pcfHeader)
+    {
+        var freightMinimums = pcfHeader.FreightMinimums;
+        if (string.IsNullOrWhiteSpace(freightMinimums))
+        {
+            return string.Empty;
+        }
 
+        var matchesStandard = FreightMinimumsMatch(
+            freightMinimums,
+            pcfHeader.ActualStandardFreightMinimums);
+        var label = matchesStandard ? "standard" : "promo";
+        var displayValue = matchesStandard && !string.IsNullOrWhiteSpace(pcfHeader.ActualStandardFreightMinimums)
+            ? pcfHeader.ActualStandardFreightMinimums
+            : freightMinimums;
 
+        return $"{displayValue} ({label})";
+    }
 
+    private static bool FreightMinimumsMatch(string? left, string? right)
+    {
+        var leftAmount = NormalizeFreightMinimum(left);
+        var rightAmount = NormalizeFreightMinimum(right);
 
+        if (leftAmount.HasValue && rightAmount.HasValue)
+        {
+            return leftAmount.Value == rightAmount.Value;
+        }
 
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+        {
+            return false;
+        }
 
+        return string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
 
+    private static decimal? NormalizeFreightMinimum(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
 
+        var normalized = value.Trim().ToLowerInvariant();
+        var multiplier = 1m;
 
+        if (normalized.EndsWith("k"))
+        {
+            multiplier = 1000m;
+            normalized = normalized[..^1];
+        }
 
+        normalized = Regex.Replace(normalized, @"[^0-9.]", string.Empty);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return null;
+        }
 
+        if (!decimal.TryParse(normalized, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var parsed))
+        {
+            return null;
+        }
 
-
+        return parsed * multiplier;
+    }
 }
 

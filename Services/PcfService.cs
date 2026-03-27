@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using RepPortal.Data;
 using RepPortal.Models;
+using Dumpify;
 
 
 namespace RepPortal.Services;
@@ -284,6 +285,8 @@ AND (
             h.Promo_Terms_Text as PromoPaymentTermsText,
             h.Standard_Freight_Terms as PromoFreightTerms,
             h.Freight_Minimums as FreightMinimums,
+            h.Standard_Freight_Terms as ActualPromoFreightTerms,
+            h.Freight_Minimums as ActualPromoFreightMinimums,
             cc.SalesManager,
             cc.AddressLine1 as BillToAddress,
             cc.City as BillToCity,
@@ -324,6 +327,8 @@ AND (
                 {
                     currentHeader = header;
                     currentHeader.PCFLines = new List<PCFItem>();
+                    currentHeader.ActualPromoFreightTerms = currentHeader.PromoFreightTerms;
+                    currentHeader.ActualPromoFreightMinimums = currentHeader.FreightMinimums;
                     headerDict.Add(currentHeader.PcfNum, currentHeader);
                 }
                 // Only add the item if it's not null
@@ -341,6 +346,7 @@ AND (
         var headerResult = headerDict.Values.FirstOrDefault();
         if (headerResult != null)
         {
+            await PopulateActualStandardFreightFieldsAsync(headerResult);
 
             var agency = await connection.QueryFirstOrDefaultAsync<string>(
                 "Select name from CIISQL10.BAT_App.dbo.Chap_SlsmanNameV where slsman = @RepCode",
@@ -379,6 +385,8 @@ AND (
             h.Promo_Terms_Text as PromoPaymentTermsText,
             h.Standard_Freight_Terms as PromoFreightTerms,
             h.Freight_Minimums as FreightMinimums,
+            h.Standard_Freight_Terms as ActualPromoFreightTerms,
+            h.Freight_Minimums as ActualPromoFreightMinimums,
             cc.SalesManager,
             cc.AddressLine1 as BillToAddress,
             cc.City as BillToCity,
@@ -421,6 +429,8 @@ AND (
                 {
                     currentHeader = header;
                     currentHeader.PCFLines = new List<PCFItem>();
+                    currentHeader.ActualPromoFreightTerms = currentHeader.PromoFreightTerms;
+                    currentHeader.ActualPromoFreightMinimums = currentHeader.FreightMinimums;
                     headerDict.Add(currentHeader.PcfNum, currentHeader);
                 }
                 // Only add the item if it's not null
@@ -438,6 +448,8 @@ AND (
         var headerResult = headerDict.Values.FirstOrDefault();
         if (headerResult != null)
         {
+            await PopulateActualStandardFreightFieldsAsync(headerResult);
+
             var agency = await connection.QueryFirstOrDefaultAsync<string>(
                 "Select name from CIISQL10.BAT_App.dbo.Chap_SlsmanNameV where slsman = @RepCode",
                 new { RepCode = headerResult.RepCode });
@@ -465,6 +477,41 @@ AND (
 
 
         return headerResult;
+    }
+
+    private async Task PopulateActualStandardFreightFieldsAsync(PCFHeader header)
+    {
+        if (string.IsNullOrWhiteSpace(header.CustomerNumber))
+        {
+            return;
+        }
+
+        const string sql = @"
+            SELECT TOP 1
+                cu.Uf_FrtTerms as ActualStandardFreightTerms,
+                CASE
+                    WHEN cu.Decifld2 IS NULL THEN NULL
+                    ELSE CONVERT(varchar(50), CONVERT(int, FLOOR(cu.Decifld2)))
+                END as ActualStandardFreightMinimums
+            FROM Customer_mst cu
+            WHERE LTRIM(RTRIM(cu.Cust_Num)) = @CustomerNumber
+              AND cu.Cust_Seq = 0";
+
+        using var batConnection = _dbConnectionFactory.CreateBatConnection();
+        var standardFreightValues = await batConnection.QueryFirstOrDefaultAsync<StandardFreightInfo>(
+            sql,
+            new { header.CustomerNumber });
+
+        header.ActualStandardFreightTerms = standardFreightValues?.ActualStandardFreightTerms;
+        header.ActualStandardFreightMinimums = standardFreightValues?.ActualStandardFreightMinimums;
+        //header.Dump(); // Log the header with the populated standard freight fields for debugging
+
+    }
+
+    private sealed class StandardFreightInfo
+    {
+        public string? ActualStandardFreightTerms { get; set; }
+        public string? ActualStandardFreightMinimums { get; set; }
     }
 
     public async Task<List<int>> GetExpiringInDays(int daysOut)

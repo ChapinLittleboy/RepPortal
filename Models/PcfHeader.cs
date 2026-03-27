@@ -194,7 +194,16 @@ public class PCFHeader : INotifyPropertyChanged
         get
         {
             if (!string.IsNullOrWhiteSpace(PromoPaymentTermsText))
-                return $"{PromoPaymentTermsText} (promo)";
+            {
+                var label = string.Equals(
+                    PromoPaymentTermsText.Trim(),
+                    StandardPaymentTermsText?.Trim(),
+                    StringComparison.OrdinalIgnoreCase)
+                    ? "standard"
+                    : "promo";
+
+                return $"{PromoPaymentTermsText} ({label})";
+            }
 
             if (!string.IsNullOrWhiteSpace(StandardPaymentTermsText))
                 return $"{StandardPaymentTermsText} (standard)";
@@ -202,6 +211,16 @@ public class PCFHeader : INotifyPropertyChanged
             return "Special Terms";
         }
     }
+
+    public string? ActualPromoFreightTerms { get; set; }
+    public string? ActualStandardFreightTerms { get; set; }
+    public string? ActualPromoFreightMinimums { get; set; }
+    public string? ActualStandardFreightMinimums { get; set; }
+
+
+
+
+
 }
 
 public class PaymentTerm

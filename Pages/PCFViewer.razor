@@ -5,6 +5,9 @@
 @inject ExportService ExportService
 @inject IJSRuntime JSRuntime
 @inject RepPortal.Services.IActivityLogService ActivityLogService
+@using Dumpify
+@using System.Globalization
+@using System.Text.RegularExpressions
 
 
 
@@ -69,33 +72,33 @@ else if (isReady)
                             @pcfHeader.BTState, @pcfHeader.BTZip
                         </div>
                     </div>
-                    <div class="col-md-4">
+                @* <div class="col-md-4">
                         <strong>Payment Terms:</strong>
                         <div>
                             @pcfHeader.PaymentTermsDisplay
                           
                         </div>
                     </div>
+*@
 				</div>
 
 				<!-- Row 4: Buying Group and Promo Terms (conditional) -->
 				<div class="row mb-2">
+					<div class="col-md-4">
+						<strong>Payment Terms:</strong>
+						<div>@pcfHeader.PaymentTermsDisplay</div>
+					</div>
+					<div class="col-md-4">
+						<strong>Freight Terms:</strong>
+						<div>@GetFreightTermsDisplay()</div>
+					</div>
+					<div class="col-md-4">
+						<strong>Freight Minimums:</strong>
+						<div>@GetFreightMinimumsDisplay()</div>
+					</div>
+				</div>
 
-					@if (pcfHeader.PcfType == "PD" || pcfHeader.PcfType == "PW")
-					{
-						<div class="col-md-4">
-							<strong>Promo Payment Terms:</strong>
-							<div>@pcfHeader.PromoPaymentTermsText</div>
-						</div>
-						<div class="col-md-4">
-							<strong>Promo Freight Terms:</strong>
-							<div>@pcfHeader.PromoFreightTerms</div>
-						</div>
-						<div class="col-md-4">
-							<strong>Promo Freight Minimums:</strong>
-							<div>@pcfHeader.FreightMinimums</div>
-						</div>
-					}
+				<div class="row mb-2">
 					<div class="col-md-4">
 						<strong>Buying Group:</strong>
 						<div>@pcfHeader.BuyingGroup</div>
@@ -210,6 +213,7 @@ else if (isReady)
 
 	private async Task PrintPDFNicer()
 	{
+       pcfHeader.Dump();
 		{
 			// 1) Generate your PDF bytes
 			var pdfBytes = ExportService.ExportPcfHeaderToPdf2(pcfHeader);
@@ -252,6 +256,91 @@ else if (isReady)
 		{
 			Logger.LogInformation("No PCFLines found for PCFNumber: {PcfNumber}", pcfNumber);
 		}
+	}
+
+	private string GetFreightTermsDisplay()
+	{
+		var freightTerms = pcfHeader?.PromoFreightTerms;
+		if (string.IsNullOrWhiteSpace(freightTerms))
+		{
+			return string.Empty;
+		}
+
+		var label = string.Equals(
+			freightTerms.Trim(),
+			pcfHeader?.ActualStandardFreightTerms?.Trim(),
+			StringComparison.OrdinalIgnoreCase)
+			? "standard"
+			: "promo";
+
+		return $"{freightTerms} ({label})";
+	}
+
+	private string GetFreightMinimumsDisplay()
+	{
+		var freightMinimums = pcfHeader?.FreightMinimums;
+		if (string.IsNullOrWhiteSpace(freightMinimums))
+		{
+			return string.Empty;
+		}
+
+		var matchesStandard = FreightMinimumsMatch(
+			freightMinimums,
+			pcfHeader?.ActualStandardFreightMinimums);
+		var label = matchesStandard ? "standard" : "promo";
+		var displayValue = matchesStandard && !string.IsNullOrWhiteSpace(pcfHeader?.ActualStandardFreightMinimums)
+			? pcfHeader.ActualStandardFreightMinimums
+			: freightMinimums;
+
+		return $"{displayValue} ({label})";
+	}
+
+	private static bool FreightMinimumsMatch(string? left, string? right)
+	{
+		var leftAmount = NormalizeFreightMinimum(left);
+		var rightAmount = NormalizeFreightMinimum(right);
+
+		if (leftAmount.HasValue && rightAmount.HasValue)
+		{
+			return leftAmount.Value == rightAmount.Value;
+		}
+
+		if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+		{
+			return false;
+		}
+
+		return string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
+	}
+
+	private static decimal? NormalizeFreightMinimum(string? value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+		{
+			return null;
+		}
+
+		var normalized = value.Trim().ToLowerInvariant();
+		var multiplier = 1m;
+
+		if (normalized.EndsWith("k"))
+		{
+			multiplier = 1000m;
+			normalized = normalized[..^1];
+		}
+
+		normalized = Regex.Replace(normalized, @"[^0-9.]", string.Empty);
+		if (string.IsNullOrWhiteSpace(normalized))
+		{
+			return null;
+		}
+
+		if (!decimal.TryParse(normalized, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var parsed))
+		{
+			return null;
+		}
+
+		return parsed * multiplier;
 	}
 
 }
