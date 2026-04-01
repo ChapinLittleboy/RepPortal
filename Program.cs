@@ -155,6 +155,7 @@ builder.Services.AddScoped<PcfPdfAssetResolver>();
 builder.Services.AddScoped<PcfService>();
 builder.Services.AddScoped<TitleService>();
 builder.Services.AddScoped<ExportService>();
+builder.Services.AddScoped<IIdoService, IdoService>();
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<IDownloadPriceBookService, DownloadPriceBookService>();
 builder.Services.AddScoped<IFormsDownloadService, DownloadFormsService>();
