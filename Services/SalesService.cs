@@ -27,6 +27,7 @@ public class SalesService : ISalesService
     private readonly ISalesDataService? _core;
     private readonly ICsiRestClient? _csiRestClient;
     private readonly CsiOptions _csiOptions;
+    private readonly IIdoService? _idoService;
 
     // Primary DI ctor
     public SalesService(
@@ -37,7 +38,8 @@ public class SalesService : ISalesService
         ILogger<SalesService> logger,
         ISalesDataService core,
         ICsiRestClient csiRestClient,
-        IOptions<CsiOptions> csiOptions)
+        IOptions<CsiOptions> csiOptions,
+        IIdoService idoService)
     {
         _connectionString = configuration.GetConnectionString("BatAppConnection")
                             ?? throw new InvalidOperationException("Missing BatAppConnection connection string.");
@@ -48,6 +50,7 @@ public class SalesService : ISalesService
         _core = core;
         _csiRestClient = csiRestClient;
         _csiOptions = csiOptions.Value;
+        _idoService = idoService;
     }
 
     // Convenience ctor (tests/console). Only methods that use the raw connection string will work.
@@ -195,34 +198,45 @@ public class SalesService : ISalesService
 
     public async Task<List<Dictionary<string, object>>> GetItemSalesReportData()
     {
-        EnsureAuth();
         EnsureRepContext();
+
+        if (_csiOptions.UseApi)
+        {
+            if (_idoService == null)
+                throw new InvalidOperationException("IIdoService is required when UseApi is enabled.");
+
+            var repCode = _repCodeContext!.CurrentRepCode;
+            var allowedRegions = _repCodeContext.CurrentRegions;
+            return await _idoService.GetItemSalesReportDataAsync(repCode, allowedRegions);
+        }
+
+        EnsureAuth();
 
         var authState = await _authenticationStateProvider!.GetAuthenticationStateAsync();
         var user = authState.User;
-        var repCode = _repCodeContext!.CurrentRepCode;
+        var repCodeSql = _repCodeContext!.CurrentRepCode;
 
-        IEnumerable<string>? allowedRegions = null;
-        if (repCode == "LAWxxx")
+        IEnumerable<string>? allowedRegionsSql = null;
+        if (repCodeSql == "LAWxxx")
         {
-            allowedRegions = user.Claims
+            allowedRegionsSql = user.Claims
                 .Where(c => c.Type == "Region")
                 .Select(c => c.Value)
                 .Distinct()
                 .ToList();
         }
-        else if (repCode == "LAW")
+        else if (repCodeSql == "LAW")
         {
-            allowedRegions = _repCodeContext.CurrentRegions;
+            allowedRegionsSql = _repCodeContext.CurrentRegions;
         }
 
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
 
-        var query = BuildItemsMonthlyQuery(allowedRegions);
+        var query = BuildItemsMonthlyQuery(allowedRegionsSql);
         _logger?.LogInformation("GetItemSalesReportData SQL:\n{Sql}", query);
 
-        var rows = await connection.QueryAsync(query, new { RepCode = repCode }, commandType: CommandType.Text);
+        var rows = await connection.QueryAsync(query, new { RepCode = repCodeSql }, commandType: CommandType.Text);
         return MaterializeToDictionaries(rows);
     }
 
