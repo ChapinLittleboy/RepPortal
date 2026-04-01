@@ -27,6 +27,7 @@ public class SalesService : ISalesService
     private readonly ISalesDataService? _core;
     private readonly ICsiRestClient? _csiRestClient;
     private readonly CsiOptions _csiOptions;
+    private readonly IIdoService? _idoService;
 
     // Primary DI ctor
     public SalesService(
@@ -37,7 +38,8 @@ public class SalesService : ISalesService
         ILogger<SalesService> logger,
         ISalesDataService core,
         ICsiRestClient csiRestClient,
-        IOptions<CsiOptions> csiOptions)
+        IOptions<CsiOptions> csiOptions,
+        IIdoService idoService)
     {
         _connectionString = configuration.GetConnectionString("BatAppConnection")
                             ?? throw new InvalidOperationException("Missing BatAppConnection connection string.");
@@ -48,6 +50,7 @@ public class SalesService : ISalesService
         _core = core;
         _csiRestClient = csiRestClient;
         _csiOptions = csiOptions.Value;
+        _idoService = idoService;
     }
 
     // Convenience ctor (tests/console). Only methods that use the raw connection string will work.
@@ -1704,6 +1707,93 @@ public class SalesService : ISalesService
         return Convert.ChangeType(raw, targetType, CultureInfo.InvariantCulture);
     }
     // Other ISalesService methods remain NotImplemented for now
+
+    /// <summary>
+    /// Looks up an order header and its line items by customer number and customer PO (or order number).
+    /// Switches between SQL (Dapper) and IDO API paths based on <see cref="CsiOptions.UseApi"/>.
+    /// </summary>
+    public async Task<(OrderLookupHeader? Header, List<OrderLookupLine> Lines)> GetOrderLookupAsync(
+        string custNum, string normalizedPo, string repCode)
+    {
+        if (_csiOptions.UseApi)
+        {
+            if (_idoService is null)
+                throw new InvalidOperationException("IDO service is not available.");
+            return await _idoService.GetOrderLookupAsync(custNum, normalizedPo, repCode);
+        }
+
+        using var conn = _dbConnectionFactory!.CreateBatConnection();
+
+        const string headerSql = @"
+    SELECT
+        co.cust_num         AS CustNum,
+        ca0.name            AS CustomerName,
+        co.co_num           AS CoNum,
+        co.cust_po          AS CustPo,
+        co.cust_seq         AS CustSeq,
+        ca.state            AS ShipToState,
+        co.credit_hold      AS CreditHold,
+        inv.inv_date        AS InvoiceDate,
+        co.order_date       AS OrderDate,
+        co.stat             AS OrderStatus
+    FROM co_mst co
+    JOIN custaddr_mst ca
+      ON co.cust_num = ca.cust_num
+     AND co.cust_seq = ca.cust_seq
+    JOIN customer_mst cu
+      ON co.cust_num = cu.cust_num AND co.cust_seq = cu.cust_seq
+    LEFT JOIN custaddr_mst ca0
+      ON co.cust_num = ca0.cust_num
+     AND ca0.cust_seq = 0
+    LEFT JOIN inv_hdr_mst inv
+      ON co.cust_num = inv.cust_num
+     AND co.cust_po  = inv.cust_po
+    WHERE (REPLACE(REPLACE(co.cust_po, '-', ''), '_', '') = @CustPo
+            OR co.co_num = dbo.ExpandKyByType('CoNumType', @CustPo))
+      AND co.cust_num = dbo.ExpandKyByType('CustNumType', @CustNum)
+      AND (
+        @RepCode = 'Admin'
+        OR (
+            @RepCode = 'DAL'
+            AND (
+                co.slsman = @RepCode
+                OR co.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
+            )
+        )
+        OR (
+            @RepCode NOT IN ('Admin', 'DAL')
+            AND co.slsman = @RepCode
+        )
+      );";
+
+        var header = await conn.QueryFirstOrDefaultAsync<OrderLookupHeader>(
+            headerSql,
+            new { CustPo = normalizedPo, CustNum = custNum, RepCode = repCode });
+
+        if (header is null)
+            return (null, new List<OrderLookupLine>());
+
+        const string lineSql = @"
+    SELECT
+        ci.co_line          AS CoLine,
+        ci.item             AS Item,
+        ci.[description]    AS Description,
+        ci.qty_ordered      AS QtyOrdered,
+        ci.qty_shipped      AS QtyShipped,
+        ci.qty_invoiced     AS QtyInvoiced,
+        ci.due_date         AS DueDate,
+        ci.stat             AS LineStatus,
+        COALESCE(cm.ship_date, ci.ship_date) AS ShipDate
+    FROM coitem_mst ci
+    LEFT JOIN co_ship_mst cm
+      ON ci.co_num = cm.co_num
+     AND cm.co_line = ci.co_line
+    WHERE ci.co_num = @CoNum;";
+
+        var lines = (await conn.QueryAsync<OrderLookupLine>(lineSql, new { CoNum = header.CoNum })).ToList();
+
+        return (header, lines);
+    }
 
     private static string Eq(string field, string value) =>
         $"{field} = '{value.Replace("'", "''")}'";
