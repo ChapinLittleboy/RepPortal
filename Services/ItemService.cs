@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Microsoft.Extensions.Options;
 using RepPortal.Data;
 using RepPortal.Models;
 
@@ -22,12 +23,15 @@ public class ItemService : IItemService
     private readonly IConfiguration _configuration;
     private readonly CustomerService _customerService;
     private readonly ILogger<PcfService> _logger;
+    private readonly IIdoService _idoService;
+    private readonly CsiOptions _csiOptions;
 
     private List<ItemInfo> _itemsCache;
     private Dictionary<string, ItemDetail> _detailsCache;
 
     public ItemService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider,
-        IRepCodeContext repCodeContext, IDbConnectionFactory dbConnectionFactory, CustomerService customerService, ILogger<PcfService> logger)
+        IRepCodeContext repCodeContext, IDbConnectionFactory dbConnectionFactory, CustomerService customerService,
+        ILogger<PcfService> logger, IIdoService idoService, IOptions<CsiOptions> csiOptions)
     {
         _authenticationStateProvider = authenticationStateProvider;
         _repCodeContext = repCodeContext;
@@ -35,7 +39,8 @@ public class ItemService : IItemService
         _configuration = configuration;
         _customerService = customerService;
         _logger = logger;
-
+        _idoService = idoService;
+        _csiOptions = csiOptions.Value;
     }
 
     public async Task<List<ItemInfo>> GetItemsAsync()
@@ -57,8 +62,16 @@ public class ItemService : IItemService
         if (_detailsCache.TryGetValue(item, out var cached))
             return cached;
 
-        using var connection = _dbConnectionFactory.CreateBatConnection();
-        var sql = @"
+        ItemDetail result;
+
+        if (_csiOptions.UseApi)
+        {
+            result = await _idoService.GetItemDetailAsync(item);
+        }
+        else
+        {
+            using var connection = _dbConnectionFactory.CreateBatConnection();
+            var sql = @"
                 SELECT TOP 1
                   i.Item,
                   i.Description,
@@ -71,6 +84,12 @@ public class ItemService : IItemService
                   ON ip.item = i.item
                 WHERE i.Item = @Item
                 ORDER BY ip.effect_date DESC";
-        return await connection.QueryFirstOrDefaultAsync<ItemDetail>(sql, new { Item = item });
+            result = await connection.QueryFirstOrDefaultAsync<ItemDetail>(sql, new { Item = item });
+        }
+
+        if (result != null)
+            _detailsCache[item] = result;
+
+        return result;
     }
 }
