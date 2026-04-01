@@ -14,7 +14,8 @@
       "Bash(grep:*)",
       "WebSearch",
       "WebFetch(domain:www.syncfusion.com)",
-      "WebFetch(domain:blazor.syncfusion.com)"
+      "WebFetch(domain:blazor.syncfusion.com)",
+      "Bash(xargs -I {} basename {})"
     ]
   }
 }
