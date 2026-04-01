@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using RepPortal.Models;
 
 
@@ -11,12 +12,16 @@ public class CustomerService
 {
     private readonly string _batAppConnection;
     private readonly IRepCodeContext _repCodeContext;
+    private readonly IIdoService _idoService;
+    private readonly CsiOptions _csiOptions;
     //private readonly CreditHoldExclusionService _creditHoldExclusionService;
 
-    public CustomerService(IConfiguration config, IRepCodeContext repCodeContext, CreditHoldExclusionService creditHoldExclusionService)
+    public CustomerService(IConfiguration config, IRepCodeContext repCodeContext, CreditHoldExclusionService creditHoldExclusionService, IIdoService idoService, IOptions<CsiOptions> csiOptions)
     {
         _batAppConnection = config.GetConnectionString("BatAppConnection");
         _repCodeContext = repCodeContext;
+        _idoService = idoService;
+        _csiOptions = csiOptions.Value;
         //_creditHoldExclusionService = creditHoldExclusionService;  // gets list from RepPortal.dbo.CreditHoldReasonCodeExceptions
     }
 
@@ -64,6 +69,9 @@ AND (ca.credit_hold_reason IS NULL OR ca.credit_hold_reason NOT IN (
     public async Task<List<Customer>> GetCustomersDetailsByRepCodeAsync()  // Cannot do Region as region is ship-to specific
     {
         // NOTE:  Always uses the repCode from the RepCodeContext
+        if (_csiOptions.UseApi)
+            return await _idoService.GetCustomersDetailsByRepCodeAsync(_repCodeContext.CurrentRepCode);
+
         const string sql = @"
             SELECT cu.cust_num as Cust_Num, ca.[name] as Cust_Name, ca.corp_cust as Corp_Cust,
        ca.addr##1 as BillToAddress1, ca.addr##2 as BillToAddress2, ca.addr##3 as BillToAddress3,

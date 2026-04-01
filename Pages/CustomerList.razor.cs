@@ -55,7 +55,7 @@ namespace RepPortal.Pages
                         StringComparer.OrdinalIgnoreCase // Case-insensitive comparison
                     );
 
-                    var allCustomers = await CustomerService.GetCustomerNamesByRepCodeAsync();
+                    var allCustomers = await CustomerService.GetCustomersDetailsByRepCodeAsync();
                     foreach (var cust in allCustomers)
                     {
                         if (!allowedTypes.Contains(cust.BuyingGroup))
