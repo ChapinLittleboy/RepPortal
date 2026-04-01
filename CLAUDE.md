@@ -162,15 +162,19 @@ When migrating a report from direct SQL to IDO:
 
 | Report | Page Component | Service Method | IDO / Status |
 |---|---|---|---|
-| Invoice Lines | 'Pages/InvoiceLines.razor' | ISalesService.GetInvoiceRptData | 'Chap_InvoiceLines' ✅ Complete — use as reference |
-| Customer List| Pages/CustomerList.razor | CustomerService.GetCustomersDetailsByRepCodeAsync | ⬜ Needs IDO implementation |
-| Monthly Sales by Item | Pages/MonthlySalesByItemReport.razor | ISalesService.GetItemSalesReportData | ⬜ Needs IDO implementation |
-| Order Lookup| Pages/CustomerOrderLookup.razor | Inline SQL via IDbConnectionFactory | ⬜ Needs IDO implementation |
-| Item Pricing Lookup| Pages/GetItemPricing.razor | IItemService.GetItemDetailAsync | ⬜ Needs IDO implementation |
-| Packing List | Pages/PackingListPage.razor | PackingListService Rep_Rpt_PackingSlipByBOLSp detail in docs  | ⬜ Needs IDO implementation | 
-##Also some Hangfire Reports
-| Invoiced Accounts (scheduled| Services/Reports/InvoicedAccountsReport | sp_GetInvoices detail in docs  | ⬜ Needs IDO implementation |
-| Shipments (scheduled)| Services/Reports/ShipmentsReport.cs| Raw sql | ⬜ Needs IDO implementation |
+| Invoice Lines | `Pages/InvoiceLines.razor` | `ISalesService.GetInvoiceRptData` | `Chap_InvoiceLines` ✅ Complete — use as reference |
+| Customer List | `Pages/CustomerList.razor` | `CustomerService.GetCustomersDetailsByRepCodeAsync` | ✅ Complete — merged to api-dev |
+| Monthly Sales by Item | `Pages/MonthlySalesByItemReport.razor` | `ISalesService.GetItemSalesReportData` | ✅ Complete — merged to api-dev |
+| Order Lookup | `Pages/CustomerOrderLookup.razor` | `ISalesService.GetOrderLookupAsync` | ✅ Complete — merged to api-dev (SQL extracted to service) |
+| Item Pricing Lookup | `Pages/GetItemPricing.razor` | `IItemService.GetItemDetailAsync` | ✅ Complete — merged to api-dev |
+| Packing List | `Pages/PackingListPage.razor` | `PackingListService` / `Rep_Rpt_PackingSlipByBOLSp` | ⬜ Needs IDO implementation (see docs/Rep_Rpt_PackingSlipByBOLSp.sql) |
+
+## Hangfire Background Reports
+
+| Report | File | Service Method | IDO / Status |
+|---|---|---|---|
+| Invoiced Accounts (scheduled) | `Services/Reports/InvoicedAccountsReport.cs` | `sp_GetInvoices` | ⬜ Needs IDO implementation |
+| Shipments (scheduled) | `Services/Reports/ShipmentsReport.cs` | Raw SQL | ⬜ Needs IDO implementation |
 
 
 
