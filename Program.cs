@@ -133,6 +133,7 @@ builder.Services.AddScoped<IIdoService, IdoService>();
 // Core: auth-free — used by both pages and jobs
 builder.Services.AddScoped<ISalesDataService, SalesDataService>();
 //builder.Services.AddScoped<SalesService>();
+builder.Services.AddScoped<IIdoService, IdoService>();
 builder.Services.AddScoped<ISalesService, SalesService>();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddHttpContextAccessor();
