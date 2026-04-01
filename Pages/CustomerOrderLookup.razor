@@ -1,11 +1,10 @@
-﻿@page "/order-lookup"
-@using Dapper
+@page "/order-lookup"
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.Grids
-@using System.Text.RegularExpressions;
+@using System.Text.RegularExpressions
 @using FilterType = Syncfusion.Blazor.DropDowns.FilterType
-@inject IDbConnectionFactory DbConnectionFactory
+@inject ISalesService SalesService
 @inject IRepCodeContext RepCodeContext
 @inject CustomerService CustomerService
 @inject RepPortal.Services.IActivityLogService ActivityLogService
@@ -113,11 +112,10 @@
             <GridColumn Field="ShipDate" HeaderText="Last Ship Date" Format="d" Width="120" TextAlign="TextAlign.Center" />
             <GridColumn Field="DueDate" HeaderText="Expected Ship" Format="d" Width="120" TextAlign="TextAlign.Center" />
 
-
             <GridColumn HeaderText="Line Status" Width="120" TextAlign="TextAlign.Center">
                 <Template>
                     @{
-                        var data = context as OrderLine;
+                        var data = context as OrderLookupLine;
                         <text>@GetLineStatusDescription(data.LineStatus)</text>
                     }
                 </Template>
@@ -128,15 +126,13 @@
 }
 
 @code {
-    private string CustomerNumber { get; set; }
     private string CustomerPo { get; set; }
     private string normalizedPo { get; set; }
     private string? SelectedOrderNumber { get; set; } = null;
     private bool HasSelectedOrder => !string.IsNullOrWhiteSpace(SelectedOrderNumber);
 
-
-    private OrderHeader Header { get; set; }
-    private List<OrderLine> LineItems { get; set; } = new();
+    private OrderLookupHeader? Header { get; set; }
+    private List<OrderLookupLine> LineItems { get; set; } = new();
     private List<Customer> Customers { get; set; } = new();
     private int NumericValue = 50;
     public SfComboBox<string, Customer> WantedCust { get; set; }
@@ -152,19 +148,14 @@
             Nav.NavigateTo($"/invoices-report/{SelectedOrderNumber}");
     }
 
-
-    /// <summary>
-    /// Remove all non-alphanumeric chars from the PO string.
-    /// </summary>
-    private string NormalizePo(string po)
+    /// <summary>Remove all non-alphanumeric chars from the PO string.</summary>
+    private static string NormalizePo(string po)
     {
-	    if (string.IsNullOrEmpty(po))
-		    return string.Empty;
-	    // [^A-Za-z0-9] means “anything that’s NOT A–Z, a–z or 0–9”
+	    if (string.IsNullOrEmpty(po)) return string.Empty;
 	    return Regex.Replace(po, "[^A-Za-z0-9]", "");
     }
 
-	private async Task LoadOrderAsync()
+    private async Task LoadOrderAsync()
     {
         Header = null;
         LineItems.Clear();
@@ -172,110 +163,37 @@
         if (string.IsNullOrWhiteSpace(WantedCust.Value) || string.IsNullOrWhiteSpace(CustomerPo))
             return;
 
-		normalizedPo = NormalizePo(CustomerPo);
+        normalizedPo = NormalizePo(CustomerPo);
 
-        // Log report usage with parameters
         var logParams = new { CustNum = WantedCust.Value, CustomerPo = normalizedPo, RepCode = RepCodeContext.CurrentRepCode };
         var paramJson = System.Text.Json.JsonSerializer.Serialize(logParams);
         await ActivityLogService.LogReportUsageActivityAsync("Customer Order Lookup", paramJson);
 
-        using var conn = DbConnectionFactory.CreateBatConnection();
+        var (header, lines) = await SalesService.GetOrderLookupAsync(
+            WantedCust.Value, normalizedPo, RepCodeContext.CurrentRepCode);
 
-        // 1) fetch header
-        var headerSql = @"
-    SELECT
-        co.cust_num         AS CustNum,
-        ca0.name            AS CustomerName,
-        co.co_num           AS CoNum,
-        co.cust_po          AS CustPo,
-        co.cust_seq         AS CustSeq,
-        ca.state            AS ShipToState,
-        co.credit_hold      AS CreditHold,
-        inv.inv_date        AS InvoiceDate,      -- from inv_hdr_table
-        co.order_date       AS OrderDate,
-        co.stat             AS OrderStatus
-    FROM co_mst co
-    JOIN custaddr_mst ca
-      ON co.cust_num = ca.cust_num
-     AND co.cust_seq = ca.cust_seq
-    JOIN customer_mst cu
-      ON co.cust_num = cu.cust_num and  co.cust_seq = cu.cust_seq
-    LEFT JOIN custaddr_mst ca0
-      ON co.cust_num = ca0.cust_num
-     AND ca0.cust_seq = 0
-    LEFT JOIN inv_hdr_mst inv
-      ON co.cust_num = inv.cust_num
-     AND co.cust_po  = inv.cust_po
-            WHERE (REPLACE(REPLACE(co.cust_po, '-', ''), '_', '') = @CustPo
-				OR co.co_num = dbo.ExpandKyByType('CoNumType',@CustPo))
+        if (header is null) return;
 
-              AND co.cust_num = dbo.ExpandKyByType('CustNumType', @CustNum)
-			 AND (
-        -- Admin gets everything
-        @RepCode = 'Admin'
+        Header = header;
+        SelectedOrderNumber = header.CoNum;
+        LineItems = lines;
 
-        -- DAL gets their normal customers + special customer list
-        OR (
-                @RepCode = 'DAL'
-                AND (
-                        co.slsman = @RepCode
-                        OR co.cust_num IN ('  45424', '  45427', '  45424K', '45424', '45427', '45424K')
-                   )
-           )
-
-        -- All other reps get only customers matching their rep code
-        OR (
-                @RepCode NOT IN ('Admin', 'DAL')
-                AND co.slsman = @RepCode
-           )
-    );
-        ";
-        //Note: uses slsman on the Customer Order, not customer
-        Header = await conn.QueryFirstOrDefaultAsync<OrderHeader>(headerSql, new { CustPo = normalizedPo, CustNum = WantedCust.Value, RepCode = RepCodeContext.CurrentRepCode});
-
-        if (Header == null) return;
-
-        SelectedOrderNumber = Header.CoNum;
-
-        // 2) fetch line items
-        var lineSql = @"
-            SELECT
-                ci.co_line      AS CoLine,
-                ci.item         AS Item,
-                ci.[description]AS Description,
-                ci.qty_ordered  AS QtyOrdered,
-                ci.qty_shipped  AS QtyShipped,
-                ci.qty_invoiced AS QtyInvoiced,
-                ci.due_date     AS DueDate,
-                ci.stat         AS LineStatus,
-                coalesce(cm.ship_date, ci.ship_date)    AS ShipDate
-            FROM coitem_mst ci
-            LEFT JOIN co_ship_mst cm
-              ON ci.co_num = cm.co_num
-             AND cm.co_line = ci.co_line
-            WHERE ci.co_num = @CoNum;
-        ";
-        var rows = (await conn.QueryAsync<OrderLine>(lineSql, new { CoNum = Header.CoNum })).ToList();
-        LineItems = rows;
-
-        // compute “expected” (earliest) ship‐by and last ship dates
-        Header.ExpectedShipDate = rows
+        // Compute expected (earliest due date) and last ship date from lines.
+        Header.ExpectedShipDate = lines
             .Where(r => r.DueDate.HasValue)
-            .Select(r => r.DueDate.Value)
+            .Select(r => r.DueDate!.Value)
             .DefaultIfEmpty()
-            .Min();
+            .Min() is DateTime minDt && minDt != DateTime.MinValue ? minDt : null;
 
-        Header.LastShipDate = rows
-	                              .Select(r => r.ShipDate)               // IEnumerable<DateTime?>
-	                              .Max()                                 // DateTime? (null if there were no values)
-	                              ?.ToString("d")                        // null or the formatted date
-                              ?? "";                                 // coalesce null → ""
+        Header.LastShipDate = lines
+            .Select(r => r.ShipDate)
+            .Max()
+            ?.ToString("d") ?? "";
 
-
-        // If header is already on hold, skip processing
+        // Derive a display-level order status from line statuses when not already terminal.
         if (Header.OrderStatus != "H" && Header.OrderStatus != "S")
         {
-	        var statuses = rows.Select(r => r.LineStatus).Distinct().ToList();
+	        var statuses = lines.Select(r => r.LineStatus).Distinct().ToList();
 
 	        if (statuses.All(s => s == "F"))
 	        {
@@ -314,9 +232,9 @@
             "O" => "Open",
             "C" => "Completed",
             "H" => "Hold",
-			"P" => "Shipped",
-			"B" => "Shipped and Backordered",
-			"X" => "Cancelled",
+            "P" => "Shipped",
+            "B" => "Shipped and Backordered",
+            "X" => "Cancelled",
             "S" => "Stopped",
             _ => code
         };
@@ -329,33 +247,4 @@
             "C" => "Cancelled",
             _ => code
         };
-
-    public class OrderHeader
-    {
-        public string CustNum { get; set; }
-        public string CustomerName { get; set; }
-        public string CoNum { get; set; }
-        public string CustPo { get; set; }
-        public int CustSeq { get; set; }
-        public string ShipToState { get; set; }
-        public bool CreditHold { get; set; }
-        public DateTime? InvoiceDate { get; set; }
-        public DateTime OrderDate { get; set; }
-        public string OrderStatus { get; set; }
-        public DateTime? ExpectedShipDate { get; set; }
-        public string? LastShipDate { get; set; }
-    }
-
-    public class OrderLine
-    {
-        public int CoLine { get; set; }
-        public string Item { get; set; }
-        public string Description { get; set; }
-        public int QtyOrdered { get; set; }
-        public int QtyShipped { get; set; }
-        public int QtyInvoiced { get; set; }
-        public DateTime? DueDate { get; set; }
-        public string LineStatus { get; set; }
-        public DateTime? ShipDate { get; set; }
-    }
 }

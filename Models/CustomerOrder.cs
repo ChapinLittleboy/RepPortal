@@ -52,3 +52,35 @@ public class CustomerOrderSummaryExport
     public decimal FutureDollars { get; set; } // Future_D
     public decimal TotalDollars { get; set; } // Total_D
 }
+
+/// <summary>Order header returned by the customer order lookup (Dapper + IDO paths).</summary>
+public class OrderLookupHeader
+{
+    public string CustNum { get; set; } = "";
+    public string CustomerName { get; set; } = "";
+    public string CoNum { get; set; } = "";
+    public string CustPo { get; set; } = "";
+    public int CustSeq { get; set; }
+    public string? ShipToState { get; set; }
+    public bool CreditHold { get; set; }
+    public DateTime? InvoiceDate { get; set; }
+    public DateTime OrderDate { get; set; }
+    public string OrderStatus { get; set; } = "";
+    // Computed in the page after lines are loaded:
+    public DateTime? ExpectedShipDate { get; set; }
+    public string? LastShipDate { get; set; }
+}
+
+/// <summary>Order line item returned by the customer order lookup (Dapper + IDO paths).</summary>
+public class OrderLookupLine
+{
+    public int CoLine { get; set; }
+    public string Item { get; set; } = "";
+    public string? Description { get; set; }
+    public int QtyOrdered { get; set; }
+    public int QtyShipped { get; set; }
+    public int QtyInvoiced { get; set; }
+    public DateTime? DueDate { get; set; }
+    public string LineStatus { get; set; } = "";
+    public DateTime? ShipDate { get; set; }
+}

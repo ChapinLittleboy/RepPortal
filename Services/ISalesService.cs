@@ -6,6 +6,8 @@ namespace RepPortal.Services;
 public interface ISalesService
 {
     Task<List<OrderDetail>> GetAllOpenOrderDetailsAsync();
+Task<(OrderLookupHeader? Header, List<OrderLookupLine> Lines)> GetOrderLookupAsync(
+    string custNum, string normalizedPo, string repCode);
     Task<List<CustType>> GetCustomerTypesListAsync();
 
    

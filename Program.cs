@@ -147,6 +147,8 @@ builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 builder.Services.AddHttpClient<ICsiRestClient, CsiRestClient>()
     .AddHttpMessageHandler<CsiLoggingHandler>();
 
+builder.Services.AddScoped<IIdoService, IdoService>();
+
 
 
 builder.Services.AddScoped<PcfPdfAssetResolver>();
