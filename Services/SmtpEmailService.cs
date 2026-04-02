@@ -17,9 +17,9 @@ public interface IEmailService
 
 public class EmailAttachment
 {
-    public string FileName { get; set; }
-    public string ContentType { get; set; }
-    public byte[] Content { get; set; }
+    public string? FileName { get; set; }
+    public string? ContentType { get; set; }
+    public byte[]? Content { get; set; }
 }
 
 

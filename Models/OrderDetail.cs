@@ -6,10 +6,10 @@ namespace RepPortal.Models;
 public class OrderDetail
 {
     [CsiField("CoCustNum")]
-    public string Cust { get; set; }
+    public string? Cust { get; set; }
 
     [CsiField("Adr0Name")]
-    public string CustName { get; set; }
+    public string? CustName { get; set; }
 
     [CsiField("DerDueDate")]
     public DateTime DueDate { get; set; }
@@ -27,7 +27,7 @@ public class OrderDetail
     public string? CoNum { get; set; }
 
     [CsiField("Item")]
-    public string Item { get; set; }
+    public string? Item { get; set; }
 
     [CsiField("Description")]
     public string? ItemDesc { get; set; }

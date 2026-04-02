@@ -18,9 +18,9 @@ public class DbConnectionFactory : IDbConnectionFactory
 
 {
     private readonly IConfiguration _configuration;
-    private readonly string _batConnectionString;
-    private readonly string _pcfConnectionString;
-    private readonly string _repConnectionString;
+    private readonly string? _batConnectionString;
+    private readonly string? _pcfConnectionString;
+    private readonly string? _repConnectionString;
 
     //private readonly DbConnectionFactory _dbConnectionFactory;
 

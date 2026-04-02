@@ -27,8 +27,7 @@ public class SalesService : ISalesService
     private readonly ISalesDataService? _core;
     private readonly ICsiRestClient? _csiRestClient;
     private readonly IIdoService? _idoService;
-    private readonly CsiOptions _csiOptions;
-    private readonly IIdoService? _idoService;
+    private readonly CsiOptions? _csiOptions;
 
     // Primary DI ctor
     public SalesService(
@@ -40,8 +39,7 @@ public class SalesService : ISalesService
         ISalesDataService core,
         IIdoService idoService,
         ICsiRestClient csiRestClient,
-        IOptions<CsiOptions> csiOptions,
-        IIdoService idoService)
+        IOptions<CsiOptions> csiOptions)
     {
         _connectionString = configuration.GetConnectionString("BatAppConnection")
                             ?? throw new InvalidOperationException("Missing BatAppConnection connection string.");

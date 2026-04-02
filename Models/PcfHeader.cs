@@ -6,7 +6,7 @@ namespace RepPortal.Models;
 public class PCFHeader : INotifyPropertyChanged
 {
     #region Private Fields
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IHttpContextAccessor? _httpContextAccessor;
     #endregion
 
     #region Constructors
@@ -38,7 +38,7 @@ public class PCFHeader : INotifyPropertyChanged
     public string? CustomerNumber { get; set; } = string.Empty;
     public string? CustomerName { get; set; } = string.Empty;
     public string? BuyingGroup { get; set; } = string.Empty;
-    public Customer CustomerInfo { get; set; }
+    public Customer? CustomerInfo { get; set; }
     public string? CustContact { get; set; }
     public string? CustContactEmail { get; set; }
     #endregion
@@ -91,7 +91,7 @@ public class PCFHeader : INotifyPropertyChanged
     #endregion
 
     #region Payment and Shipping Terms
-    public List<PaymentTerm> PaymentTermsList { get; set; } // Inject the list
+    public List<PaymentTerm>? PaymentTermsList { get; set; } // Inject the list
     public string PromoPaymentTermsDescription =>
         PaymentTermsList?.FirstOrDefault(t => t.Terms_Code == PromoPaymentTerms)?.Description ?? "";
 

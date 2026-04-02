@@ -126,8 +126,8 @@
 }
 
 @code {
-    private string CustomerPo { get; set; }
-    private string normalizedPo { get; set; }
+    private string? CustomerPo { get; set; }
+    private string? normalizedPo { get; set; }
     private string? SelectedOrderNumber { get; set; } = null;
     private bool HasSelectedOrder => !string.IsNullOrWhiteSpace(SelectedOrderNumber);
 
@@ -135,7 +135,7 @@
     private List<OrderLookupLine> LineItems { get; set; } = new();
     private List<Customer> Customers { get; set; } = new();
     private int NumericValue = 50;
-    public SfComboBox<string, Customer> WantedCust { get; set; }
+    public SfComboBox<string, Customer>? WantedCust { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

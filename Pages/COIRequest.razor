@@ -99,14 +99,14 @@ else
     };
 
     private List<IBrowserFile> uploadedFiles = new();
-    private string submitMessage;
+    private string? submitMessage;
     private List<Customer> customerList = new();
     private bool isLoading = true;
     private string WantedCustNum = string.Empty;
     private int NumericValue = 50; // Default value for the combo box DeBounceDelay
-    public SfComboBox<string, Customer> WantedCust { get; set; }
+    public SfComboBox<string, Customer>? WantedCust { get; set; }
     public bool EmailMeCopy { get; set; }
-    private string recipientEmail;
+    private string? recipientEmail;
     
 
     protected override async Task OnInitializedAsync()
@@ -187,9 +187,9 @@ else
 
     public class COIRequestModel
     {
-        public string CustomerNumber { get; set; }
-        public string CustomerName { get; set; }
-        public string Notes { get; set; }
+        public string? CustomerNumber { get; set; }
+        public string? CustomerName { get; set; }
+        public string? Notes { get; set; }
         public bool EmailMeCopy { get; set; } = false;
 
 

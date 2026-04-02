@@ -10,4 +10,10 @@ public interface IIdoService
     Task<List<InvoiceRptDetail>> GetInvoiceRptDataAsync(SalesService.InvoiceRptParameters parameters, string repCode);
     Task<List<Dictionary<string, object>>> GetSalesReportDataUsingInvRepAsync(string repCode, IEnumerable<string>? allowedRegions);
     Task<List<Dictionary<string, object>>> GetSalesReportDataAsync(string repCode, IEnumerable<string>? allowedRegions);
+    Task<PackingList> GetPackingListByShipmentAsync(string packNum);
+    Task<List<PackingList>> GetPackingListsByOrderAsync(string coNum);
+    Task<List<Customer>> GetCustomersDetailsByRepCodeAsync(string repCode);
+    Task<ItemDetail> GetItemDetailAsync(string item);
+    Task<List<Dictionary<string, object>>> GetItemSalesReportDataAsync(string repCode, IEnumerable<string>? allowedRegions);
+    Task<(OrderLookupHeader? Header, List<OrderLookupLine> Lines)> GetOrderLookupAsync(string custNum, string normalizedPo, string repCode);
 }

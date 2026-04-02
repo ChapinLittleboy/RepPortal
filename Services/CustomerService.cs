@@ -7,10 +7,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using RepPortal.Models;
 
-
-public class CustomerService
+public interface ICustomerLookupService
 {
-    private readonly string _batAppConnection;
+    Task<List<Customer>> GetCustomersDetailsByRepCodeAsync();
+}
+
+public class CustomerService : ICustomerLookupService
+{
+    private readonly string? _batAppConnection;
     private readonly IRepCodeContext _repCodeContext;
     private readonly IIdoService _idoService;
     private readonly CsiOptions _csiOptions;

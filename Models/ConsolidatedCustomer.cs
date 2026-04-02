@@ -2,7 +2,7 @@
 
 public class ConsolidatedCustomer
 {
-    public string CustNum { get; set; } // First part of the composite key
+    public string? CustNum { get; set; } // First part of the composite key
     public int CustSeq { get; set; }    // Second part of the composite key
 
     public string? Salesman { get; set; }

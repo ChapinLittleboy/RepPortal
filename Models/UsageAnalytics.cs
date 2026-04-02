@@ -11,10 +11,10 @@ namespace RepPortal.Models
     public class ReportUsageHistory
     {
         public int UsageId { get; set; }
-        public string UserName { get; set; }
+        public string? UserName { get; set; }
         public DateTime UsageDate { get; set; }
-        public string RepCode { get; set; }
-        public string Feature { get; set; }
+        public string? RepCode { get; set; }
+        public string? Feature { get; set; }
         public string? SearchCriteria { get; set; }
     }
 
@@ -24,7 +24,7 @@ namespace RepPortal.Models
     /// </summary>
     public class FeatureUsageSummary
     {
-        public string Feature { get; set; }
+        public string? Feature { get; set; }
         public int UsageCount { get; set; }
     }
 
@@ -34,7 +34,7 @@ namespace RepPortal.Models
     /// </summary>
     public class RepCodeUsageSummary
     {
-        public string RepCode { get; set; }
+        public string? RepCode { get; set; }
         public int UsageCount { get; set; }
     }
 
@@ -44,7 +44,7 @@ namespace RepPortal.Models
     /// </summary>
     public class UsersPerRepCodeSummary
     {
-        public string RepCode { get; set; }
+        public string? RepCode { get; set; }
         public int UniqueUserCount { get; set; }
     }
 

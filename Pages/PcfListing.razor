@@ -103,7 +103,7 @@ else
 	private bool isLoading = false;
 
 	private List<PCFHeader> pcfHeaders = new List<PCFHeader>();
-	private SfGrid<PCFHeader> MyGrid;
+	private SfGrid<PCFHeader>? MyGrid;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -162,7 +162,7 @@ else
 
 	public class StatusOptions
 	{
-		public string StatusCode { get; set; }
+		public string? StatusCode { get; set; }
 	}
 	private List<StatusOptions> pcfStatusOptions = new List<StatusOptions>
 	{

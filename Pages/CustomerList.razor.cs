@@ -11,22 +11,22 @@ namespace RepPortal.Pages
     [Authorize]
     public partial class CustomerList : ComponentBase
     {
-        [Inject] protected AuthenticationStateProvider AuthenticationStateProvider { get; set; }
-        [Inject] protected UserManager<ApplicationUser> UserManager { get; set; }
-        [Inject] protected CustomerService CustomerService { get; set; }
-        [Inject] protected IRepCodeContext RepCodeContext { get; set; }
-        [Inject] protected TitleService TitleService { get; set; }
-        [Inject] protected RepPortal.Services.IActivityLogService ActivityLogService { get; set; }
+        [Inject] protected AuthenticationStateProvider? AuthenticationStateProvider { get; set; }
+        [Inject] protected UserManager<ApplicationUser>? UserManager { get; set; }
+        [Inject] protected CustomerService? CustomerService { get; set; }
+        [Inject] protected IRepCodeContext? RepCodeContext { get; set; }
+        [Inject] protected TitleService? TitleService { get; set; }
+        [Inject] protected RepPortal.Services.IActivityLogService? ActivityLogService { get; set; }
 
-        private IEnumerable<Customer> customers;
-        private string repCode;
+        private IEnumerable<Customer>? customers;
+        private string? repCode;
         private bool isLoading = true;
-        private SfGrid<Customer> Grid;
+        private SfGrid<Customer>? Grid;
         //private List<CreditHoldReasonCode> reasonCodeList = new List<CreditHoldReasonCode>();
-        public string _state;
+        public string? _state;
         private List<CreditHoldReasonCode> _creditHoldReasons = new();
         private Dictionary<string, string> _reasonLookup = new();
-        private IEnumerable<CustType> CustomerTypesList;
+        private IEnumerable<CustType>? CustomerTypesList;
 
         protected override async Task OnInitializedAsync()
         {
@@ -108,7 +108,7 @@ namespace RepPortal.Pages
         public class CreditHoldLookup
         {
             public int Id { get; set; }
-            public string Text { get; set; }
+            public string? Text { get; set; }
         }
 
         public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)

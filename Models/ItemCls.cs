@@ -47,8 +47,8 @@ public class ItemCls
 }
 public class ItemDetail
 {
-    public string Item { get; set; }
-    public string Description { get; set; }
+    public string? Item { get; set; }
+    public string? Description { get; set; }
     public decimal Price1 { get; set; }
     public decimal Price2 { get; set; }
     public decimal Price3 { get; set; }
@@ -70,13 +70,13 @@ public class ItemDetail
         _ => "Unknown"
     };
 
-    public string ItemStatus { get; set; }
+    public string? ItemStatus { get; set; }
 }
 
 public class ItemInfo
 {
-    public string Item { get; set; }
-    public string Description { get; set; }
+    public string? Item { get; set; }
+    public string? Description { get; set; }
     // what shows up + gets filtered on in the combo
     public string DisplayText => $"{Item} – {Description}";
 }

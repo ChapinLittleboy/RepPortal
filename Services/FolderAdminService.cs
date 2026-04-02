@@ -7,7 +7,7 @@ namespace RepPortal.Services;
 
 public class FolderAdminService
 {
-    private readonly string _connString;
+    private readonly string? _connString;
 
     public FolderAdminService(IConfiguration config)
     {

@@ -8,6 +8,6 @@ public class ChatRequest
 
 public class Message
 {
-    public string Role { get; set; } // "system", "user", or "assistant"
-    public string Content { get; set; }
+    public string? Role { get; set; } // "system", "user", or "assistant"
+    public string? Content { get; set; }
 }

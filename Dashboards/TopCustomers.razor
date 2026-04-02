@@ -95,8 +95,8 @@
 @code {
     private bool isLoading = false;
     private int numberOfCustomers = 5;
-    private List<CustomerViewModel> topCustomers;
-    private CustomerViewModel selectedCustomer;
+    private List<CustomerViewModel>? topCustomers;
+    private CustomerViewModel? selectedCustomer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -222,7 +222,7 @@
     public class CustomerViewModel
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public decimal PreviousYearTotal { get; set; }
         public decimal CurrentYearTotal { get; set; }
         public decimal PercentChange { get; set; }
@@ -231,7 +231,7 @@
 
     public class MonthlyData
     {
-        public string Month { get; set; }
+        public string? Month { get; set; }
         public decimal PreviousYearAmount { get; set; }
         public decimal CurrentYearAmount { get; set; }
     }

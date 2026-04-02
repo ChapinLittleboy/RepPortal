@@ -1180,6 +1180,307 @@ public class IdoService : IIdoService
             .ToList();
     }
 
+    public async Task<PackingList> GetPackingListByShipmentAsync(string packNum)
+    {
+        var result = new PackingList();
+        if (string.IsNullOrWhiteSpace(packNum))
+            return result;
+
+        // Line items + order/customer fields from SLCoShips
+        var shipQuery = new Dictionary<string, string>
+        {
+            ["props"] = "BolNumber,CoNum,CoCustNum,CoCustPo,CoLine,CoiItem,CoiDescription,CoiUM,QtyShipped",
+            ["filter"] = Eq("BolNumber", packNum),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var shipResponse = Deserialize(await _csiRestClient.GetAsync("json/SLCoShips/adv", shipQuery));
+        if (shipResponse.MessageCode != 0)
+            throw new InvalidOperationException(shipResponse.Message);
+
+        var shipRows = shipResponse.Items.Select(MapRow<PackingListShipRow>).ToList();
+
+        // Header fields (dates, warehouse, carrier, ship-to address) from ait_ss_bols
+        var bolQuery = new Dictionary<string, string>
+        {
+            ["props"] = "ShipmentId,ShipDate,Whse,ShipCode,CarrierCode,CustNum,ConsigneeName,ConsigneeAddr1,ConsigneeAddr2,ConsigneeAddr3,ConsigneeAddr4,ConsigneeCity,ConsigneeState,ConsigneeZip",
+            ["filter"] = Eq("ShipmentId", packNum),
+            ["rowcap"] = "1",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var bolResponse = Deserialize(await _csiRestClient.GetAsync("json/ait_ss_bols/adv", bolQuery));
+        PackingListBolRow? bol = bolResponse.MessageCode == 0 && bolResponse.Items.Count > 0
+            ? MapRow<PackingListBolRow>(bolResponse.Items[0])
+            : null;
+
+        var firstShip = shipRows.FirstOrDefault();
+        result.Header = new PackingListHeader
+        {
+            PackNum    = packNum,
+            PackDate   = bol?.ShipDate,
+            Whse       = bol?.Whse ?? "",
+            CoNum      = firstShip?.CoNum ?? "",
+            CustNum    = firstShip?.CustNum ?? bol?.CustNum ?? "",
+            ShipCode   = bol?.ShipCode ?? "",
+            Carrier    = bol?.CarrierCode ?? "",
+            ShipAddr   = bol?.ConsigneeName ?? "",
+            ShipAddr2  = bol?.ConsigneeAddr1 ?? "",
+            ShipAddr3  = bol?.ConsigneeAddr2 ?? "",
+            ShipAddr4  = bol?.ConsigneeAddr3 ?? "",
+            ShipCity   = bol?.ConsigneeCity ?? "",
+            ShipState  = bol?.ConsigneeState ?? "",
+            ShipZip    = bol?.ConsigneeZip ?? "",
+            CustPo     = firstShip?.CustPo ?? "",
+        };
+
+        result.Items = shipRows.Select(r => new PackingListItem
+        {
+            CoLine     = r.CoLine,
+            Item       = r.Item ?? "",
+            ItemDesc   = r.ItemDesc ?? "",
+            UM         = r.UM ?? "",
+            ShipmentId = packNum,
+            QtyPicked  = r.QtyShipped,
+            QtyShipped = r.QtyShipped,
+        }).ToList();
+
+        return result;
+    }
+
+    public async Task<List<PackingList>> GetPackingListsByOrderAsync(string coNum)
+    {
+        if (string.IsNullOrWhiteSpace(coNum))
+            return new List<PackingList>();
+
+        // Fetch all shipment lines for this order in one query
+        var shipQuery = new Dictionary<string, string>
+        {
+            ["props"] = "BolNumber,CoNum,CoCustNum,CoCustPo,CoLine,CoiItem,CoiDescription,CoiUM,QtyShipped",
+            ["filter"] = Eq("CoNum", coNum),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var shipResponse = Deserialize(await _csiRestClient.GetAsync("json/SLCoShips/adv", shipQuery));
+        if (shipResponse.MessageCode != 0)
+            throw new InvalidOperationException(shipResponse.Message);
+
+        var shipRows = shipResponse.Items.Select(MapRow<PackingListShipRow>).ToList();
+        if (shipRows.Count == 0)
+            return new List<PackingList>();
+
+        // Group lines by pack number (BolNumber)
+        var byBol = shipRows
+            .Where(r => !string.IsNullOrWhiteSpace(r.BolNumber))
+            .GroupBy(r => r.BolNumber!)
+            .ToList();
+
+        // Fetch all BOL headers in one query
+        var bolNums = byBol.Select(g => g.Key).ToList();
+        var bolQuery = new Dictionary<string, string>
+        {
+            ["props"] = "ShipmentId,ShipDate,Whse,ShipCode,CarrierCode,CustNum,ConsigneeName,ConsigneeAddr1,ConsigneeAddr2,ConsigneeAddr3,ConsigneeAddr4,ConsigneeCity,ConsigneeState,ConsigneeZip",
+            ["filter"] = In("ShipmentId", bolNums),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var bolResponse = Deserialize(await _csiRestClient.GetAsync("json/ait_ss_bols/adv", bolQuery));
+        var bolLookup = (bolResponse.MessageCode == 0
+            ? bolResponse.Items.Select(MapRow<PackingListBolRow>)
+                                .Where(b => !string.IsNullOrWhiteSpace(b.ShipmentId))
+            : Enumerable.Empty<PackingListBolRow>())
+            .ToDictionary(b => b.ShipmentId!, StringComparer.OrdinalIgnoreCase);
+
+        var results = new List<PackingList>();
+        foreach (var group in byBol)
+        {
+            var packNum = group.Key;
+            bolLookup.TryGetValue(packNum, out PackingListBolRow? bol);
+            var firstShip = group.First();
+
+            var pl = new PackingList
+            {
+                Header = new PackingListHeader
+                {
+                    PackNum   = packNum,
+                    PackDate  = bol?.ShipDate,
+                    Whse      = bol?.Whse ?? "",
+                    CoNum     = firstShip.CoNum ?? "",
+                    CustNum   = firstShip.CustNum ?? bol?.CustNum ?? "",
+                    ShipCode  = bol?.ShipCode ?? "",
+                    Carrier   = bol?.CarrierCode ?? "",
+                    ShipAddr  = bol?.ConsigneeName ?? "",
+                    ShipAddr2 = bol?.ConsigneeAddr1 ?? "",
+                    ShipAddr3 = bol?.ConsigneeAddr2 ?? "",
+                    ShipAddr4 = bol?.ConsigneeAddr3 ?? "",
+                    ShipCity  = bol?.ConsigneeCity ?? "",
+                    ShipState = bol?.ConsigneeState ?? "",
+                    ShipZip   = bol?.ConsigneeZip ?? "",
+                    CustPo    = firstShip.CustPo ?? "",
+                },
+                Items = group.Select(r => new PackingListItem
+                {
+                    CoLine     = r.CoLine,
+                    Item       = r.Item ?? "",
+                    ItemDesc   = r.ItemDesc ?? "",
+                    UM         = r.UM ?? "",
+                    ShipmentId = packNum,
+                    QtyPicked  = r.QtyShipped,
+                    QtyShipped = r.QtyShipped,
+                }).ToList()
+            };
+            results.Add(pl);
+        }
+
+        return results;
+    }
+
+    public async Task<List<Customer>> GetCustomersDetailsByRepCodeAsync(string repCode)
+    {
+        // Load supplemental data from local DBs (not available in CSI IDO)
+        using var repConnection = _dbConnectionFactory.CreateRepConnection();
+        var exclusionCodes = (await repConnection.QueryAsync<string>(
+            "SELECT Code FROM CreditHoldReasonCodeExclusions WITH (NOLOCK)"))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        using var batConnection = _dbConnectionFactory.CreateBatConnection();
+        var salesManagerRows = await batConnection.QueryAsync<(string Initials, string Name)>(
+            "SELECT SalesManagerInitials, SalesManagerName FROM Chap_SalesManagers WITH (NOLOCK)");
+        var salesManagerLookup = salesManagerRows
+            .Where(r => !string.IsNullOrWhiteSpace(r.Initials))
+            .ToDictionary(r => r.Initials!, r => r.Name ?? "", StringComparer.OrdinalIgnoreCase);
+
+        // Build IDO filter matching SQL path logic
+        var isAdmin = string.Equals(repCode, "Admin", StringComparison.OrdinalIgnoreCase);
+        var isDal   = string.Equals(repCode, "DAL",   StringComparison.OrdinalIgnoreCase);
+
+        string? filter = null;
+        if (!isAdmin)
+        {
+            if (isDal)
+            {
+                // DAL gets their own customers plus a fixed set of special customer numbers
+                var dalSpecialNums = new[] { "45424", "45427", "45424K", "  45424", "  45427", "  45424K" };
+                filter = $"(Slsman = 'DAL' OR {In("CustNum", dalSpecialNums)})";
+            }
+            else
+            {
+                filter = Eq("Slsman", repCode);
+            }
+        }
+
+        const string props =
+            "CustNum,Name,Slsman,Stat,CustType,CustTypeDescription,CorpCust," +
+            "CreditHold,CreditHoldDate,CreditHoldReason,CreditHoldDescription," +
+            "Addr_1,Addr_2,Addr_3,Addr_4,City,StateCode,Zip,Country," +
+            "cusUf_PROG_BASIS,cusUf_FrtTerms,cusuf_c_slsmgr";
+
+        var query = new Dictionary<string, string>
+        {
+            ["props"]    = props,
+            ["orderby"]  = "Name",
+            ["rowcap"]   = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        if (!string.IsNullOrEmpty(filter))
+            query["filter"] = filter;
+
+        var response = Deserialize(await _csiRestClient.GetAsync("json/SLCustomers/adv", query));
+        if (response.MessageCode != 0)
+            throw new InvalidOperationException(response.Message);
+
+        var customers = response.Items.Select(MapRow<Customer>).ToList();
+
+        // Mirror the SQL WHERE exclusion on credit hold reason codes (those codes live in RepPortal DB)
+        customers = customers
+            .Where(c => string.IsNullOrWhiteSpace(c.CreditHoldReason) ||
+                        !exclusionCodes.Contains(c.CreditHoldReason))
+            .ToList();
+
+        // Populate SalesManagerName from local BAT lookup (Chap_SalesManagers)
+        foreach (var customer in customers)
+        {
+            customer.SalesManagerName =
+                !string.IsNullOrWhiteSpace(customer.SalesManager) &&
+                salesManagerLookup.TryGetValue(customer.SalesManager, out string? name)
+                    ? name
+                    : "To Be Assigned";
+        }
+
+        return customers;
+    }
+
+    public async Task<ItemDetail> GetItemDetailAsync(string item)
+    {
+        // Most recent pricing row — also carries ItmDescription from joined item_mst
+        var priceQuery = new Dictionary<string, string>
+        {
+            ["props"]    = "Item,ItmDescription,UnitPrice1,UnitPrice2,UnitPrice3,EffectDate",
+            ["filter"]   = Eq("Item", item),
+            ["orderby"]  = "EffectDate DESC",
+            ["rowcap"]   = "1",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var priceResponse = Deserialize(await _csiRestClient.GetAsync("json/SLItemprices/adv", priceQuery));
+        if (priceResponse.MessageCode != 0 || priceResponse.Items.Count == 0)
+            return null!;
+
+        var priceRow = priceResponse.Items[0];
+
+        // Item status lives in SLItems, not SLItemprices
+        var itemQuery = new Dictionary<string, string>
+        {
+            ["props"]    = "Item,Stat",
+            ["filter"]   = Eq("Item", item),
+            ["rowcap"]   = "1",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+
+        var itemResponse = Deserialize(await _csiRestClient.GetAsync("json/SLItems/adv", itemQuery));
+        string? stat = null;
+        if (itemResponse.MessageCode == 0 && itemResponse.Items.Count > 0)
+            stat = GetCell(itemResponse.Items[0], "Stat");
+
+        static decimal ParseDecimal(string? raw) =>
+            decimal.TryParse(raw, System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out decimal v) ? v : 0m;
+
+        return new ItemDetail
+        {
+            Item        = GetCell(priceRow, "Item") ?? item,
+            Description = GetCell(priceRow, "ItmDescription") ?? "",
+            Price1      = ParseDecimal(GetCell(priceRow, "UnitPrice1")),
+            Price2      = ParseDecimal(GetCell(priceRow, "UnitPrice2")),
+            Price3      = ParseDecimal(GetCell(priceRow, "UnitPrice3")),
+            ItemStatus  = stat ?? "A"
+        };
+    }
+
+    public Task<List<Dictionary<string, object>>> GetItemSalesReportDataAsync(string repCode, IEnumerable<string>? allowedRegions)
+        => throw new NotImplementedException("GetItemSalesReportDataAsync IDO implementation pending.");
+
+    public Task<(OrderLookupHeader? Header, List<OrderLookupLine> Lines)> GetOrderLookupAsync(string custNum, string normalizedPo, string repCode)
+        => throw new NotImplementedException("GetOrderLookupAsync IDO implementation pending.");
+
     private static MgRestAdvResponse Deserialize(string json) =>
         JsonSerializer.Deserialize<MgRestAdvResponse>(
             json,
@@ -1400,5 +1701,36 @@ public class IdoService : IIdoService
         [CsiField("Name")] public string? Name { get; set; }
         [CsiField("City")] public string? City { get; set; }
         [CsiField("State")] public string? State { get; set; }
+    }
+
+    private sealed class PackingListBolRow
+    {
+        [CsiField("ShipmentId")]     public string? ShipmentId { get; set; }
+        [CsiField("ShipDate")]       public DateTime? ShipDate { get; set; }
+        [CsiField("Whse")]           public string? Whse { get; set; }
+        [CsiField("ShipCode")]       public string? ShipCode { get; set; }
+        [CsiField("CarrierCode")]    public string? CarrierCode { get; set; }
+        [CsiField("CustNum")]        public string? CustNum { get; set; }
+        [CsiField("ConsigneeName")]  public string? ConsigneeName { get; set; }
+        [CsiField("ConsigneeAddr1")] public string? ConsigneeAddr1 { get; set; }
+        [CsiField("ConsigneeAddr2")] public string? ConsigneeAddr2 { get; set; }
+        [CsiField("ConsigneeAddr3")] public string? ConsigneeAddr3 { get; set; }
+        [CsiField("ConsigneeAddr4")] public string? ConsigneeAddr4 { get; set; }
+        [CsiField("ConsigneeCity")]  public string? ConsigneeCity { get; set; }
+        [CsiField("ConsigneeState")] public string? ConsigneeState { get; set; }
+        [CsiField("ConsigneeZip")]   public string? ConsigneeZip { get; set; }
+    }
+
+    private sealed class PackingListShipRow
+    {
+        [CsiField("BolNumber")]      public string? BolNumber { get; set; }
+        [CsiField("CoNum")]          public string? CoNum { get; set; }
+        [CsiField("CoCustNum")]      public string? CustNum { get; set; }
+        [CsiField("CoCustPo")]       public string? CustPo { get; set; }
+        [CsiField("CoLine")]         public int CoLine { get; set; }
+        [CsiField("CoiItem")]        public string? Item { get; set; }
+        [CsiField("CoiDescription")] public string? ItemDesc { get; set; }
+        [CsiField("CoiUM")]          public string? UM { get; set; }
+        [CsiField("QtyShipped")]     public decimal QtyShipped { get; set; }
     }
 }

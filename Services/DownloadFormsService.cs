@@ -14,9 +14,9 @@ public interface IFormsDownloadService
 
 public class DownloadFormsService : IFormsDownloadService
 {
-    private readonly string _connString;
+    private readonly string? _connString;
     private readonly IWebHostEnvironment _env;
-    private readonly string _root;
+    private readonly string? _root;
     private readonly string _route;
 
 

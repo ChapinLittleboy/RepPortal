@@ -4,10 +4,10 @@ namespace RepPortal.Models;
 
 public class InsuranceRequest
 {
-    public string RepCode { get; set; }
+    public string? RepCode { get; set; }
     public string? ExistingCustomerId { get; set; }
-    public NewCustomerInfo NewCustomer { get; set; }
-    public string Notes { get; set; }
+    public NewCustomerInfo? NewCustomer { get; set; }
+    public string? Notes { get; set; }
     public List<IFormFile> Attachments { get; set; } = new();
 }
 

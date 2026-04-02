@@ -71,7 +71,9 @@ else if (_dashboardData != null)
                         <ChartSeriesCollection>
                             <ChartSeries DataSource="@_dashboardData.FeatureUsage.OrderByDescending(f => f.UsageCount).Take(10)"
                                          XName="Feature" YName="UsageCount" Type="ChartSeriesType.Bar" Name="Features">
-                                <ChartSeriesDataLabel Visible="true" Position="LabelPosition.Outside"/>
+                                <ChartMarker>
+                                    <ChartDataLabel Visible="true" Position="LabelPosition.Outer"></ChartDataLabel>
+                                </ChartMarker>
                             </ChartSeries>
                         </ChartSeriesCollection>
                         <ChartTooltipSettings Enable="true"/>
@@ -93,7 +95,9 @@ else if (_dashboardData != null)
                         <ChartSeriesCollection>
                             <ChartSeries DataSource="@_dashboardData.RepCodeUsage.OrderByDescending(r => r.UsageCount).Take(10)"
                                          XName="RepCode" YName="UsageCount" Type="ChartSeriesType.Bar" Name="Rep Codes">
-                                <ChartSeriesDataLabel Visible="true" Position="LabelPosition.Top"/>
+                                <ChartMarker>
+                                    <ChartDataLabel Visible="true" Position="LabelPosition.Top"></ChartDataLabel>
+                                </ChartMarker>
                             </ChartSeries>
                         </ChartSeriesCollection>
                         <ChartTooltipSettings Enable="true"/>
@@ -115,7 +119,7 @@ else if (_dashboardData != null)
                         <ChartSeriesCollection>
                             <ChartSeries DataSource="@_dashboardData.UsageOverTime.OrderBy(u => u.Date)"
                                          XName="Date" YName="UsageCount" Type="ChartSeriesType.Line" Name="Views">
-                                <ChartSeriesMarker Visible="true"/>
+                                <ChartMarker Visible="true"></ChartMarker>
                             </ChartSeries>
                         </ChartSeriesCollection>
                         <ChartTooltipSettings Enable="true"/>

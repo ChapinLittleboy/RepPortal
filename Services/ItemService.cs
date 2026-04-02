@@ -26,8 +26,8 @@ public class ItemService : IItemService
     private readonly IIdoService _idoService;
     private readonly CsiOptions _csiOptions;
 
-    private List<ItemInfo> _itemsCache;
-    private Dictionary<string, ItemDetail> _detailsCache;
+    private List<ItemInfo>? _itemsCache;
+    private Dictionary<string, ItemDetail>? _detailsCache;
 
     public ItemService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider,
         IRepCodeContext repCodeContext, IDbConnectionFactory dbConnectionFactory, CustomerService customerService,

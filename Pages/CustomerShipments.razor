@@ -171,24 +171,24 @@
 
 
 @code {
-	private SfGrid<CustomerShipment> Grid;
+	private SfGrid<CustomerShipment>? Grid;
 	private List<CustomerShipment> ShipmentsData = new List<CustomerShipment>();
 
 	private bool isLoading = false;
 	private bool showTip = false;
-	private IEnumerable<string> CustomerTypes;
+	private IEnumerable<string>? CustomerTypes;
 	private bool isReady = false;
 	private int NumericValue = 50; // Default value for the combo box DeBounceDelay
-	private IEnumerable<Customer> CustomerEList;
+	private IEnumerable<Customer>? CustomerEList;
 	private List<Customer> CustomerList = new List<Customer>();
 	private string WantedCustNum = string.Empty;
-	public SfComboBox<string, Customer> WantedCust { get; set; }
+	public SfComboBox<string, Customer>? WantedCust { get; set; }
 	private bool isLawlessRep = false;
-	private IEnumerable<CustType> CustomerTypesList;
+	private IEnumerable<CustType>? CustomerTypesList;
 
 
-	private AuthenticationState authState;
-	private ApplicationUser currentUser;
+	private AuthenticationState? authState;
+	private ApplicationUser? currentUser;
 
 	private SalesService.ShipmentsParameters parameters = new SalesService.ShipmentsParameters();
 

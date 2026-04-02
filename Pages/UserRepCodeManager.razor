@@ -90,8 +90,8 @@ else
 }
 
 @code {
-    private List<UserWithEdit> users;
-    private SfGrid<UserWithEdit> Grid;
+    private List<UserWithEdit>? users;
+    private SfGrid<UserWithEdit>? Grid;
 
     protected override async Task OnInitializedAsync()
     {
@@ -178,14 +178,14 @@ else
 
     private class UserWithEdit
     {
-        public string Id { get; set; }
-        public string Email { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string RepCode { get; set; }
-        public string EditedRepCode { get; set; }
-        public string Region { get; set; }
-        public string EditedRegion { get; set; }
+        public string? Id { get; set; }
+        public string? Email { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? RepCode { get; set; }
+        public string? EditedRepCode { get; set; }
+        public string? Region { get; set; }
+        public string? EditedRegion { get; set; }
         public bool IsActive { get; set; }
     }
 }

@@ -10,7 +10,7 @@ public class TitleService
         _helpContentService = helpContentService;
     }
 
-    public event Action OnTitleChanged;
+    public event Action? OnTitleChanged;
 
     private string _pageSubtitle = string.Empty;
     public string PageSubtitle

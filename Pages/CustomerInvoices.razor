@@ -164,21 +164,21 @@
     // Optional route parameter (null when not supplied)
     [Parameter] public string? OrderNo { get; set; }
 
-    private SfGrid<InvoiceRptDetail> Grid;
+    private SfGrid<InvoiceRptDetail>? Grid;
     private List<InvoiceRptDetail> InvoiceData = new List<InvoiceRptDetail>();
-    private IEnumerable<string> CustomerTypes;
-    private IEnumerable<Customer> CustomerEList;
+    private IEnumerable<string>? CustomerTypes;
+    private IEnumerable<Customer>? CustomerEList;
     private List<Customer> CustomerList = new List<Customer>();
     private string WantedCustNum = string.Empty;
     private int NumericValue = 50; // Default value for the combo box DeBounceDelay
     private bool isLoading = false;
     private bool showTip = false;
     private bool isReady = false;
-    private IEnumerable<CustType> CustomerTypesList;
+    private IEnumerable<CustType>? CustomerTypesList;
 
-    private AuthenticationState authState;
-    private ApplicationUser currentUser;
-    public SfComboBox<string, Customer> WantedCust { get; set; }
+    private AuthenticationState? authState;
+    private ApplicationUser? currentUser;
+    public SfComboBox<string, Customer>? WantedCust { get; set; }
 
     private SalesService.InvoiceRptParameters parameters = new SalesService.InvoiceRptParameters();
     private string[] GroupColumns =>

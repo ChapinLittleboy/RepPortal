@@ -6,7 +6,7 @@ using RepPortal.Models;
 namespace RepPortal.Services;
 public class MarketingFileService
 {
-    private readonly string _connString;
+    private readonly string? _connString;
 
     public MarketingFileService(IConfiguration config)
     {

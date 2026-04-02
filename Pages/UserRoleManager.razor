@@ -60,7 +60,7 @@ else
 }
 
 @code {
-    private List<UserWithRoles> users;
+    private List<UserWithRoles>? users;
     private List<string> allRoles = new();
    
 
@@ -130,9 +130,9 @@ else
 
     private class UserWithRoles
     {
-        public ApplicationUser User { get; set; }
-        public List<string> Roles { get; set; }
-        public string SelectedRole { get; set; }
+        public ApplicationUser? User { get; set; }
+        public List<string>? Roles { get; set; }
+        public string? SelectedRole { get; set; }
         
     }
 }

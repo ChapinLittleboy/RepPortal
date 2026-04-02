@@ -2,8 +2,8 @@
 
 public class CustomerOrderSummary
 {
-    public string Cust { get; set; } // Customer Number
-    public string Name { get; set; } // Customer Name (CorpName)
+    public string? Cust { get; set; } // Customer Number
+    public string? Name { get; set; } // Customer Name (CorpName)
     public int ShippableUnits { get; set; } // Shippable_U
     public int FutureUnits { get; set; } // Future_U
     public int TotalUnits { get; set; } // Total_U
@@ -19,14 +19,14 @@ public class CustomerOrderSummary
 // In your Models folder (e.g., Models/OrderDetail.cs)
 public class OrderDetailxx
 {
-    public string Cust { get; set; }
-    public string CustName { get; set; }
+    public string? Cust { get; set; }
+    public string? CustName { get; set; }
     public DateTime DueDate { get; set; }
     public DateTime OrdDate { get; set; }
     public DateTime? PromDate { get; set; }
     public string? CustPO { get; set; }
     public string? CoNum { get; set; }
-    public string Item { get; set; }
+    public string? Item { get; set; }
     public string? ItemDesc { get; set; }
 
     public decimal Price { get; set; }
@@ -43,8 +43,8 @@ public class OrderDetailxx
 }
 public class CustomerOrderSummaryExport
 {
-    public string Cust { get; set; } // Customer Number
-    public string Name { get; set; } // Customer Name (CorpName)
+    public string? Cust { get; set; } // Customer Number
+    public string? Name { get; set; } // Customer Name (CorpName)
     public int ShippableUnits { get; set; } // Shippable_U
     public int FutureUnits { get; set; } // Future_U
     public int TotalUnits { get; set; } // Total_U

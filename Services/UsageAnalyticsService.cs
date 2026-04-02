@@ -16,7 +16,7 @@ namespace RepPortal.Services
 
     public class UsageAnalyticsService : IUsageAnalyticsService
     {
-        private readonly string _connectionString;
+        private readonly string? _connectionString;
 
         /// <summary>
         /// The service is initialized with the database connection string.

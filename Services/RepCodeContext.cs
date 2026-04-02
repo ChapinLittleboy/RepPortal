@@ -20,7 +20,7 @@ public interface IRepCodeContext
 public class RepCodeContext : IRepCodeContext
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private string _overriddenCode;
+    private string? _overriddenCode;
     private List<string> _overriddenRegions = new();
 
 
@@ -94,7 +94,7 @@ public class RepCodeContext : IRepCodeContext
 
     List<string> IRepCodeContext.CurrentRegions { get => CurrentRegions; set => throw new NotImplementedException(); }
 
-    public event Action OnRepCodeChanged;
+    public event Action? OnRepCodeChanged;
 
 
     public void OverrideRepCode(string newCode)

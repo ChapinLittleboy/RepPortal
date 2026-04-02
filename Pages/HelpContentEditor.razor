@@ -41,8 +41,8 @@
 
 @code {
     private List<PageDefinition> pageList = new();
-    private string selectedPageKey;
-    private PageDefinition selectedPage;
+    private string? selectedPageKey;
+    private PageDefinition? selectedPage;
     private HelpContent helpContent = new();
 
     protected override async Task OnInitializedAsync()
