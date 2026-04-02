@@ -3,8 +3,6 @@
 @using Syncfusion.Blazor.Inputs
 @using Syncfusion.Blazor.Popups
 @using Microsoft.AspNetCore.Components.Authorization
-@using System.Security.Claims
-@using Microsoft.IdentityModel.Tokens
 @using Syncfusion.Blazor.SplitButtons
 
 
@@ -97,7 +95,7 @@
 			  Header="About This Form">
 		<DialogTemplates>
 			<Content>
-				@((MarkupString)TitleService.PageHelpContent)
+				@((MarkupString)(TitleService.PageHelpContent ?? string.Empty))
 			</Content>
 		</DialogTemplates>
 	</SfDialog>
@@ -106,78 +104,57 @@
 
 @code
 {
-	private string eventName = "No";
-	private string welcomemsg;
-	private string FirstName;
+	private string welcomemsg = string.Empty;
 	private bool isAdmin;
-	private bool isSuperUser;
-	private IEnumerable<Claim> claims;
+	private readonly List<DropDownMenuItem> ReportItems =
+	[
+		CreateDropDownMenuItem("Rep Customer List - Active & Inactive Accounts", "customerlist"),
+		CreateDropDownMenuItem("Quick Order Lookup - Order/PO # Status", "quickorderlookup"),
+		CreateDropDownMenuItem("Print Packing Lists", "packinglists"),
+		CreateDropDownMenuItem("Sales Rep - Monthly Invoiced Sales Reports", "salesrepmonthlyinvoicesales"),
+		CreateDropDownMenuItem("Open Orders Report", "openordersreport"),
+		CreateDropDownMenuItem("Shipments Report", "shipmentsreport"),
+		CreateDropDownMenuItem("Invoiced Accounts Report", "invoicesreport"),
+		CreateDropDownMenuItem("Monthly Sales Report - Historic Territory Based Sales", "monthlysalesreport"),
+		CreateDropDownMenuItem("Monthly Sales by Item Report - Historic Territory Based Sales", "monthlysalesbyitemreport"),
+		CreateDropDownMenuItem("Pivot table Sales by Item - Historic Territory Based Sales", "pivotsalesbyitemreport")
+	];
 
+	private readonly List<DropDownMenuItem> PricingItems =
+	[
+		CreateDropDownMenuItem("SPR/PCF Log", "pcflogpage"),
+		CreateDropDownMenuItem("Item Pricing", "itempricingpage")
+	];
 
-	private List<DropDownMenuItem> ReportItems = new()
-	{
-		new DropDownMenuItem { Text = "Rep Customer List - Active & Inactive Accounts", Id = "customerlist" },
-		new DropDownMenuItem { Text = "Quick Order Lookup - Order/PO # Status", Id = "quickorderlookup" },
-		new DropDownMenuItem { Text = "Print Packing Lists", Id = "packinglists" },
-		new DropDownMenuItem { Text = "Sales Rep - Monthly Invoiced Sales Reports", Id = "salesrepmonthlyinvoicesales" },
-		new DropDownMenuItem { Text = "Open Orders Report", Id = "openordersreport" },
-		new DropDownMenuItem { Text = "Shipments Report", Id = "shipmentsreport" },
-		new DropDownMenuItem { Text = "Invoiced Accounts Report", Id = "invoicesreport" },
-		new DropDownMenuItem { Text = "Monthly Sales Report - Historic Territory Based Sales", Id = "monthlysalesreport" },
-		new DropDownMenuItem { Text = "Monthly Sales by Item Report - Historic Territory Based Sales", Id = "monthlysalesbyitemreport" },
-		new DropDownMenuItem { Text = "Pivot table Sales by Item - Historic Territory Based Sales", Id = "pivotsalesbyitemreport" }
-	};
+	private readonly List<DropDownMenuItem> FormsItems =
+	[
+		CreateDropDownMenuItem("Forms", "formspage"),
+		CreateDropDownMenuItem("Request Certificate of Insurance", "coirequest")
+	];
 
-	private List<DropDownMenuItem> PricingItems = new()
-	{
-		new DropDownMenuItem { Text = "SPR/PCF Log", Id = "pcflogpage" },
-		new DropDownMenuItem { Text = "Item Pricing", Id = "itempricingpage" }
-	};
+	private readonly List<DropDownMenuItem> MarketingItems =
+	[
+		CreateDropDownMenuItem("Marketing", "marketingpage")
+	];
 
-	private List<DropDownMenuItem> FormsItems = new()
-	{
-        new DropDownMenuItem { Text = "Forms", Id = "formspage" },
-        new DropDownMenuItem { Text = "Request Certificate of Insurance", Id = "coirequest" }
-	};
+	private readonly List<DropDownMenuItem> ContactItems =
+	[
+		CreateDropDownMenuItem("Download Contacts", "downloadcontacts")
+	];
 
-	private List<DropDownMenuItem> MarketingItems = new()
-	{
-		new DropDownMenuItem { Text = "Marketing", Id = "marketingpage" }
-	};
-
-	private List<DropDownMenuItem> ContactItems = new()
-	{
-		new DropDownMenuItem { Text = "Download Contacts", Id = "downloadcontacts" }
-	};
-
-	private List<DropDownMenuItem> AdminItems = new()
-	{
-        new DropDownMenuItem { Text = "Usage Dashboard", Id = "usagedashboard" },
-        new DropDownMenuItem { Text = "Manage User Roles", Id = "manageuserroles" },
-		new DropDownMenuItem { Text = "Debug User Identity", Id = "debuguseridentity" },
-		new DropDownMenuItem { Text = "Manage RepCodes", Id = "managerepcodes" },
-		new DropDownMenuItem { Text = "Manage Folders", Id = "managefolders" },
-		new DropDownMenuItem { Text = "Manage Marketing Files", Id = "managemarketingfiles" },
-		new DropDownMenuItem { Text = "Manage Page Help Text", Id = "pagehelp" },
-		new DropDownMenuItem { Text = "Connected Users", Id = "connectedusers" },
-		new DropDownMenuItem { Text = "Manage Excluded Hold Code", Id = "manageexcludedholdcodes" },
-        new DropDownMenuItem { Text = "IDO Props builder", Id = "idopropsbuilder" }
-	};
-
-	private void itemSelectedxxx(Syncfusion.Blazor.Navigations.MenuEventArgs<DropDownMenuItem> args)
-	{
-		var id = args.Item.Id;
-		if (!string.IsNullOrEmpty(id))
-		{
-			//NavigationManager.NavigateTo(id);
-		}
-	}
-
-	public class ItemModel
-	{
-		public string Text { get; set; }
-		public string Id { get; set; }
-	}
+	private readonly List<DropDownMenuItem> AdminItems =
+	[
+		CreateDropDownMenuItem("Usage Dashboard", "usagedashboard"),
+		CreateDropDownMenuItem("Manage User Roles", "manageuserroles"),
+		CreateDropDownMenuItem("Debug User Identity", "debuguseridentity"),
+		CreateDropDownMenuItem("Manage RepCodes", "managerepcodes"),
+		CreateDropDownMenuItem("Manage Folders", "managefolders"),
+		CreateDropDownMenuItem("Manage Marketing Files", "managemarketingfiles"),
+		CreateDropDownMenuItem("Manage Page Help Text", "pagehelp"),
+		CreateDropDownMenuItem("Connected Users", "connectedusers"),
+		CreateDropDownMenuItem("Manage Excluded Hold Code", "manageexcludedholdcodes"),
+		CreateDropDownMenuItem("IDO Props builder", "idopropsbuilder")
+	];
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -185,13 +162,12 @@
 		var user = authState.User;
 
 
-		if (user.Identity.IsAuthenticated)
+		if (user.Identity?.IsAuthenticated == true)
 		{
 			var firstName = user.FindFirst(c => c.Type == "FirstName")?.Value;
 			var lastName = user.FindFirst(c => c.Type == "LastName")?.Value;
 			welcomemsg = $"{firstName} {lastName}!";
 			isAdmin = user.IsInRole("Administrator") || user.IsInRole("SuperUser");
-			isSuperUser = user.IsInRole("SuperUser");
 		}
 		else
 		{
@@ -204,11 +180,14 @@
 		TitleService.OnTitleChanged += StateHasChanged;
 	}
 
-	private SfDialog HelpDialog;
+	private SfDialog? HelpDialog;
 
 	private async Task OpenHelpDialog()
 	{
-		await HelpDialog.ShowAsync();
+		if (HelpDialog is not null)
+		{
+			await HelpDialog.ShowAsync();
+		}
 	}
 
 	private void OnRepCodeChanged()
@@ -222,25 +201,6 @@
 	}
 
 
-	private async Task<string> GetRepDisplayAsyncNotUsed()
-	{
-		var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-		var user = authState.User;
-
-		var userRepCode = user.FindFirst("RepCode")?.Value ?? string.Empty;
-		var effectiveRepCode = RepCodeContext.CurrentRepCode;
-		var agencyName = SalesService.GetRepAgency(effectiveRepCode);
-
-		var isOverridden = userRepCode != effectiveRepCode;
-
-		var repDisplay = isOverridden
-			? $"<span title=\"Impersonating another rep\">[{effectiveRepCode}*]</span> {agencyName}"
-			: $"[{effectiveRepCode}] {agencyName}";
-
-		return repDisplay;
-	}
-
-
 	private string GetRepFullName(System.Security.Claims.ClaimsPrincipal user)
 	{
 		// You might get this information from claims
@@ -251,36 +211,6 @@
 		var agencyName = SalesService.GetRepAgency(repCode); // Assuming this is a synchronous call for simplicity
 
 		return $"[{repCode}]  {agencyName}";
-	}
-
-	private async Task<string> GetRegionsAsync()
-	{
-		var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-		var user = authState.User;
-
-		bool isAdmin = user.IsInRole("Administrator");
-		var allRegions = RepCodeContext.CurrentRegions;
-
-		// If not an admin, show only the user's single assigned region (from AspNetUsers)
-		if (!isAdmin)
-		{
-			// Assuming only one Region claim per non-admin
-			var singleRegion = allRegions.FirstOrDefault();
-			if (!string.IsNullOrWhiteSpace(singleRegion))
-			{
-				return $"Region: {singleRegion}";
-			}
-
-			return string.Empty;
-		}
-
-		// Admins see all regions from the RepCodeContext (claims or overrides)
-		if (allRegions != null && allRegions.Any())
-		{
-			return "Regions: " + string.Join(", ", allRegions);
-		}
-
-		return string.Empty;
 	}
 
 	private string GetRegions()
@@ -299,7 +229,7 @@
 		}
 		else
 		{
-			if (!RepCodeContext.AssignedRegion.IsNullOrEmpty())
+			if (!string.IsNullOrEmpty(RepCodeContext.AssignedRegion))
 			{
 				var regionmsg = "Region: " + RepCodeContext.AssignedRegion;
 				return regionmsg;
@@ -319,7 +249,6 @@
 		//Selected menu item
 		var selectedItem = args.Item.Text;
 		var selectedId = args.Item.Id;
-		this.eventName = "ItemSelected";
 		string rpttype = null;
 
 		if (args.Item.HtmlAttributes != null &&
@@ -340,7 +269,7 @@
        
 
 
-		TitleService.LoadPageHelpContentAsync(selectedId);
+		_ = TitleService.LoadPageHelpContentAsync(selectedId);
         TitleService.PageHelpLinkText = "Report Description/Explanation";  // The default
 
 		switch (selectedId)
@@ -455,6 +384,16 @@
     {
         await JS.InvokeVoidAsync("window.open", "/RepDocs/Chapin%20International%20Internal%20Departmental%20Contacts.pdf?v=1", "_blank");
     }
+
+#pragma warning disable BL0005
+	private static DropDownMenuItem CreateDropDownMenuItem(string text, string id)
+	{
+		var item = new DropDownMenuItem();
+		item.Text = text;
+		item.Id = id;
+		return item;
+	}
+#pragma warning restore BL0005
 }
 
 <style>

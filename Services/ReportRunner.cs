@@ -15,7 +15,7 @@ namespace RepPortal.Services
     public sealed class ReportRunner
     {
         private readonly IUserContextResolver _userCtx;
-        private readonly SmtpEmailSender _email;
+        private readonly IAttachmentEmailSender _email;
 
         private readonly IInvoicedAccountsReport _invoicedAccounts;
         private readonly IShipmentsReport _shipments;
@@ -28,7 +28,7 @@ namespace RepPortal.Services
 
         public ReportRunner(
             IUserContextResolver userCtx,
-            SmtpEmailSender email,
+            IAttachmentEmailSender email,
             IInvoicedAccountsReport invoicedAccounts,
             IShipmentsReport shipments,
             IExcelReportExporter excel,
@@ -69,10 +69,13 @@ namespace RepPortal.Services
                     break;
                 }
 
+                case ReportType.Shipments:
                 case ReportType.ShipmentsNotImplemented:
-                    data = await _shipments.GetAsync(repCode, regions, cust, start, end);
-                    await EmailAsync(req.Email, "Shipments", data, start, end);
+                {
+                    var tz = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+                    await RunShipmentsAsync(req, tz);
                     break;
+                }
 
                 case ReportType.ExpiringPCFNotications:
                     await _expiringPcfNotificationsJob.RunAsync();
@@ -183,6 +186,47 @@ namespace RepPortal.Services
                 _ => (firstThis, nowLocal.Date.AddDays(1))
             };
         }
+        private async Task RunShipmentsAsync(ReportRequest req, TimeZoneInfo tz)
+        {
+            var ctx = await _userCtx.ResolveByEmailAsync(req.Email)
+                      ?? throw new InvalidOperationException($"No user context for {req.Email}");
+
+            var code = Enum.TryParse<DateRangeCodeType>(req.DateRangeCode ?? "", true, out var parsed)
+                ? parsed
+                : DateRangeCodeType.CurrentMonth;
+            var (beginLocal, endLocalExclusive) = ToDateRangeLocal(code, tz);
+
+            var rows = await _shipments.GetAsync(
+                repCode:       ctx.RepCode,
+                allowedRegions: ctx.AllowedRegions,
+                customerId:    req.CustomerId,
+                startDate:     ClampToSqlDateTime(beginLocal),
+                endDate:       endLocalExclusive);
+
+            var title    = "Shipments";
+            var subtitle = $"{beginLocal:yyyy-MM-dd} – {endLocalExclusive.AddDays(-1):yyyy-MM-dd}";
+            var bytes = _excel.Export(rows, new ExcelExportOptions(
+                WorksheetName:   "Shipments",
+                Title:           title,
+                Subtitle:        subtitle,
+                DateColumns:     new[] { nameof(CustomerShipment.ShipDate), nameof(CustomerShipment.DueDate) },
+                CurrencyColumns: new[] { nameof(CustomerShipment.Price), nameof(CustomerShipment.ExtLinePrice) }));
+
+            var subject = $"{title} ({subtitle})";
+            var body    = $"<p>Attached: {title} for {subtitle}.</p>";
+
+            await _email.SendAsync(
+                toEmail:     req.Email,
+                subject:     subject,
+                htmlBody:    body,
+                attachments: new[]
+                {
+                    (FileName:    $"Shipments_{ClampToSqlDateTime(beginLocal):yyyy-MM-dd}_{endLocalExclusive.AddDays(-1):yyyy-MM-dd}.xlsx",
+                     Bytes:       bytes,
+                     ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                });
+        }
+
         private async Task RunInvoicedAccountsAsync(ReportRequest req, TimeZoneInfo tz)
         {
             var ctx = await _userCtx.ResolveByEmailAsync(req.Email)

@@ -8,8 +8,11 @@ DataSource="@FileList"
 Toolbar="@(new[] { "Add", "Edit", "Delete", "Update", "Cancel" })"
 AllowPaging="true"
 AllowSorting="true"
-EditSettings="@GridSettings"
 Width="100%">
+    <GridEditSettings AllowEditing="true"
+                      AllowAdding="true"
+                      AllowDeleting="true"
+                      Mode="EditMode.Normal" />
     <GridColumns>
         <GridColumn Field="Id" HeaderText="ID" IsPrimaryKey="true" Visible="false"></GridColumn>
         <GridColumn Field="DisplayName" HeaderText="Display Name" Width="200"></GridColumn>
@@ -34,13 +37,6 @@ Width="100%">
     private List<string> FolderPaths = new();
 
     private string abc = "NotSet";
-    private GridEditSettings GridSettings = new()
-        {
-            AllowEditing = true,
-            AllowAdding = true,
-            AllowDeleting = true,
-            Mode = EditMode.Normal
-        };
 
     private EventCallback<ActionEventArgs<MarketingFile>> ActionCompleteCallback =>
         EventCallback.Factory.Create<ActionEventArgs<MarketingFile>>(this, OnGridActionComplete);

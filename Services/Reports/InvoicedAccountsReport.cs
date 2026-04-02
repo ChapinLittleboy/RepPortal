@@ -1,8 +1,10 @@
 ﻿using System.Data;
 using Dapper;
 using Microsoft.Extensions.Logging;
-using RepPortal.Data; // your factory namespace
-using RepPortal.Models; // InvoiceRptDetail
+using Microsoft.Extensions.Options;
+using RepPortal.Data;
+using RepPortal.Models;
+using RepPortal.Services;
 
 
 public interface IInvoicedAccountsReport
@@ -18,16 +20,24 @@ public interface IInvoicedAccountsReport
         string? endUserType = null,
         string? coNum = null);
 }
-public sealed class InvoicedAccountsReport : IInvoicedAccountsReport
 
+public sealed class InvoicedAccountsReport : IInvoicedAccountsReport
 {
     private readonly IDbConnectionFactory _dbFactory;
     private readonly ILogger<InvoicedAccountsReport> _logger;
+    private readonly IIdoService _idoService;
+    private readonly CsiOptions _csiOptions;
 
-    public InvoicedAccountsReport(IDbConnectionFactory dbFactory, ILogger<InvoicedAccountsReport> logger)
+    public InvoicedAccountsReport(
+        IDbConnectionFactory dbFactory,
+        ILogger<InvoicedAccountsReport> logger,
+        IIdoService idoService,
+        IOptions<CsiOptions> csiOptions)
     {
         _dbFactory = dbFactory;
         _logger = logger;
+        _idoService = idoService;
+        _csiOptions = csiOptions.Value;
     }
 
     public async Task<List<InvoiceRptDetail>> GetAsync(
@@ -41,47 +51,62 @@ public sealed class InvoicedAccountsReport : IInvoicedAccountsReport
             string? endUserType = null,
             string? coNum = null)
     {
-        // Build the regions CSV exactly like your Blazor method did
-        string? allowedRegionsCsv = (allowedRegions is { Count: > 0 })
+        _logger?.LogInformation(
+            "InvoicedAccounts: Rep={Rep} Cust={Cust} Range=[{Begin}->{End}) Regions={Regions} UseApi={UseApi}",
+            repCode, customerId ?? "(ALL)",
+            beginLocal, endLocalExclusive,
+            allowedRegions is { Count: > 0 } ? string.Join(",", allowedRegions) : "(none)",
+            _csiOptions.UseApi);
+
+        if (_csiOptions.UseApi)
+        {
+            var parameters = new SalesService.InvoiceRptParameters
+            {
+                RepCode          = repCode,
+                BeginInvoiceDate = beginLocal,
+                EndInvoiceDate   = endLocalExclusive,
+                CustNum          = customerId,
+                CorpNum          = corpNum,
+                CustType         = custType,
+                EndUserType      = endUserType,
+                CoNum            = coNum,
+                AllowedRegions   = allowedRegions?.ToList() ?? new List<string>(),
+            };
+            return await _idoService.GetInvoiceRptDataAsync(parameters, repCode);
+        }
+
+        // SQL path
+        string? allowedRegionsCsv = allowedRegions is { Count: > 0 }
             ? string.Join(",", allowedRegions)
             : null;
 
-        using var conn = _dbFactory.CreateRepConnection(); // returns IDbConnection
-        conn.Open(); // sync open is fine in a Hangfire job
-
-        // If you prefer async open and you know it's SqlConnection:
-        // if (conn is SqlConnection sc) await sc.OpenAsync();
-
-        _logger?.LogInformation(
-            "InvoicedAccounts: Rep={Rep} Cust={Cust} Range=[{Begin}->{End}) Regions={Regions}",
-            repCode, customerId ?? "(ALL)",
-            beginLocal, endLocalExclusive, allowedRegionsCsv ?? "(none)");
+        using var conn = _dbFactory.CreateRepConnection();
+        conn.Open();
 
         var results = await conn.QueryAsync<InvoiceRptDetail>(@"
-                EXEC RepPortal.dbo.sp_GetInvoices 
-                     @BeginInvoiceDate, 
-                     @EndInvoiceDate, 
-                     @RepCode, 
-                     @CustNum, 
-                     @CorpNum, 
-                     @CustType, 
+                EXEC RepPortal.dbo.sp_GetInvoices
+                     @BeginInvoiceDate,
+                     @EndInvoiceDate,
+                     @RepCode,
+                     @CustNum,
+                     @CorpNum,
+                     @CustType,
                      @EndUserType,
                      @AllowedRegions;",
             new
             {
                 BeginInvoiceDate = beginLocal,
-                EndInvoiceDate = endLocalExclusive,
-                RepCode = repCode,           // security
-                CustNum = customerId,        // nullable
-                CorpNum = corpNum,           // nullable
-                CustType = custType,          // nullable
-                EndUserType = endUserType,       // nullable
-                AllowedRegions = allowedRegionsCsv  // nullable CSV
+                EndInvoiceDate   = endLocalExclusive,
+                RepCode          = repCode,
+                CustNum          = customerId,
+                CorpNum          = corpNum,
+                CustType         = custType,
+                EndUserType      = endUserType,
+                AllowedRegions   = allowedRegionsCsv
             });
 
         IEnumerable<InvoiceRptDetail> filtered = results;
 
-        // Preserve your optional CoNum post-filter
         if (!string.IsNullOrWhiteSpace(coNum))
         {
             var match = coNum.Trim().ToUpperInvariant();

@@ -1,6 +1,8 @@
 ﻿using System.Data;
 using System.Globalization;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Options;
+using RepPortal.Models;
 
 namespace RepPortal.Services;
 
@@ -25,9 +27,14 @@ public class PackingListService
     private readonly string _appDb;
     private readonly string _spShipmentsByOrder;
     private readonly Dictionary<string, SiteProcConfig> _siteMap;
+    private readonly IIdoService _idoService;
+    private readonly CsiOptions _csiOptions;
 
-    public PackingListService(IConfiguration cfg)
+    public PackingListService(IConfiguration cfg, IIdoService idoService, IOptions<CsiOptions> csiOptions)
     {
+        _idoService = idoService;
+        _csiOptions = csiOptions.Value;
+
         _appDb = cfg.GetConnectionString("BatAppConnection")
                  ?? throw new InvalidOperationException("Missing connection string 'BAT'.");
 
@@ -51,19 +58,26 @@ public class PackingListService
                 };
             }
         }
-        if (_siteMap.Count == 0)
+
+        // Site map is only required when using the SQL path.
+        if (!_csiOptions.UseApi && _siteMap.Count == 0)
             throw new InvalidOperationException("No site configurations found under 'Sites'.");
     }
 
     /// <summary>Legacy single-site call (defaults to BAT). Prefer the overload with site.</summary>
-    public Task<RepPortal.Models.PackingList> GetPackingListByShipmentAsync(string packNum, CancellationToken ct = default)
-        => GetPackingListByShipmentAsync(packNum, site: "BAT", ct);
+    public Task<PackingList> GetPackingListByShipmentAsync(string packNum, CancellationToken ct = default)
+    {
+        if (_csiOptions.UseApi)
+            return _idoService.GetPackingListByShipmentAsync(packNum);
+
+        return GetPackingListByShipmentAsync(packNum, site: "BAT", ct);
+    }
 
     /// <summary>Get a packing list for a given pack number at a given site (BAT/KENT).</summary>
-    public async Task<RepPortal.Models.PackingList> GetPackingListByShipmentAsync(
+    public async Task<PackingList> GetPackingListByShipmentAsync(
         string packNum, string site, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(packNum)) return new RepPortal.Models.PackingList();
+        if (string.IsNullOrWhiteSpace(packNum)) return new PackingList();
         if (!_siteMap.TryGetValue(site ?? "", out var siteCfg))
             throw new ArgumentException($"Unknown site '{site}'. Configure it under Sites:* in appsettings.json.");
 
@@ -140,9 +154,12 @@ public class PackingListService
     /// Given a co_num, get all (site, pack_num) keys then hydrate each into a full PackingList
     /// using the proper site's connection/procedure. Parallel with throttling.
     /// </summary>
-    public async Task<List<RepPortal.Models.PackingList>> GetShipmentsByOrderAsync(
+    public async Task<List<PackingList>> GetShipmentsByOrderAsync(
         string coNum, int maxConcurrency = 6, CancellationToken ct = default)
     {
+        if (_csiOptions.UseApi)
+            return await _idoService.GetPackingListsByOrderAsync(coNum);
+
         var keys = await GetShipmentKeysByOrderAsync(coNum);
         if (keys.Count == 0) return new();
 
@@ -166,13 +183,13 @@ public class PackingListService
 
     // ------------------- mapping helpers (same as before) -------------------
 
-    private static RepPortal.Models.PackingList FromDataTable(DataTable table)
+    private static PackingList FromDataTable(DataTable table)
     {
-        var list = new RepPortal.Models.PackingList();
+        var list = new PackingList();
         if (table.Rows.Count == 0) return list;
 
         var r0 = table.Rows[0];
-        list.Header = new RepPortal.Models.PackingListHeader
+        list.Header = new PackingListHeader
         {
             PackNum = S(r0, "pack_num"),
             PackDate = DT(r0, "pack_date"),
@@ -193,7 +210,7 @@ public class PackingListService
 
         foreach (DataRow r in table.Rows)
         {
-            list.Items.Add(new RepPortal.Models.PackingListItem
+            list.Items.Add(new PackingListItem
             {
                 CoLine = I(r, "co_line"),
                 Item = S(r, "item"),

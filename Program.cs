@@ -2,8 +2,6 @@ using System.Reflection;
 using System.Threading.RateLimiting;
 using Blazored.LocalStorage;
 using Dapper;
-using DbUp;
-using Hangfire;
 using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Components.Server.Circuits;
@@ -87,6 +85,8 @@ Log.Logger = new LoggerConfiguration()
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSyncfusionBlazor();
 builder.Host.UseSerilog();
+var skipStartupTasks = builder.Configuration.GetValue<bool>("TestSettings:SkipStartupTasks");
+var disableHangfire = builder.Configuration.GetValue<bool>("TestSettings:DisableHangfire");
 
 
 // Add services to the container.
@@ -129,6 +129,7 @@ builder.Services.Configure<CsiOptions>(
 builder.Services.AddScoped<CreditHoldExclusionService>();
 builder.Services.AddScoped<UserManager<ApplicationUser>>();
 builder.Services.AddScoped<CustomerService>();
+builder.Services.AddScoped<ICustomerLookupService>(sp => sp.GetRequiredService<CustomerService>());
 builder.Services.AddScoped<IIdoService, IdoService>();
 // Core: auth-free — used by both pages and jobs
 builder.Services.AddScoped<ISalesDataService, SalesDataService>();
@@ -180,22 +181,25 @@ builder.Services.AddScoped<IPivotLayoutService, PivotLayoutService>();
 //EnsureHangfireSchema(repPortalConn, "HangFire");
 
 //  Not ready for Hangfire yet.  
- builder.Services.AddHangfire(cfg => cfg
-    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-    .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings()
-    .UseSerilogLogProvider()
-    .UseSqlServerStorage(builder.Configuration.GetConnectionString("RepPortalConnection"),
-        new SqlServerStorageOptions
-        {
-            SchemaName = "HangFire",
-            PrepareSchemaIfNecessary = true,
-            QueuePollInterval = TimeSpan.FromSeconds(15)
-        }));
-builder.Services.AddHangfireServer(options =>
+if (!disableHangfire)
 {
-    options.Queues = new[] { "reports", "default" };   // dedicate a queue for report jobs
-});
+    builder.Services.AddHangfire(cfg => cfg
+       .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+       .UseSimpleAssemblyNameTypeSerializer()
+       .UseRecommendedSerializerSettings()
+       .UseSerilogLogProvider()
+       .UseSqlServerStorage(builder.Configuration.GetConnectionString("RepPortalConnection"),
+           new SqlServerStorageOptions
+           {
+               SchemaName = "HangFire",
+               PrepareSchemaIfNecessary = true,
+               QueuePollInterval = TimeSpan.FromSeconds(15)
+           }));
+    builder.Services.AddHangfireServer(options =>
+    {
+        options.Queues = new[] { "reports", "default" };   // dedicate a queue for report jobs
+    });
+}
 //  end of Hangfire commented out section
 
 builder.Services.AddAuthorization(options =>
@@ -207,6 +211,8 @@ builder.Services.AddTransient<CsiLoggingHandler>();
 builder.Services.AddTransient<RepPortal.Services.SmtpEmailSender>();      // concrete
 builder.Services.AddTransient<IEmailSender, RepPortal.Services.SmtpEmailSender>();
 builder.Services.AddTransient<IAttachmentEmailSender, RepPortal.Services.SmtpEmailSender>();
+builder.Services.AddSingleton<IRecurringJobScheduler, HangfireRecurringJobScheduler>();
+builder.Services.AddScoped<IReportSubscriptionStore, HangfireReportSubscriptionStore>();
 
 builder.Services.AddSingleton<IUserContextResolver>(sp =>
 {
@@ -287,9 +293,6 @@ var app = builder.Build();
 
 
 
-var scope = app.Services.CreateScope();
-var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -342,18 +345,18 @@ app.UseAuthorization();
 
 
 
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapRazorPages();
-    endpoints.MapControllers();
-});
+app.MapRazorPages();
+app.MapControllers();
 
 //  Not ready for Hangfire yet.
-app.MapHangfireDashboard("/hangfire", new DashboardOptions
+if (!disableHangfire)
 {
-    AppPath = "https://ChapinPortal.com",
-    Authorization = new[] { new HangfireAuthorizationFilter("HangfireAdmins") }
-});
+    app.MapHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        AppPath = "https://ChapinPortal.com",
+        Authorization = new[] { new HangfireAuthorizationFilter("HangfireAdmins") }
+    });
+}
 //
 
 
@@ -361,44 +364,15 @@ app.MapHangfireDashboard("/hangfire", new DashboardOptions
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
-//RunDbUp(connectionString);
-await RunConfigureRoles();
-if (builder.Configuration.GetValue<bool>("RunIdentityEmailMigration"))
+if (!skipStartupTasks)
 {
-    await RunMigrateIdentityEmails();
-}
-
-
-
-
-app.Run();
-
-
-
-
-
-void RunDbUp(string connectionString)
-{
-    var upgrader = DeployChanges.To
-        .SqlDatabase(connectionString)
-        .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly()) // or use FromFileSystem
-        .LogToConsole()
-        .Build();
-
-    var result = upgrader.PerformUpgrade();
-
-    if (!result.Successful)
+    await RunConfigureRoles();
+    if (builder.Configuration.GetValue<bool>("RunIdentityEmailMigration"))
     {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine(result.Error);
-        Console.ResetColor();
-        throw new Exception("Database upgrade failed");
+        await RunMigrateIdentityEmails();
     }
-
-    Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine("Database upgrade successful");
-    Console.ResetColor();
 }
+app.Run();
 
 async Task RunConfigureRoles()
 {
@@ -421,18 +395,8 @@ async Task RunMigrateIdentityEmails()
     var migration = scope.ServiceProvider.GetRequiredService<IdentityEmailDomainMigration>();
     await migration.RunAsync();
 }
-static void EnsureHangfireSchema(string connectionString, string schemaName)
-{
-    using var con = new SqlConnection(connectionString);
-    con.Open();
 
-    using var cmd = new SqlCommand(@"
-IF SCHEMA_ID(@schema) IS NULL
-BEGIN
-    DECLARE @sql nvarchar(max) = N'CREATE SCHEMA ' + QUOTENAME(@schema) + N';';
-    EXEC (@sql);
-END", con);
-    cmd.Parameters.AddWithValue("@schema", schemaName);
-    cmd.ExecuteNonQuery();
+public partial class Program
+{
 }
 

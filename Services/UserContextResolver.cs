@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
-
 namespace RepPortal.Services;
 
 public sealed record UserContextResult(string RepCode, IReadOnlyList<string>? AllowedRegions);
@@ -24,9 +22,6 @@ public  class UserContextResolver : IUserContextResolver
 {
         private readonly string _connectionString;
         private readonly ILogger<UserContextResolver>? _logger;
-        private readonly Configuration _cfg;
-
-    
 
     public UserContextResolver(string? connectionString,  ILogger<UserContextResolver>? logger = null)
         {

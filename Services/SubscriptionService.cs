@@ -7,12 +7,12 @@ namespace RepPortal.Services
 {
     public sealed class SubscriptionService
     {
-        private readonly ReportRunner _runner;
+        private readonly IRecurringJobScheduler _scheduler;
         private readonly ILogger<SubscriptionService> _logger;
 
-        public SubscriptionService(ReportRunner runner, ILogger<SubscriptionService> logger)
+        public SubscriptionService(IRecurringJobScheduler scheduler, ILogger<SubscriptionService> logger)
         {
-            _runner = runner;
+            _scheduler = scheduler;
             _logger = logger;
         }
 
@@ -31,7 +31,7 @@ namespace RepPortal.Services
             var id = BuildJobId(reportType, email, cust, range);
             var tz = SafeFindTimeZone(timeZoneId);
 
-            RecurringJob.AddOrUpdate<ReportRunner>(
+            _scheduler.AddOrUpdate<ReportRunner>(
                 recurringJobId: id,
                 queue: "reports",
                 methodCall: r => r.RunAsync(new ReportRequest(reportType, email, cust, range)),
@@ -55,7 +55,7 @@ namespace RepPortal.Services
         {
             Normalize(reportType, customerId, dateRangeCode, out var cust, out var range);
             var id = BuildJobId(reportType, email, cust, range);
-            RecurringJob.RemoveIfExists(id);
+            _scheduler.RemoveIfExists(id);
             _logger.LogInformation("Removed job {JobId} for {Email} ({Type})", id, email, reportType);
         }
 

@@ -1,10 +1,6 @@
-﻿@using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs
 @using Syncfusion.Blazor.DropDowns
 @inject IRepCodeContext RepCodeContext
-@inject AuthenticationStateProvider AuthStateProvider
 @inject ISalesService SalesService
-
-
 
 @if (true)
 {
@@ -38,24 +34,18 @@
 }
 
 @code {
-	private bool isAdmin = false;
-	private string selectedCode;
-	private string[] selectedRegions = Array.Empty<string>(); // Now matches SfMultiSelect binding
+	private string selectedCode = string.Empty;
+	private string[] selectedRegions = Array.Empty<string>();
 	private List<string> allRepCodes = new();
 	private List<RegionItem> RegionList = new();
 
-
-
     protected override async Task OnInitializedAsync()
     {
-	    var user = (await AuthStateProvider.GetAuthenticationStateAsync()).User;
-	    isAdmin = user.IsInRole("Administrator");
-
 	    allRepCodes = await SalesService.GetAllRepCodesAsync();
 	    selectedCode = RepCodeContext.CurrentRepCode;
 	    selectedRegions = RepCodeContext.CurrentRegions.ToArray();
 
-	    await LoadRegionsAsync(); // Load once for LAW display
+	    await LoadRegionsAsync();
     }
 
     private async Task LoadRegionsAsync()
@@ -67,12 +57,14 @@
 		    RegionName = r.RegionName
 	    }).ToList();
     }
+
     private void ApplyOverride()
     {
 	    var regions = selectedCode == "LAW" ? selectedRegions.ToList() : new List<string>();
 	    RepCodeContext.OverrideRepCode(selectedCode, regions);
 	    StateHasChanged();
     }
+
     private void ResetOverride()
     {
         RepCodeContext.ResetRepCode();
@@ -83,12 +75,5 @@
     private void HandleRegionChange(string[] newSelection)
     {
 	    selectedRegions = newSelection;
-
-	    // Optionally do something else:
-	    Console.WriteLine("Selected regions changed:");
-	    foreach (var region in selectedRegions)
-	    {
-		    Console.WriteLine($" - {region}");
-	    }
     }
 }

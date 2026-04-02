@@ -15,8 +15,11 @@
         DataSource="@FolderList"
         Toolbar="@(new[] { "Add", "Edit", "Delete", "Update", "Cancel" })"
         AllowPaging="true"
-        EditSettings="@GridSettings"
         Width="100%">
+    <GridEditSettings AllowEditing="true"
+                      AllowAdding="true"
+                      AllowDeleting="true"
+                      Mode="EditMode.Normal" />
 	<GridSelectionSettings Type="SelectionType.Single" Mode="Syncfusion.Blazor.Grids.SelectionMode.Row"></GridSelectionSettings>
 
 	<GridColumns>
@@ -35,16 +38,7 @@
 @code {
     private string SelectedTable = "FormsFolders";
     private List<FolderRecord> FolderList = new();
-	private SfGrid<FolderRecord> GridRef;
-
-
-    private GridEditSettings GridSettings = new()
-    {
-        AllowEditing = true,
-        AllowAdding = true,
-        AllowDeleting = true,
-        Mode = EditMode.Normal
-    };
+	private SfGrid<FolderRecord>? GridRef;
 
  
 

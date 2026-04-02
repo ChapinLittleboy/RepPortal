@@ -11,6 +11,7 @@
 @using ChangeEventArgs = Microsoft.AspNetCore.Components.ChangeEventArgs
 @using FilterType = Syncfusion.Blazor.DropDowns.FilterType
 @inject AuthenticationStateProvider AuthStateProvider
+@inject IReportSubscriptionStore SubscriptionStore
 
 <PageTitle>Subscriptions</PageTitle>
 
@@ -153,8 +154,8 @@ else
 </EditForm>
 
 @code {
-    [Inject] private CustomerService CustomerService { get; set; } = default!;
-    private List<SubscriptionVm>? _subs;
+    [Inject] private ICustomerLookupService CustomerService { get; set; } = default!;
+    private List<ReportSubscriptionEntry>? _subs;
     private string? _currentUserEmail;
     private int ComboDebounceMs { get; set; } = 300;
     // Data sources for the two inputs
@@ -219,12 +220,7 @@ else
 
     private void Load()
     {
-        using var conn = JobStorage.Current.GetConnection();
-        var jobs = conn.GetRecurringJobs()
-            .Where(j => j.Id.StartsWith("subs:") && j.Id.Contains(_currentUserEmail!, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        _subs = jobs.Select(Parse).ToList();
+        _subs = SubscriptionStore.GetSubscriptionsForUser(_currentUserEmail!);
     }
     private static string GetReportDisplay(ReportType rt)
     {
@@ -239,43 +235,29 @@ else
         DateRangeCodeType.AllDates             => "All Dates",
         _                                      => dt.ToString()
     };
-    private SubscriptionVm Parse(RecurringJobDto job)
-    {
-        // ID format: subs:ReportType:Email:CustomerId:DateRange
-        var parts = job.Id.Split(':');
-        return new SubscriptionVm
-        {
-            Id = job.Id,
-            ReportType = Enum.TryParse<ReportType>(parts[1], out var rt) ? rt : ReportType.MonthlySales,
-            Email = parts[2],
-            CustomerId = parts.Length > 3 && parts[3] != "ALL" ? parts[3] : null,
-            DateRangeCode = parts.Length > 4 && parts[4] != "DEFAULT" ? parts[4] : null,
-            Cron = job.Cron,
-            TimeZone = job.TimeZoneId
-        };
-    }
-
     private void Add()
     {
         if (_currentUserEmail is null) return;
 
         _newSub.Email = _currentUserEmail;
 
-        ReportSubscriptions.Upsert(
-            _newSub.ReportType,
-            _newSub.Email,
-            _newSub.CustomerId,
-            _newSub.DateRangeCode.ToString(),
-            _newSub.Cron,
-            _newSub.TimeZone);
+        SubscriptionStore.Upsert(new ReportSubscriptionEntry
+        {
+            ReportType = _newSub.ReportType,
+            Email = _newSub.Email,
+            CustomerId = _newSub.CustomerId,
+            DateRangeCode = _newSub.DateRangeCode.ToString(),
+            Cron = _newSub.Cron,
+            TimeZone = _newSub.TimeZone
+        });
 
         Load();
         _newSub = new() { Email = _currentUserEmail };
     }
 
-    private void Remove(SubscriptionVm sub)
+    private void Remove(ReportSubscriptionEntry sub)
     {
-        RecurringJob.RemoveIfExists(sub.Id);
+        SubscriptionStore.Remove(sub.Id);
         Load();
     }
 
@@ -321,17 +303,6 @@ else
         public DateRangeCodeType Value { get; set; }
     }
 
-
-    private sealed class SubscriptionVm
-    {
-        public string Id { get; set; } = default!;
-        public ReportType ReportType { get; set; }
-        public string Email { get; set; } = default!;
-        public string? CustomerId { get; set; }
-        public string? DateRangeCode { get; set; }
-        public string Cron { get; set; } = default!;
-        public string TimeZone { get; set; } = default!;
-    }
 
     private sealed class NewSubVm
     {

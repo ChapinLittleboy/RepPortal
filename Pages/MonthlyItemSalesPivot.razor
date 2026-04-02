@@ -101,6 +101,8 @@
                              >
 
                     <PivotViewDataSourceSettings DataSource="@Sales"
+                                                 ExcludeFields="@ExcludedFields"
+                                                 FieldMapping="@FieldMappings"
                                                  ShowAggregationOnValueField="false"
                           EmptyCellsTextContent=""        
                         
@@ -132,19 +134,6 @@
                                 }
                             </CellTemplate>
                         </PivotViewTemplates>
-                        <PivotViewFieldMappings>
-
-                        <!-- Hide raw fields -->
-                            <PivotViewFieldOptions Name="ItemNum" ShowInFieldList="false" />
-                            <PivotViewFieldOptions Name="ProductName" ShowInFieldList="false" />
-                            <PivotViewFieldOptions Name="CustomerName" ShowInFieldList="false" />
-                            <PivotViewFieldOptions Name="ShipToName" ShowInFieldList="false" />
-                            <PivotViewFieldOptions Name="CustNum" ShowInFieldList="false" />
-                            <PivotViewFieldOptions Name="ShipToNameAddr" Caption="ShipTo-CustNum" />
-                            <PivotViewFieldOptions Name="CityStateZip" Caption="ShipTo" />
-
-                        </PivotViewFieldMappings>
-
                         <PivotViewRows>
                             <PivotViewRow Name="CustNumWithName" Caption="CustNumName" ExpandAll="@_expandCorpLevel" AllowDragAndDrop=true/>
                             
@@ -346,6 +335,19 @@
 @code {
     private const string PageKey = "MonthlyItemSalesPivot";
     private SfPivotView<SaleRow> PivotRef { get; set; } = default!;
+    private readonly string[] ExcludedFields =
+    [
+        "ItemNum",
+        "ProductName",
+        "CustomerName",
+        "ShipToName",
+        "CustNum"
+    ];
+    private readonly List<PivotViewField> FieldMappings =
+    [
+        CreatePivotField("ShipToNameAddr", "ShipTo-CustNum"),
+        CreatePivotField("CityStateZip", "ShipTo")
+    ];
     public List<SaleRow>? Sales { get; set; }
     private bool isLoading = true;
     private bool _pivotLayoutsEnabled;
@@ -654,4 +656,19 @@
     public string CityStateZip => $"{City}, {State} {Zip}";
 
     }
+
+#pragma warning disable BL0005
+    private static PivotViewField CreatePivotField(string name, string? caption = null)
+    {
+        var field = new PivotViewField();
+        field.Name = name;
+
+        if (caption is not null)
+        {
+            field.Caption = caption;
+        }
+
+        return field;
+    }
+#pragma warning restore BL0005
 }

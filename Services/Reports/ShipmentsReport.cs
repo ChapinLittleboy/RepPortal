@@ -1,102 +1,117 @@
-﻿// Services/Reports/ShipmentsReport.cs
+// Services/Reports/ShipmentsReport.cs
 
 using Dapper;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RepPortal.Data;
+using RepPortal.Models;
+
 namespace RepPortal.Services.Reports
 {
     public interface IShipmentsReport
     {
-        Task<List<Dictionary<string, object>>> GetAsync(
+        Task<List<CustomerShipment>> GetAsync(
             string repCode,
             IEnumerable<string>? allowedRegions,
             string? customerId,
-            DateTime startUtc,
-            DateTime endUtcExclusive);
+            DateTime startDate,
+            DateTime endDate);
     }
 
     public sealed class ShipmentsReport : IShipmentsReport
     {
         private readonly IDbConnectionFactory _dbFactory;
         private readonly ILogger<ShipmentsReport>? _logger;
+        private readonly IIdoService _idoService;
+        private readonly CsiOptions _csiOptions;
 
-        public ShipmentsReport(IDbConnectionFactory dbFactory, ILogger<ShipmentsReport>? logger = null)
+        public ShipmentsReport(
+            IDbConnectionFactory dbFactory,
+            IIdoService idoService,
+            IOptions<CsiOptions> csiOptions,
+            ILogger<ShipmentsReport>? logger = null)
         {
             _dbFactory = dbFactory;
+            _idoService = idoService;
+            _csiOptions = csiOptions.Value;
             _logger = logger;
         }
 
-        public async Task<List<Dictionary<string, object>>> GetAsync(
-            string repCode, 
+        public async Task<List<CustomerShipment>> GetAsync(
+            string repCode,
             IEnumerable<string>? allowedRegions,
             string? customerId,
             DateTime startDate,
             DateTime endDate)
-
         {
-            var minStart= new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Local);
+            var minStart = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Local);
             var maxEnd = DateTime.Now.Date.AddDays(60);
 
+            if (startDate < minStart) startDate = minStart;
+            if (endDate >= maxEnd)    endDate = maxEnd;
 
-            // Clamp startUtc
-            if (startDate < minStart)
-            {
-                startDate = minStart;
-            }
-
-            // Clamp endUtcExclusive
-            if (endDate >= maxEnd)
-            {
-                endDate = maxEnd;
-            }
-
-            // Final sanity check
             if (startDate >= endDate)
+                throw new ArgumentOutOfRangeException(nameof(startDate),
+                    "The date range is invalid after applying limits.");
+
+            _logger?.LogInformation(
+                "Shipments: Rep={Rep} Cust={Cust} Range=[{Start}->{End}) UseApi={UseApi}",
+                repCode, customerId ?? "(ALL)", startDate, endDate, _csiOptions.UseApi);
+
+            if (_csiOptions.UseApi)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(startDate),
-                    "The date range is invalid after applying limits."
-                );
+                var parameters = new SalesService.ShipmentsParameters
+                {
+                    RepCode       = repCode,
+                    BeginShipDate = startDate,
+                    EndShipDate   = endDate,
+                    CustNum       = customerId,
+                };
+                var regions = allowedRegions?.ToList();
+                return await _idoService.GetShipmentsDataAsync(parameters, repCode, regions);
             }
 
-
+            // SQL path — kept for on-premise fallback
             using var conn = _dbFactory.CreateRepConnection();
             conn.Open();
 
-            var sql = BuildQuery(allowedRegions);
+            var regionList = allowedRegions?.ToList();
+            var sql = BuildQuery(regionList);
 
-            var rows =  conn.Query(sql, new
+            var rows = conn.Query<CustomerShipment>(sql, new
             {
-                RepCode = repCode,
+                RepCode    = repCode,
                 CustomerId = customerId,
-                StartUtc = startDate,
-                EndUtc = endDate
+                StartUtc   = startDate,
+                EndUtc     = endDate
             });
 
-            return InvoicedAccountsReport.Materialize(rows); // reuse helper if you like
+            return rows.ToList();
         }
 
         private static string BuildQuery(IEnumerable<string>? allowedRegions)
         {
             var regionFilter = allowedRegions is null ? ""
-                : "AND s.Region IN @AllowedRegions";
+                : "AND s.Uf_SalesRegion IN @AllowedRegions";
 
+            // Note: SQL path is on-premise only. Cloud path uses GetShipmentsDataAsync via IDO.
             return $@"
-SELECT top 100 
-    s.co_num,
-    s.Ship_Date,
-    co.Cust_Num,
-    
-    s.Qty_Shipped,
-    ci.Item
-FROM BAT_App.dbo.co_ship_mst s
-join Bat_App.dbo.co_mst co on s.Co_num  = co.co_num
-join Bat_App.dbo.coitem_mst ci on  co.co_num = ci.co_num 
-WHERE 1 = 1 --s.RepCode = @RepCode
-  AND (@CustomerId IS NULL OR co.Cust_Num = @CustomerId)
-  AND s.Ship_Date >= @StartUtc
-  AND s.Ship_Date <  @EndUtc
+SELECT
+    co.co_num       AS OrderNumber,
+    s.ship_date     AS ShipDate,
+    co.cust_num     AS CustNum,
+    si.qty_shipped  AS ShipQty,
+    si.item         AS ItemNum
+FROM BAT_App.dbo.coship_mst s
+JOIN BAT_App.dbo.co_mst co   ON s.co_num = co.co_num
+JOIN BAT_App.dbo.coshipitem_mst si ON s.co_num = si.co_num AND s.shipment_id = si.shipment_id
+JOIN BAT_App.dbo.customer_mst cu  ON co.cust_num = cu.cust_num AND co.cust_seq = cu.cust_seq
+WHERE co.slsman = @RepCode
+  AND (@CustomerId IS NULL OR co.cust_num = @CustomerId)
+  AND s.ship_date >= @StartUtc
+  AND s.ship_date <  @EndUtc
   {regionFilter}
-ORDER BY s.Ship_Date DESC";
+ORDER BY s.ship_date DESC";
         }
     }
 }
