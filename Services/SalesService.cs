@@ -1470,38 +1470,58 @@ public class SalesService : ISalesService
     {
         var repCode = _repCodeContext!.CurrentRepCode;
         var allowedRegions = _repCodeContext.CurrentRegions;
+        var today = DateTime.Today;
+        var fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+        var yearsToInclude = string.Equals(repCode, "MCS", StringComparison.OrdinalIgnoreCase) ? 4 : 4;   // change first number if MCS should see 3 years instead of 4
+        var pivotStartDate = new DateTime(fiscalYear - yearsToInclude, 9, 1);
 
         string sql = @"
-           SELECT 
-     ih.site_ref,
-      ih.inv_date AS OrderDate,
+           SELECT
+      CAST(ih.inv_date AS date) AS OrderDate,
       ca.cust_num AS CustNum,
-      ca.name     AS ShipToName,
-      ca0.name as CustomerName,
+      ca.name AS ShipToName,
+      ca0.name AS CustomerName,
       im.description AS ProductName,
-      ii.item     AS ItemNum,
-      ii.qty_invoiced AS Quantity,
-      ISNULL((ii.qty_invoiced * ii.price),0) AS SalesAmount,
-      fc.MonthShort, fc.DayOfMonth, fc.DayShort, fc.FiscalYear, fc.QuarterOfFiscalYear, fc.MonthOfFiscalYear
-      ,rn.RegionName
-      ,ca.City, ca.State, ca.Zip
+      ii.item AS ItemNum,
+      SUM(ii.qty_invoiced) AS Quantity,
+      SUM(ISNULL((ii.qty_invoiced * ii.price), 0)) AS SalesAmount,
+      fc.MonthShort, fc.DayOfMonth, fc.DayShort, fc.FiscalYear, fc.QuarterOfFiscalYear, fc.MonthOfFiscalYear,
+      rn.RegionName,
+      ca.City, ca.State, ca.Zip
   FROM inv_hdr_mst_all ih
   JOIN inv_item_mst_all ii ON ih.inv_num = ii.inv_num AND ih.inv_seq = ii.inv_seq
-  --JOIN co_mst co        ON ih.co_num = co.co_num
-  --JOIN coitem_mst ci    ON co.co_num = ci.co_num AND ii.co_line = ci.co_line
-  JOIN custaddr_mst ca  ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
-  join custaddr_mst ca0 on ih.cust_num = ca0.cust_num and ca0.cust_seq = 0
-  JOIN customer_mst cu on ih.cust_num=cu.cust_num and cu.cust_seq = ih.cust_seq
-  JOIN item_mst im      ON ii.item = im.item
-LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
-  Join tempwork.dbo.FiscalCalendarVw fc on Cast(ih.inv_date as date)=fc.[Date]
-            WHERE 1 = 1 
-              AND ih.inv_date > dbo.midnightof('9/1/2022')
+  JOIN custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
+  JOIN custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
+  JOIN customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
+  JOIN item_mst im ON ii.item = im.item
+  LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
+  JOIN tempwork.dbo.FiscalCalendarVw fc ON CAST(ih.inv_date AS date) = fc.[Date]
+            WHERE 1 = 1
+              AND ih.inv_date >= @PivotStartDate
               AND cu.slsman = @RepCode";
 
 
         if (allowedRegions != null && allowedRegions.Any())
             sql += " AND cu.Uf_SalesRegion IN @AllowedRegions";
+
+        sql += @"
+        GROUP BY
+            CAST(ih.inv_date AS date),
+            ca.cust_num,
+            ca.name,
+            ca0.name,
+            im.description,
+            ii.item,
+            fc.MonthShort,
+            fc.DayOfMonth,
+            fc.DayShort,
+            fc.FiscalYear,
+            fc.QuarterOfFiscalYear,
+            fc.MonthOfFiscalYear,
+            rn.RegionName,
+            ca.City,
+            ca.State,
+            ca.Zip";
 
 
 
@@ -1510,10 +1530,15 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_Sal
         using var connection = new SqlConnection(_connectionString);
         _logger?.LogInformation("Executing SQL: {Sql}", sql);
 
-        var parameters = new { RepCode = repCode, AllowedRegions = allowedRegions?.ToArray() };
+        var parameters = new
+        {
+            RepCode = repCode,
+            AllowedRegions = allowedRegions?.ToArray(),
+            PivotStartDate = pivotStartDate
+        };
 
 
-        var rows = await connection.QueryAsync<SaleRow>(sql, parameters);
+        var rows = await connection.QueryAsync<SaleRow>(sql, parameters, commandTimeout: 180);
         return rows.ToList();
 
 

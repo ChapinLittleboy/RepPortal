@@ -58,13 +58,17 @@ public class DownloadFormsService : IFormsDownloadService
                 {
                     var info = new FileInfo(fp);
                     var name = info.Name;
+                    var relativePath = Path.GetRelativePath(physical, fp);
                     // _route comes from config["PriceBooks:RequestPath"] == "/RepDocs"
-                    var url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(folder.FolderRelativePath)}/{Uri.EscapeDataString(name)}";
+                    var folderSegments = SplitSegments(folder.FolderRelativePath ?? string.Empty);
+                    var fileSegments = SplitSegments(relativePath);
+                    var url = $"{_route.TrimEnd('/')}/{string.Join("/", folderSegments.Concat(fileSegments).Select(Uri.EscapeDataString))}";
                     var sizeKb = Math.Round(info.Length / 1024.0, 2);
 
                     return new FormsDownloadFile
                     {
                         Name = name,
+                        RelativePath = relativePath.Replace('\\', '/'),
                         Url = url,
                         SizeText = $"{sizeKb} KB"
                     };
@@ -74,5 +78,8 @@ public class DownloadFormsService : IFormsDownloadService
 
         return folders;
     }
+
+    private static IEnumerable<string> SplitSegments(string path) =>
+        path.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
 }
 

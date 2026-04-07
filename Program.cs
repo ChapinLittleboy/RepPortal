@@ -160,6 +160,7 @@ builder.Services.AddScoped<IIdoService, IdoService>();
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<IDownloadPriceBookService, DownloadPriceBookService>();
 builder.Services.AddScoped<IFormsDownloadService, DownloadFormsService>();
+builder.Services.AddScoped<IAdminFormsFileService, AdminFormsFileService>();
 builder.Services.AddScoped<IMarketingService, DownloadMarketingInfoService>();
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 builder.Services.AddScoped<StateContainer>();

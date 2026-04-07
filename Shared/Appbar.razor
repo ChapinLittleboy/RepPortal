@@ -149,6 +149,7 @@
 		CreateDropDownMenuItem("Debug User Identity", "debuguseridentity"),
 		CreateDropDownMenuItem("Manage RepCodes", "managerepcodes"),
 		CreateDropDownMenuItem("Manage Folders", "managefolders"),
+		CreateDropDownMenuItem("Manage Form Files", "manageformfiles"),
 		CreateDropDownMenuItem("Manage Marketing Files", "managemarketingfiles"),
 		CreateDropDownMenuItem("Manage Page Help Text", "pagehelp"),
 		CreateDropDownMenuItem("Connected Users", "connectedusers"),
@@ -359,6 +360,9 @@
 				break;
 			case "managefolders":
 				Navigation.NavigateTo("/admin/folders");
+				break;
+			case "manageformfiles":
+				Navigation.NavigateTo("/admin/forms-files");
 				break;
 			case "managemarketingfiles":
 				Navigation.NavigateTo("/admin/marketingfiles");

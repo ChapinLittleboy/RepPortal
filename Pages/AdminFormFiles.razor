@@ -1,0 +1,233 @@
+@page "/admin/forms-files"
+@attribute [Authorize(Roles = "Administrator,SuperUser")]
+@inject IAdminFormsFileService AdminFormsFileService
+@inject RepPortal.Services.IActivityLogService ActivityLogService
+
+<PageTitle>Manage Form Files</PageTitle>
+
+<h3>Manage Form Files</h3>
+
+<p class="text-muted">Upload files into the forms folders defined on the folder admin page, or archive files so they no longer appear on the Forms download page.</p>
+
+<div class="row g-3 align-items-end mb-3">
+    <div class="col-md-5">
+        <label class="form-label" for="folderSelect">Folder</label>
+        <select id="folderSelect" class="form-select" @bind="SelectedFolderPath" @bind:after="OnSelectedFolderChangedAsync">
+            <option value="">Select a folder...</option>
+            @foreach (var folder in Folders)
+            {
+                <option value="@folder.FolderRelativePath">@folder.DisplayName (@folder.FolderRelativePath)</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-7">
+        @if (!string.IsNullOrWhiteSpace(SelectedFolderPath))
+        {
+            <div class="small text-muted">Files uploaded here become available on <code>/forms-download</code>.</div>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(StatusMessage))
+{
+    <div class="alert @StatusCssClass">@StatusMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(SelectedFolderPath))
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Add Files</h5>
+            <InputFile OnChange="OnFilesSelected" multiple class="form-control mb-3" />
+
+            @if (PendingUploadFiles.Any())
+            {
+                <div class="mb-3">
+                    <div class="fw-semibold">Selected files</div>
+                    <ul class="mb-0">
+                        @foreach (var file in PendingUploadFiles)
+                        {
+                            <li>@file.Name (@FormatSize(file.Size))</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <button class="btn btn-primary" @onclick="UploadFilesAsync" disabled="@(!PendingUploadFiles.Any() || IsBusy)">
+                @(IsBusy ? "Working..." : "Upload Files")
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0">Current Files</h5>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="RefreshFilesAsync" disabled="@IsBusy">Refresh</button>
+            </div>
+
+            @if (CurrentFiles.Any())
+            {
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Modified</th>
+                            <th>Size</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var file in CurrentFiles)
+                        {
+                            <tr>
+                                <td>
+                                    <div>@file.Name</div>
+                                    @if (!string.Equals(file.RelativePath, file.Name, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <div class="small text-muted">@file.RelativePath</div>
+                                    }
+                                </td>
+                                <td>@file.LastModifiedText</td>
+                                <td>@file.SizeText</td>
+                                <td class="text-end">
+                                    <a class="btn btn-outline-primary btn-sm me-2" href="@file.Url" target="_blank">Open</a>
+                                    <button class="btn btn-outline-danger btn-sm"
+                                            @onclick="() => ArchiveFileAsync(file)"
+                                            disabled="@IsBusy">
+                                        Archive
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="mb-0"><em>No files are currently available in this folder.</em></p>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private const long MaxUploadBytes = 100 * 1024 * 1024;
+
+    private List<AdminFormsFolder> Folders = new();
+    private List<AdminManagedFile> CurrentFiles = new();
+    private IReadOnlyList<IBrowserFile> PendingUploadFiles = Array.Empty<IBrowserFile>();
+    private string SelectedFolderPath = string.Empty;
+    private string StatusMessage = string.Empty;
+    private string StatusCssClass = "alert-info";
+    private bool IsBusy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Folders = await AdminFormsFileService.GetFoldersAsync();
+        await ActivityLogService.LogReportUsageActivityAsync("Admin Form Files", "");
+    }
+
+    private async Task OnSelectedFolderChangedAsync()
+    {
+        PendingUploadFiles = Array.Empty<IBrowserFile>();
+        ClearStatus();
+        await RefreshFilesAsync();
+    }
+
+    private async Task RefreshFilesAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedFolderPath))
+        {
+            CurrentFiles = new List<AdminManagedFile>();
+            return;
+        }
+
+        CurrentFiles = await AdminFormsFileService.GetFilesAsync(SelectedFolderPath);
+    }
+
+    private void OnFilesSelected(InputFileChangeEventArgs args)
+    {
+        PendingUploadFiles = args.GetMultipleFiles();
+        ClearStatus();
+    }
+
+    private async Task UploadFilesAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedFolderPath) || !PendingUploadFiles.Any())
+        {
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            var skippedFiles = await AdminFormsFileService.SaveFilesAsync(SelectedFolderPath, PendingUploadFiles, MaxUploadBytes);
+            await RefreshFilesAsync();
+            var uploadedNames = string.Join(", ", PendingUploadFiles.Select(file => file.Name));
+            var replacedNames = skippedFiles.Any() ? $"; Replaced: {string.Join(", ", skippedFiles)}" : string.Empty;
+            await ActivityLogService.LogReportUsageActivityAsync(
+                "Admin Form Files Upload",
+                $"Folder: {SelectedFolderPath}; Files: {uploadedNames}{replacedNames}");
+
+            if (skippedFiles.Any())
+            {
+                StatusCssClass = "alert-success";
+                StatusMessage = $"Upload finished. Existing files were archived and replaced for: {string.Join(", ", skippedFiles)}.";
+            }
+            else
+            {
+                StatusCssClass = "alert-success";
+                StatusMessage = "Files uploaded successfully.";
+            }
+
+            PendingUploadFiles = Array.Empty<IBrowserFile>();
+        }
+        catch (IOException ex)
+        {
+            StatusCssClass = "alert-danger";
+            StatusMessage = $"Upload failed: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            StatusCssClass = "alert-danger";
+            StatusMessage = $"Upload failed: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task ArchiveFileAsync(AdminManagedFile file)
+    {
+        try
+        {
+            IsBusy = true;
+            await AdminFormsFileService.ArchiveFileAsync(SelectedFolderPath, file.RelativePath);
+            await RefreshFilesAsync();
+            await ActivityLogService.LogReportUsageActivityAsync(
+                "Admin Form Files Archive",
+                $"Folder: {SelectedFolderPath}; File: {file.RelativePath}");
+            StatusCssClass = "alert-success";
+            StatusMessage = $"{file.Name} was moved to the Archive folder.";
+        }
+        catch (Exception ex)
+        {
+            StatusCssClass = "alert-danger";
+            StatusMessage = $"Archive failed: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private static string FormatSize(long bytes) => $"{Math.Round(bytes / 1024.0, 2)} KB";
+
+    private void ClearStatus()
+    {
+        StatusMessage = string.Empty;
+        StatusCssClass = "alert-info";
+    }
+}

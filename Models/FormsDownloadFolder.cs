@@ -13,6 +13,7 @@ public class FormsDownloadFolder
 public class FormsDownloadFile
 {
     public string? Name { get; set; }
+    public string? RelativePath { get; set; }
     public string? Url { get; set; }
     public string? SizeText { get; set; }
 }
