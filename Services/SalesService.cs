@@ -1472,7 +1472,7 @@ public class SalesService : ISalesService
         var allowedRegions = _repCodeContext.CurrentRegions;
         var today = DateTime.Today;
         var fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
-        var yearsToInclude = string.Equals(repCode, "MCS", StringComparison.OrdinalIgnoreCase) ? 4 : 4;   // change first number if MCS should see 3 years instead of 4
+        var yearsToInclude = string.Equals(repCode, "MCS", StringComparison.OrdinalIgnoreCase) ? 3 : 4;   // change first number if MCS should see 3 years instead of 4
         var pivotStartDate = new DateTime(fiscalYear - yearsToInclude, 9, 1);
 
         string sql = @"
