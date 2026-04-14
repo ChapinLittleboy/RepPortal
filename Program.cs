@@ -27,7 +27,7 @@ using HangfireAuthorizationFilter = RepPortal.Data.HangfireAuthorizationFilter;
 
 
 
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JEaF5cXmRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXhecXRSQmhdWEV/XEZWYE0="); //v30
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JEaF5cXmRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXhecXRSQmhdWEV/XEZWYE0="); // Syncfusion license
 // Set the global command timeout for Dapper
 SqlMapper.Settings.CommandTimeout = 60; // Timeout set to 60 seconds
 

@@ -41,6 +41,12 @@
             <!-- Option B: pivot appears only once data is ready -->
 
             <div class="pivot-wrap">
+                @if (!string.IsNullOrWhiteSpace(_pivotActionErrorMessage))
+                {
+                    <div class="alert alert-warning" role="alert">
+                        @_pivotActionErrorMessage
+                    </div>
+                }
                 @if (_pivotLayoutsEnabled)
                 {
                     <div class="pivot-layout-toolbar">
@@ -95,10 +101,12 @@
 
                 <SfPivotView @key="_pivotRenderKey" @ref="PivotRef" ID="PivotView" TValue="SaleRow" Height="600"
                              AllowCalculatedField="false"
+                             AllowDataCompression="false"
                              ShowFieldList="true"
                              ShowGroupingBar="true"
                              AllowPdfExport="false"
                              ShowToolbar="false"
+                             EnableVirtualization="true"
                              EnableValueSorting="true"
                              ShowTooltip="false"
                              AllowExcelExport="true"
@@ -176,6 +184,7 @@
                                                   ShowRemoveIcon="true"
                                                   ShowValueTypeIcon="false" />
                     <PivotViewEvents TValue="SaleRow"
+                                     OnActionFailure="OnActionFailure"
                                      EnginePopulated="OnEnginePopulated"/>
                 </SfPivotView>
             </div>
@@ -366,6 +375,7 @@
     private int _selectedRowLevel = 1;
     private int _pivotRenderKey;
     private List<string> _cachedReportNames = new();
+    private string? _pivotActionErrorMessage;
     private string? _loadErrorMessage;
     private string? _activeReportName;
     private string? _selectedReportName;
@@ -402,6 +412,7 @@
             }
 
             _loadErrorMessage = null;
+            _pivotActionErrorMessage = null;
         }
         catch (Exception ex)
         {
@@ -537,7 +548,7 @@
             FileName = $"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}.xlsx"
         };
 
-        await PivotRef.ExportToExcelAsync(excelProperties, null, null, null, false);
+        await PivotRef.ExportToExcelAsync(false, excelProperties, false);
     }
 
     private async Task RefreshAvailableReportsAsync(string? activeReportName = null)
@@ -631,6 +642,18 @@
                 }
             }
         }
+    }
+
+    private void OnActionFailure(PivotActionFailureEventArgs args)
+    {
+        string errorDetails = args.ErrorInfo?.ToString() ?? "Unknown pivot error.";
+        string actionName = string.IsNullOrWhiteSpace(args.ActionName) ? "Pivot action" : args.ActionName;
+        _pivotActionErrorMessage = $"{actionName} failed. {errorDetails}";
+        Logger.LogError("Monthly Item Sales Pivot action failure for rep {RepCode}. Action={ActionName}, Error={Error}",
+            RepCodeContext.CurrentRepCode,
+            actionName,
+            errorDetails);
+        InvokeAsync(StateHasChanged);
     }
 
 

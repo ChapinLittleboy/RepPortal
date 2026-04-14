@@ -1,9 +1,75 @@
-﻿@page "/admin/connected"
+@page "/admin/connected"
 @attribute [Authorize(Roles = "Administrator")]
+@implements IDisposable
 
 @inject UserConnectionTracker ConnectionTracker
 
 <h3>Connected Users</h3>
 
-<p>There are currently <strong>@ConnectionTracker.ActiveConnections</strong> active user(s) on the site.</p>
+<p>There are currently <strong>@ConnectionTracker.ActiveConnections</strong> active connection(s) on the site.</p>
+<p><strong>@ConnectionTracker.AuthenticatedUserCount</strong> authenticated user(s) currently have an active circuit.</p>
 
+@if (connectedUsers.Count == 0)
+{
+    <p><em>No active users found.</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Email / Login</th>
+                <th>Open Connections</th>
+                <th>Last Seen (UTC)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in connectedUsers)
+            {
+                <tr>
+                    <td>@user.DisplayName</td>
+                    <td>@GetSecondaryIdentity(user)</td>
+                    <td>@user.ConnectionCount</td>
+                    <td>@user.LastSeenUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<UserConnectionTracker.ConnectedUserSummary> connectedUsers = Array.Empty<UserConnectionTracker.ConnectedUserSummary>();
+
+    protected override void OnInitialized()
+    {
+        ConnectionTracker.ConnectionsChanged += HandleConnectionsChanged;
+        connectedUsers = ConnectionTracker.GetConnectedUsers();
+    }
+
+    public void Dispose()
+    {
+        ConnectionTracker.ConnectionsChanged -= HandleConnectionsChanged;
+    }
+
+    private void HandleConnectionsChanged()
+    {
+        connectedUsers = ConnectionTracker.GetConnectedUsers();
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private static string GetSecondaryIdentity(UserConnectionTracker.ConnectedUserSummary user)
+    {
+        if (!string.IsNullOrWhiteSpace(user.Email))
+        {
+            return user.Email;
+        }
+
+        if (!string.IsNullOrWhiteSpace(user.UserName))
+        {
+            return user.UserName;
+        }
+
+        return user.IsAnonymous ? "Anonymous" : user.UserKey;
+    }
+}
