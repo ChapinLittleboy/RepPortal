@@ -1470,65 +1470,88 @@ public class SalesService : ISalesService
     {
         var repCode = _repCodeContext!.CurrentRepCode;
         var allowedRegions = _repCodeContext.CurrentRegions;
-        var today = DateTime.Today;
-        var fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
-        var yearsToInclude = string.Equals(repCode, "MCS", StringComparison.OrdinalIgnoreCase) ? 3 : 4;   // change first number if MCS should see 3 years instead of 4
-        var pivotStartDate = new DateTime(fiscalYear - yearsToInclude, 9, 1);
+        var pivotStartDate = GetPivotStartDate(repCode);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         string sql = @"
-           SELECT
-      CAST(ih.inv_date AS date) AS OrderDate,
-      ca.cust_num AS CustNum,
-      ca.name AS ShipToName,
-      ca0.name AS CustomerName,
-      im.description AS ProductName,
-      ii.item AS ItemNum,
-      SUM(ii.qty_invoiced) AS Quantity,
-      SUM(ISNULL((ii.qty_invoiced * ii.price), 0)) AS SalesAmount,
-      fc.MonthShort, fc.DayOfMonth, fc.DayShort, fc.FiscalYear, fc.QuarterOfFiscalYear, fc.MonthOfFiscalYear,
-      rn.RegionName,
-      ca.City, ca.State, ca.Zip
-  FROM inv_hdr_mst_all ih
-  JOIN inv_item_mst_all ii ON ih.inv_num = ii.inv_num AND ih.inv_seq = ii.inv_seq
-  JOIN custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
-  JOIN custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
-  JOIN customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
-  JOIN item_mst im ON ii.item = im.item
-  LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
-  JOIN tempwork.dbo.FiscalCalendarVw fc ON CAST(ih.inv_date AS date) = fc.[Date]
-            WHERE 1 = 1
-              AND ih.inv_date >= @PivotStartDate
-              AND cu.slsman = @RepCode";
+WITH FilteredInvoiceLines AS (
+    SELECT
+        ih.cust_num AS CustNum,
+        ih.cust_seq AS CustSeq,
+        ii.item AS ItemNum,
+        DATEFROMPARTS(YEAR(ih.inv_date), MONTH(ih.inv_date), 1) AS InvoiceMonth,
+        SUM(ii.qty_invoiced) AS Quantity,
+        SUM(ISNULL(ii.qty_invoiced * ii.price, 0)) AS SalesAmount
+    FROM inv_hdr_mst_all ih
+    JOIN inv_item_mst_all ii
+        ON ih.inv_num = ii.inv_num
+       AND ih.inv_seq = ii.inv_seq
+    JOIN customer_mst cu
+        ON ih.cust_num = cu.cust_num
+       AND cu.cust_seq = ih.cust_seq
+    WHERE ih.inv_date >= @PivotStartDate
+      AND cu.slsman = @RepCode";
 
 
         if (allowedRegions != null && allowedRegions.Any())
             sql += " AND cu.Uf_SalesRegion IN @AllowedRegions";
 
         sql += @"
-        GROUP BY
-            CAST(ih.inv_date AS date),
-            ca.cust_num,
-            ca.name,
-            ca0.name,
-            im.description,
-            ii.item,
-            fc.MonthShort,
-            fc.DayOfMonth,
-            fc.DayShort,
-            fc.FiscalYear,
-            fc.QuarterOfFiscalYear,
-            fc.MonthOfFiscalYear,
-            rn.RegionName,
-            ca.City,
-            ca.State,
-            ca.Zip";
-
-
-
-
+    GROUP BY
+        ih.cust_num,
+        ih.cust_seq,
+        ii.item,
+        DATEFROMPARTS(YEAR(ih.inv_date), MONTH(ih.inv_date), 1)
+),
+FiscalMonths AS (
+    SELECT
+        DATEFROMPARTS(YEAR([Date]), MONTH([Date]), 1) AS InvoiceMonth,
+        MAX(MonthShort) AS MonthShort,
+        MAX(FiscalYear) AS FiscalYear,
+        MAX(QuarterOfFiscalYear) AS QuarterOfFiscalYear,
+        MAX(MonthOfFiscalYear) AS MonthOfFiscalYear
+    FROM tempwork.dbo.FiscalCalendarVw
+    GROUP BY DATEFROMPARTS(YEAR([Date]), MONTH([Date]), 1)
+)
+SELECT
+    fil.CustNum,
+    ca.name AS ShipToName,
+    ca0.name AS CustomerName,
+    im.description AS ProductName,
+    fil.ItemNum,
+    CAST(fil.Quantity AS int) AS Quantity,
+    fil.SalesAmount,
+    fm.MonthShort,
+    fm.FiscalYear,
+    fm.QuarterOfFiscalYear,
+    fm.MonthOfFiscalYear,
+    rn.RegionName,
+    ca.City,
+    ca.State,
+    ca.Zip
+FROM FilteredInvoiceLines fil
+JOIN custaddr_mst ca
+    ON fil.CustNum = ca.cust_num
+   AND fil.CustSeq = ca.cust_seq
+JOIN custaddr_mst ca0
+    ON fil.CustNum = ca0.cust_num
+   AND ca0.cust_seq = 0
+JOIN customer_mst cu
+    ON fil.CustNum = cu.cust_num
+   AND fil.CustSeq = cu.cust_seq
+JOIN item_mst im
+    ON fil.ItemNum = im.item
+JOIN FiscalMonths fm
+    ON fil.InvoiceMonth = fm.InvoiceMonth
+LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK)
+    ON rn.Region = cu.Uf_SalesRegion;";
 
         using var connection = new SqlConnection(_connectionString);
-        _logger?.LogInformation("Executing SQL: {Sql}", sql);
+        _logger?.LogInformation(
+            "GetRecentSalesAsync starting for rep {RepCode} with start date {PivotStartDate:yyyy-MM-dd}",
+            repCode,
+            pivotStartDate);
+        _logger?.LogDebug("GetRecentSalesAsync SQL: {Sql}", sql);
 
         var parameters = new
         {
@@ -1537,12 +1560,26 @@ public class SalesService : ISalesService
             PivotStartDate = pivotStartDate
         };
 
-
         var rows = await connection.QueryAsync<SaleRow>(sql, parameters, commandTimeout: 180);
-        return rows.ToList();
+        var result = rows.ToList();
 
+        stopwatch.Stop();
+        _logger?.LogInformation(
+            "GetRecentSalesAsync completed for rep {RepCode}. StartDate={PivotStartDate:yyyy-MM-dd}, Rows={RowCount}, ElapsedMs={ElapsedMs}",
+            repCode,
+            pivotStartDate,
+            result.Count,
+            stopwatch.ElapsedMilliseconds);
 
+        return result;
+    }
 
+    private static DateTime GetPivotStartDate(string repCode)
+    {
+        var today = DateTime.Today;
+        var fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+        var yearsToInclude = string.Equals(repCode, "MCS", StringComparison.OrdinalIgnoreCase) ? 3 : 4;
+        return new DateTime(fiscalYear - yearsToInclude, 9, 1);
     }
 
     public async Task<List<CustType>> GetCustomerTypesListAsync()

@@ -8,6 +8,7 @@
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.PivotView
 @inject ISalesService SalesService
+@inject ILogger<MonthlyItemSalesPivot> Logger
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
@@ -27,6 +28,12 @@
             <!-- Option A: full-page spinner -->
             <div class="loading-wrap">
                 <SfSpinner Visible="true" Label="Loading pivot..." Size="40"></SfSpinner>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_loadErrorMessage))
+        {
+            <div class="alert alert-warning" role="alert">
+                @_loadErrorMessage
             </div>
         }
         else
@@ -359,6 +366,7 @@
     private int _selectedRowLevel = 1;
     private int _pivotRenderKey;
     private List<string> _cachedReportNames = new();
+    private string? _loadErrorMessage;
     private string? _activeReportName;
     private string? _selectedReportName;
     private string? TargetReportName => !string.IsNullOrWhiteSpace(_selectedReportName) ? _selectedReportName : _activeReportName;
@@ -375,10 +383,10 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        await ActivityLogService.LogReportUsageActivityAsync("Monthly Sales Pivot", "");
 
         try
         {
+            await ActivityLogService.LogReportUsageActivityAsync("Monthly Sales Pivot", "");
             var salesTask = SalesService.GetRecentSalesAsync();
 
             if (_pivotLayoutsEnabled)
@@ -392,6 +400,15 @@
             {
                 Sales = await salesTask;
             }
+
+            _loadErrorMessage = null;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load Monthly Item Sales Pivot for rep {RepCode}", RepCodeContext.CurrentRepCode);
+            Sales = new List<SaleRow>();
+            _cachedReportNames = new List<string>();
+            _loadErrorMessage = "This pivot report is taking too long to load right now. Please try again in a moment, and contact support if it keeps timing out.";
         }
         finally
         {
@@ -622,7 +639,6 @@
 
     public class SaleRow
     {
-        public DateTime OrderDate { get; set; }
         public string ShipToName { get; set; } = "";
         public string CustomerName { get; set; } = "";
         public string ProductName { get; set; } = "";
@@ -632,9 +648,7 @@
         public string CustNum { get; set; } = "";
         public string ItemNum { get; set; } = "";
         public string MonthShort { get; set; } = "";
-        public int DayOfMonth { get; set; }
         public int FiscalYear { get; set; }
-        public string DayShort { get; set; } = "";
         public int MonthOfFiscalYear { get; set; }
         public int QuarterOfFiscalYear { get; set; }
         public string RegionName { get; set; } = "";
