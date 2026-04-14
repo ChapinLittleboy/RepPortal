@@ -22,8 +22,8 @@ else
                 <th>RepCode</th>
                 <th>Email / Login</th>
                 <th>Open Connections</th>
-                <th>Connected Since (UTC)</th>
-                <th>Last Seen (UTC)</th>
+                <th>Connected Since (Eastern)</th>
+                <th>Last Seen (Eastern)</th>
             </tr>
         </thead>
         <tbody>
@@ -34,8 +34,8 @@ else
                     <td>@GetRepCode(user)</td>
                     <td>@GetSecondaryIdentity(user)</td>
                     <td>@user.ConnectionCount</td>
-                    <td>@user.ConnectedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                    <td>@user.LastSeenUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@FormatEasternTime(user.ConnectedAtUtc)</td>
+                    <td>@FormatEasternTime(user.LastSeenUtc)</td>
                 </tr>
             }
         </tbody>
@@ -44,6 +44,10 @@ else
 
 @code {
     private IReadOnlyList<UserConnectionTracker.ConnectedUserSummary> connectedUsers = Array.Empty<UserConnectionTracker.ConnectedUserSummary>();
+
+    private static readonly TimeZoneInfo EasternTimeZone =
+        TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "Eastern Standard Time" : "America/New_York");
 
     protected override void OnInitialized()
     {
@@ -60,6 +64,12 @@ else
     {
         connectedUsers = ConnectionTracker.GetConnectedUsers();
         _ = InvokeAsync(StateHasChanged);
+    }
+
+    private static string FormatEasternTime(DateTimeOffset utcDateTime)
+    {
+        var eastern = TimeZoneInfo.ConvertTime(utcDateTime, EasternTimeZone);
+        return eastern.ToString("yyyy-MM-dd hh:mm:ss tt");
     }
 
     private static string GetSecondaryIdentity(UserConnectionTracker.ConnectedUserSummary user)
