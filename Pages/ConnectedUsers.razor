@@ -19,8 +19,10 @@ else
         <thead>
             <tr>
                 <th>User</th>
+                <th>RepCode</th>
                 <th>Email / Login</th>
                 <th>Open Connections</th>
+                <th>Connected Since (UTC)</th>
                 <th>Last Seen (UTC)</th>
             </tr>
         </thead>
@@ -29,8 +31,10 @@ else
             {
                 <tr>
                     <td>@user.DisplayName</td>
+                    <td>@GetRepCode(user)</td>
                     <td>@GetSecondaryIdentity(user)</td>
                     <td>@user.ConnectionCount</td>
+                    <td>@user.ConnectedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
                     <td>@user.LastSeenUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
                 </tr>
             }
@@ -71,5 +75,15 @@ else
         }
 
         return user.IsAnonymous ? "Anonymous" : user.UserKey;
+    }
+
+    private static string GetRepCode(UserConnectionTracker.ConnectedUserSummary user)
+    {
+        if (!string.IsNullOrWhiteSpace(user.RepCode))
+        {
+            return user.RepCode;
+        }
+
+        return user.IsAnonymous ? "-" : "(none)";
     }
 }

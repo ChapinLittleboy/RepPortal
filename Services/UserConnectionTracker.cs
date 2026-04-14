@@ -39,8 +39,10 @@ public sealed class UserConnectionTracker
                         latest.DisplayName,
                         latest.Email,
                         latest.UserName,
+                        latest.RepCode,
                         latest.IsAnonymous,
                         group.Count(),
+                        group.Min(x => x.ConnectedAtUtc),
                         group.Max(x => x.LastSeenUtc));
                 })
                 .OrderBy(summary => summary.IsAnonymous)
@@ -51,7 +53,17 @@ public sealed class UserConnectionTracker
 
     public void AddConnection(string connectionId)
     {
-        UpdateConnectionUser(connectionId, user: null);
+        lock (_syncLock)
+        {
+            if (_connections.ContainsKey(connectionId))
+            {
+                return;
+            }
+
+            _connections[connectionId] = BuildEntry(connectionId, user: null);
+        }
+
+        ConnectionsChanged?.Invoke();
     }
 
     public void UpdateConnectionUser(string connectionId, ClaimsPrincipal? user)
@@ -91,6 +103,7 @@ public sealed class UserConnectionTracker
         var userName = user?.Identity?.Name
             ?? user?.FindFirst(ClaimTypes.Name)?.Value
             ?? email;
+        var repCode = user?.FindFirst("RepCode")?.Value;
         var displayName = !string.IsNullOrWhiteSpace(fullName)
             ? fullName
             : !string.IsNullOrWhiteSpace(email)
@@ -109,7 +122,9 @@ public sealed class UserConnectionTracker
             displayName,
             email,
             userName,
+            repCode,
             !isAuthenticated,
+            DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow);
     }
 
@@ -118,8 +133,10 @@ public sealed class UserConnectionTracker
         string DisplayName,
         string? Email,
         string? UserName,
+        string? RepCode,
         bool IsAnonymous,
         int ConnectionCount,
+        DateTimeOffset ConnectedAtUtc,
         DateTimeOffset LastSeenUtc);
 
     private sealed record ConnectionEntry(
@@ -128,6 +145,8 @@ public sealed class UserConnectionTracker
         string DisplayName,
         string? Email,
         string? UserName,
+        string? RepCode,
         bool IsAnonymous,
+        DateTimeOffset ConnectedAtUtc,
         DateTimeOffset LastSeenUtc);
 }
