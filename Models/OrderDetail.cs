@@ -27,7 +27,7 @@ public class OrderDetail
     public string? CoNum { get; set; }
 
     [CsiField("Item")]
-    public string? Item { get; set; }
+    public string? ItemNumber { get; set; }
 
     [CsiField("Description")]
     public string? ItemDesc { get; set; }
@@ -43,12 +43,15 @@ public class OrderDetail
     public decimal ShippedQty { get; set; }
 
     [JsonIgnore]
-    public decimal OpenQty =>
-        Math.Max(0m, (OrdQty) - (ShippedQty));
+    public decimal OpenQty { get; set; }
 
     [JsonIgnore]
-    public decimal OpenDollars => Math.Max(0m, (OrdQty) - (ShippedQty)) * Price;
-
+    public decimal OpenDollars { get; set; }
+    public void RecalculateOpenAmounts()
+    {
+        OpenQty = Math.Max(0m, OrdQty - ShippedQty);
+        OpenDollars = OpenQty * Price;
+    }
     [CsiField("AdrName")]
     public string? ShipToName { get; set; }
 

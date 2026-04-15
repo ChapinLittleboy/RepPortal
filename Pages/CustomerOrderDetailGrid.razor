@@ -18,7 +18,7 @@ else if (orderDetails != null && orderDetails.Any())
             <GridColumn Field=@nameof(OrderDetail.PromDate) HeaderText="Promise Date" Format="d" Type="ColumnType.Date" Width="100"></GridColumn>
             <GridColumn Field=@nameof(OrderDetail.CustPO) HeaderText="Customer PO" Width="150"></GridColumn>
             <GridColumn Field=@nameof(OrderDetail.CoNum) HeaderText="Order #" Width="100"></GridColumn>
-            <GridColumn Field=@nameof(OrderDetail.Item) HeaderText="Item" Width="120"></GridColumn>
+            <GridColumn Field=@nameof(OrderDetail.ItemNumber) HeaderText="Item" Width="120"></GridColumn>
             <GridColumn Field=@nameof(OrderDetail.ShipToName) HeaderText="Ship To" Width="200"></GridColumn>
             <GridColumn Field=@nameof(OrderDetail.OrdQty) HeaderText="Ord Qty" Format="N0" Width="90" TextAlign="TextAlign.Right"></GridColumn>
             <GridColumn Field=@nameof(OrderDetail.Price) HeaderText="Price" Format="C2" Width="100" TextAlign="TextAlign.Right"></GridColumn>

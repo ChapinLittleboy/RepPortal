@@ -80,7 +80,7 @@ else
 			<GridColumn Field=@nameof(OrderDetail.ShipToNum) HeaderText="Ship To #" Width="120"></GridColumn>
 			<GridColumn Field=@nameof(OrderDetail.ShipToName) HeaderText="Name" Width="200"></GridColumn>
 			<GridColumn Field=@nameof(OrderDetail.ShipToRegion) HeaderText="Region" Width="100" Visible="@(RepCodeContext.CurrentRepCode == "LAW")"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.Item) HeaderText="Item" Width="120"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.ItemNumber) HeaderText="Item" Width="120"></GridColumn>
 			<GridColumn Field=@nameof(OrderDetail.ItemDesc) HeaderText="Item Description" Width="200"></GridColumn>
 			<GridColumn Field=@nameof(OrderDetail.OpenQty) HeaderText="Open Units" Format="N0" Width="150" TextAlign="TextAlign.Right"></GridColumn>
 			<GridColumn Field=@nameof(OrderDetail.Price) HeaderText="Price" Format="C2" Width="150" TextAlign="TextAlign.Right"></GridColumn>
@@ -115,6 +115,10 @@ else
 		{
 			// TODO: Pass SalesRep ID or filter criteria if needed
 			openOrderDetails = await SalesService.GetAllOpenOrderDetailsAsync();
+			foreach (var order in openOrderDetails)
+			{
+				order.RecalculateOpenAmounts();
+			}
 		}
 		catch (Exception ex)
 		{

@@ -55,7 +55,7 @@
     <script src="_content/Syncfusion.Blazor/scripts/syncfusion-blazor.min.js"></script> 
 
     <!-- Blazor Server Script -->
-    <script src="_framework/blazor.server.js"></script>
+    <script src="_framework/blazor.server.js" autostart="false"></script>
     <script>
         window.downloadFileFromStream = async (fileName, contentStreamReference) => {
             const arrayBuffer = await contentStreamReference.arrayBuffer();

@@ -1,9 +1,106 @@
-﻿@page "/admin/connected"
+@page "/admin/connected"
 @attribute [Authorize(Roles = "Administrator")]
+
+@using System.Timers
+@using RepPortal.Services
+@implements IDisposable
 
 @inject UserConnectionTracker ConnectionTracker
 
 <h3>Connected Users</h3>
 
-<p>There are currently <strong>@ConnectionTracker.ActiveConnections</strong> active user(s) on the site.</p>
+<p>There are currently <strong>@connections.Count</strong> active user(s) on the site.</p>
 
+@if (connections.Count == 0)
+{
+    <p>No users are currently connected.</p>
+}
+else
+{
+    <table class="table table-striped table-sm">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>RepCode</th>
+                <th>Connected</th>
+                <th>Last Activity</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var connection in connections)
+            {
+                <tr>
+                    <td>@DisplayValue(connection.Email)</td>
+                    <td>@DisplayValue(connection.RepCode)</td>
+                    <td>@FormatEasternTime(connection.ConnectedAtUtc)</td>
+                    <td>@FormatEasternTime(connection.LastActivityUtc)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private static readonly TimeZoneInfo EasternTimeZone = GetEasternTimeZone();
+    private readonly Timer refreshTimer = new(5000);
+    private IReadOnlyList<ConnectedUserInfo> connections = Array.Empty<ConnectedUserInfo>();
+
+    protected override void OnInitialized()
+    {
+        LoadConnections();
+
+        refreshTimer.Elapsed += OnRefreshTimerElapsed;
+        refreshTimer.AutoReset = true;
+        refreshTimer.Start();
+    }
+
+    private void OnRefreshTimerElapsed(object? sender, ElapsedEventArgs e)
+    {
+        _ = InvokeAsync(() =>
+        {
+            LoadConnections();
+            StateHasChanged();
+        });
+    }
+
+    private void LoadConnections()
+    {
+        connections = ConnectionTracker.GetActiveConnections();
+    }
+
+    private static string DisplayValue(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value;
+    }
+
+    private static string FormatEasternTime(DateTimeOffset? utcTimestamp)
+    {
+        if (utcTimestamp is null)
+        {
+            return "-";
+        }
+
+        var easternTime = TimeZoneInfo.ConvertTime(utcTimestamp.Value, EasternTimeZone);
+        var abbreviation = EasternTimeZone.IsDaylightSavingTime(easternTime.DateTime) ? "EDT" : "EST";
+
+        return $"{easternTime:MM/dd/yyyy h:mm:ss tt} {abbreviation}";
+    }
+
+    private static TimeZoneInfo GetEasternTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+        }
+    }
+
+    public void Dispose()
+    {
+        refreshTimer.Elapsed -= OnRefreshTimerElapsed;
+        refreshTimer.Dispose();
+    }
+}

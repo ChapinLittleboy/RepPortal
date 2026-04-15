@@ -1,4 +1,8 @@
-﻿namespace RepPortal.Models;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
+using Dapper;
+
+namespace RepPortal.Models;
 
 public class InvoiceRptDetail
 {
@@ -13,7 +17,7 @@ public class InvoiceRptDetail
     public string? CustPO { get; set; }
     [CsiField("Item")] public string? Item { get; set; }
     [CsiField("QtyInvoiced")] public decimal InvQty { get; set; }
-    public decimal? OrdQty { get; set; }  // Nullable in case not all rows have an order quantity
+    public decimal? OrdQty { get; set; }
     [CsiField("Price")] public decimal Price { get; set; }
     public DateTime? DueDate { get; set; }
     public DateTime? OrdDate { get; set; }
@@ -23,6 +27,14 @@ public class InvoiceRptDetail
     public DateTime? Ship_Date { get; set; }
     public string? ShipToRegion { get; set; }
 
-    // Computed property for Cust_Num
     public string Cust_Num => Cust.PadLeft(7);
+
+    static InvoiceRptDetail()
+    {
+        SqlMapper.SetTypeMap(typeof(InvoiceRptDetail), new CustomPropertyTypeMap(
+            typeof(InvoiceRptDetail),
+            (type, columnName) => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .FirstOrDefault(prop => prop.GetCustomAttribute<ColumnAttribute>()?.Name == columnName
+                                     || prop.Name.Equals(columnName, StringComparison.OrdinalIgnoreCase))));
+    }
 }
