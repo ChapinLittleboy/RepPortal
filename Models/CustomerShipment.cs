@@ -112,8 +112,9 @@ public class CustomerShipment
         SqlMapper.SetTypeMap(typeof(CustomerShipment), new CustomPropertyTypeMap(
             typeof(CustomerShipment),
             (type, columnName) => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .FirstOrDefault(prop => prop.GetCustomAttribute<ColumnAttribute>()?.Name == columnName
-                                     || prop.Name.Equals(columnName, StringComparison.OrdinalIgnoreCase))));
+                .FirstOrDefault(prop =>
+                    string.Equals(prop.GetCustomAttribute<ColumnAttribute>()?.Name, columnName, StringComparison.OrdinalIgnoreCase)
+                    || prop.Name.Equals(columnName, StringComparison.OrdinalIgnoreCase))!));
     }
 
     public CustomerShipment()

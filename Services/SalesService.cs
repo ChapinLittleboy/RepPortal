@@ -27,7 +27,7 @@ public class SalesService : ISalesService
     private readonly ISalesDataService? _core;
     private readonly ICsiRestClient? _csiRestClient;
     private readonly IIdoService? _idoService;
-    private readonly CsiOptions? _csiOptions;
+    private readonly CsiOptions _csiOptions;
 
     // Primary DI ctor
     public SalesService(
@@ -61,6 +61,7 @@ public class SalesService : ISalesService
         _connectionString = string.IsNullOrWhiteSpace(connectionString)
             ? throw new ArgumentException("connectionString is required.", nameof(connectionString))
             : connectionString;
+        _csiOptions = new CsiOptions();
     }
 
     public async Task<string?> GetRepCodeByRegistrationCodeAsync(string registrationCode)

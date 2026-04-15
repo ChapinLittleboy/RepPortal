@@ -64,7 +64,7 @@
 
                 if (call?.Method == "GetInvoiceRptData" && call.Parameters.ContainsKey("RepCode"))
                 {
-                    var repCode = call.Parameters["RepCode"].GetString();
+                    var repCode = call.Parameters["RepCode"].GetString() ?? CurrentRepCode;
                     string? custNum = null;
                     string? beginDate = null;
                     string? endDate = null;

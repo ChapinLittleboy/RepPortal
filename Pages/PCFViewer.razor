@@ -25,6 +25,7 @@ else if (!string.IsNullOrEmpty(_errorMessage))
 }
 else if (isReady)
 {
+	var currentHeader = pcfHeader!;
 	<div class="container pcf-header-details my-4">
 		<h2 class="mb-4">PCF/SPR Header Details</h2>
 
@@ -35,15 +36,15 @@ else if (isReady)
 				<div class="row mb-2">
 					<div class="col-md-4">
 						<strong>Customer Number:</strong>
-						<div>@pcfHeader.CustomerNumber</div>
+						<div>@currentHeader.CustomerNumber</div>
 					</div>
 					<div class="col-md-4">
 						<strong>Customer Name:</strong>
-						<div>@pcfHeader.CustomerName</div>
+						<div>@currentHeader.CustomerName</div>
 					</div>
 					<div class="col-md-4">
 						<strong>PCF/SPR Number:</strong>
-						<div>@pcfHeader.PcfNumber</div>
+						<div>@currentHeader.PcfNumber</div>
 					</div>
 				</div>
 
@@ -51,15 +52,15 @@ else if (isReady)
 				<div class="row mb-2">
 					<div class="col-md-4">
 						<strong>PCF/SPR Type:</strong>
-						<div>@pcfHeader.PCFTypeDescription</div>
+						<div>@currentHeader.PCFTypeDescription</div>
 					</div>
 					<div class="col-md-4">
 						<strong>Start Date:</strong>
-						<div>@pcfHeader.StartDate.ToString("MM-dd-yyyy")</div>
+						<div>@currentHeader.StartDate.ToString("MM-dd-yyyy")</div>
 					</div>
 					<div class="col-md-4">
 						<strong>End Date:</strong>
-						<div>@pcfHeader.EndDate.ToString("MM-dd-yyyy")</div>
+						<div>@currentHeader.EndDate.ToString("MM-dd-yyyy")</div>
 					</div>
 				</div>
 
@@ -68,8 +69,8 @@ else if (isReady)
                     <div class="col-md-4">
                         <strong>Bill To Address:</strong>
                         <div>
-                            @pcfHeader.BillToAddress, @pcfHeader.BillToCity,
-                            @pcfHeader.BTState, @pcfHeader.BTZip
+                            @currentHeader.BillToAddress, @currentHeader.BillToCity,
+                            @currentHeader.BTState, @currentHeader.BTZip
                         </div>
                     </div>
                 @* <div class="col-md-4">
@@ -86,7 +87,7 @@ else if (isReady)
 				<div class="row mb-2">
 					<div class="col-md-4">
 						<strong>Payment Terms:</strong>
-						<div>@pcfHeader.PaymentTermsDisplay</div>
+						<div>@currentHeader.PaymentTermsDisplay</div>
 					</div>
 					<div class="col-md-4">
 						<strong>Freight Terms:</strong>
@@ -101,7 +102,7 @@ else if (isReady)
 				<div class="row mb-2">
 					<div class="col-md-4">
 						<strong>Buying Group:</strong>
-						<div>@pcfHeader.BuyingGroup</div>
+						<div>@currentHeader.BuyingGroup</div>
 					</div>
 				</div>
 
@@ -109,15 +110,15 @@ else if (isReady)
 				<div class="row mb-2">
 					<div class="col-md-4">
 						<strong>Rep Code:</strong>
-						<div>@pcfHeader.RepCode</div>
+						<div>@currentHeader.RepCode</div>
 					</div>
 					<div class="col-md-4">
 						<strong>Rep Name:</strong>
-						<div>@pcfHeader.RepName</div>
+						<div>@currentHeader.RepName</div>
 					</div>
 					<div class="col-md-4">
 						<strong>Rep Agency:</strong>
-						<div>@pcfHeader.RepAgency</div>
+						<div>@currentHeader.RepAgency</div>
 					</div>
 				</div>
 
@@ -125,7 +126,7 @@ else if (isReady)
 				<div class="row mb-2">
 					<div class="col-md-12">
 						<strong>General Notes:</strong>
-						<div>@pcfHeader.GeneralNotes</div>
+						<div>@currentHeader.GeneralNotes</div>
 					</div>
 				</div>
 
@@ -133,11 +134,11 @@ else if (isReady)
 				<div class="row mb-2">
 					<div class="col-md-4">
 						<strong>Sales Manager:</strong>
-						<div>@pcfHeader.SalesManager</div>
+						<div>@currentHeader.SalesManager</div>
 					</div>
 					<div class="col-md-4">
 						<strong>Approval Date:</strong>
-						<div>@(pcfHeader.VPSalesDate.HasValue ? pcfHeader.VPSalesDate.Value.ToString("MM-dd-yyyy") : "N/A")</div>
+						<div>@(currentHeader.VPSalesDate.HasValue ? currentHeader.VPSalesDate.Value.ToString("MM-dd-yyyy") : "N/A")</div>
 					</div>
 				</div>
 			</div>
@@ -145,7 +146,7 @@ else if (isReady)
 
 		<!-- PCF Lines Grid -->
 		<h3 class="mb-3">PCF/SPR Lines</h3>
-		<SfGrid DataSource="pcfHeader.PCFLines">
+		<SfGrid DataSource="currentHeader.PCFLines">
 			<GridColumns>
 				<GridColumn Field="ItemNum" HeaderText="Item Number" Width="150"></GridColumn>
 				<GridColumn Field="ItemDesc" HeaderText="Item Description" Width="300"></GridColumn>
@@ -197,10 +198,19 @@ else if (isReady)
 			_errorMessage = $"Error loading PCF file: {ex.Message}";
 			Logger.LogError(ex, "Error loading PCF file for PCFNumber: {PcfNumber}", pcfNumber);
 		}
+		finally
+		{
+			isLoading = false;
+		}
 	}
 
 	private async void PrintPDF()
 	{
+		if (pcfHeader is null)
+		{
+			return;
+		}
+
 		var pdfName = $"PCF_{pcfHeader.PcfNumber} for Customer {pcfHeader.CustomerNumber}.pdf";
 		//ExportService service = new ExportService(hostingEnvironment, Configuration);
 		var documentStream = ExportService.CreatePCFPDF(pcfHeader);
@@ -213,24 +223,31 @@ else if (isReady)
 
 	private async Task PrintPDFNicer()
 	{
-       pcfHeader.Dump();
+		if (pcfHeader is null)
 		{
-			// 1) Generate your PDF bytes
-			var pdfBytes = ExportService.ExportPcfHeaderToPdf2(pcfHeader);
-
-			// 2) Call the JS function with three args
-			await JSRuntime.InvokeVoidAsync(
-				"downloadFileFromByteArray",
-				pdfBytes,
-				$"PCF_{pcfHeader.PcfNumber}_Cust{pcfHeader.CustomerNumber}.pdf",
-				"application/pdf"
-			);
+			return;
 		}
+
+		pcfHeader.Dump();
+
+		var pdfBytes = ExportService.ExportPcfHeaderToPdf2(pcfHeader);
+
+		await JSRuntime.InvokeVoidAsync(
+			"downloadFileFromByteArray",
+			pdfBytes,
+			$"PCF_{pcfHeader.PcfNumber}_Cust{pcfHeader.CustomerNumber}.pdf",
+			"application/pdf"
+		);
 	}
 
 
 	private void Displaylogging()
 	{
+		if (pcfHeader is null)
+		{
+			return;
+		}
+
 		Logger.LogInformation("PCFHeader Details:");
 		foreach (var property in typeof(PCFHeader).GetProperties())
 		{

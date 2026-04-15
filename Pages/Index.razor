@@ -34,7 +34,6 @@
 
 
 @code {
-    private string? repAgency;
     private string? repFirstName;
     private bool isLoggedIn = false;
     private string? repCode;
@@ -46,19 +45,13 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
-        if (user.Identity.IsAuthenticated && !isLoggedIn)
+        if (user.Identity?.IsAuthenticated == true && !isLoggedIn)
         {
             isLoggedIn = true;
 
             repFirstName = user.FindFirst(c => c.Type == "FirstName")?.Value;
             repCode = user.FindFirst(c => c.Type == "RepCode")?.Value;
-            string repEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
-
-            var assignedRegion = user.FindFirst("AssignedRegion")?.Value;
-            if (!string.IsNullOrEmpty(repFirstName))
-            {
-                //repAgency =  SalesService.GetRepAgency(repCode);
-            }
+            string? repEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
             // string LoginMessage = $"User {repFirstName} {repEmail} with RepCode {repCode} has opened the Index page.";
 
             //await ActivityLogService.LogLoginAsync(repCode,"",LoginMessage);
@@ -71,17 +64,17 @@
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
-            if (user.Identity.IsAuthenticated)
+            if (user.Identity?.IsAuthenticated == true)
             {
                 _hasLogged = true;
 
                 repFirstName = user.FindFirst(c => c.Type == "FirstName")?.Value;
                 repCode = user.FindFirst(c => c.Type == "RepCode")?.Value;
-                string repEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
+                string? repEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value;
 
                 string LoginMessage = $"User {repFirstName} {repEmail} with RepCode {repCode} has opened the Index page.";
 
-                await ActivityLogService.LogLoginAsync(repCode, "", LoginMessage);
+                await ActivityLogService.LogLoginAsync(repCode ?? string.Empty, "", LoginMessage);
             }
         }
     }

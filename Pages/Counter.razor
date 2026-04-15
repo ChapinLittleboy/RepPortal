@@ -10,11 +10,11 @@
 
 <h1>Counter</h1>
 
-@if (authState.User.Identity.IsAuthenticated)
+@if (authState?.User.Identity?.IsAuthenticated == true)
 {
     if (currentUser != null)
     {
-        <p>Welcome, @authState.User.Identity.Name  @currentUser.FirstName @currentUser.LastName @currentUser.RepCode </p>
+        <p>Welcome, @authState.User.Identity?.Name  @currentUser.FirstName @currentUser.LastName @currentUser.RepCode </p>
     }
     else
     {
@@ -48,7 +48,7 @@ else
         authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         
-        if (user.Identity.IsAuthenticated)
+        if (user.Identity?.IsAuthenticated == true)
         {
             currentUser = await UserManager.GetUserAsync(user);
         }

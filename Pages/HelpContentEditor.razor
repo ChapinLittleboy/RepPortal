@@ -48,7 +48,7 @@
     protected override async Task OnInitializedAsync()
     {
         pageList = await PageDefinitionService.GetAllPagesAsync();
-        HelpContentService.GetHelpContentAsync(string.Empty);
+        await HelpContentService.GetHelpContentAsync(string.Empty);
     }
 
     private async Task OnPageSelected(ChangeEventArgs<string, PageDefinition> args)

@@ -55,8 +55,8 @@
                     <Template>
                         @{
                             var data = context as Customer;
-                            var displayName = data.Status == "A" ? data.SalesManagerName : "To be assigned";
-                            var tooltip = data.Status != "A" ? "Sales manager will be assigned when the account is activated" : string.Empty;
+                            var displayName = data?.Status == "A" ? data.SalesManagerName : "To be assigned";
+                            var tooltip = data?.Status != "A" ? "Sales manager will be assigned when the account is activated" : string.Empty;
                         }
                         <span title="@tooltip">@displayName</span>
                     </Template>

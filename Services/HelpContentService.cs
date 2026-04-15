@@ -17,14 +17,24 @@ public class HelpContentService
         _connection = _connectionFactory.CreateRepConnection();
     }
 
-    public async Task<HelpContent> GetHelpContentAsync(string pageKey)
+    public async Task<HelpContent?> GetHelpContentAsync(string? pageKey)
     {
+        if (string.IsNullOrWhiteSpace(pageKey))
+        {
+            return null;
+        }
+
         var sql = "SELECT * FROM PageHelpContent WHERE PageKey = @PageKey";
         return await _connection.QueryFirstOrDefaultAsync<HelpContent>(sql, new { PageKey = pageKey });
     }
 
     public async Task SaveHelpContentAsync(HelpContent content)
     {
+        if (string.IsNullOrWhiteSpace(content.PageKey))
+        {
+            throw new InvalidOperationException("PageKey is required to save help content.");
+        }
+
         var existing = await GetHelpContentAsync(content.PageKey);
         if (existing == null)
         {

@@ -55,15 +55,15 @@ else
 					        <GridAggregateColumn Field="@colName" Type="AggregateType.Sum" Format="C0">
 						        <FooterTemplate>
 							        @{
-								        var aggregate = (context as AggregateTemplateContext);
+								        var aggregate = context as AggregateTemplateContext;
 							        }
-							        <div>@aggregate.Sum</div>
+							        <div>@aggregate?.Sum</div>
 						        </FooterTemplate>
 						        <GroupFooterTemplate>
 							        @{
-								        var aggregate = (context as AggregateTemplateContext);
+								        var aggregate = context as AggregateTemplateContext;
 							        }
-							        <div>@aggregate.Sum</div>
+							        <div>@aggregate?.Sum</div>
 						        </GroupFooterTemplate>
 					        </GridAggregateColumn>
 				        }
@@ -120,7 +120,7 @@ else
     [Parameter]
     public string? salesmanType { get; set; }
 
-    private SfGrid<ExpandoObject>? Grid;
+    private SfGrid<ExpandoObject> Grid = default!;
     private List<Dictionary<string, object>> SalesData = new List<Dictionary<string, object>>();
     private List<string> DynamicColumns = new List<string>();
     private List<ExpandoObject> eSalesData = new List<ExpandoObject>();
@@ -131,6 +131,7 @@ else
     private AuthenticationState? authState;
     private ApplicationUser? currentUser;
     private bool isLawRep;
+    private string EffectiveRepCode => currentUser?.RepCode ?? RepCodeContext.CurrentRepCode ?? "Unknown";
 
 
     protected override async Task OnParametersSetAsync()
@@ -170,7 +171,7 @@ else
 		    .Select(i => fyStart.AddMonths(i).ToString("MMM") + fyStart.AddMonths(i).Year)
 		    .ToHashSet();
 
-	    foreach (IDictionary<string, object> row in eSalesData)
+	    foreach (var row in eSalesData.Select(GetExpandoDictionary))
 	    {
 		    var monthKeysToRemove = row.Keys
 			    .Where(k => Regex.IsMatch(k, @"^[A-Z][a-z]{2}\d{4}$") && !allowedMonths.Contains(k))
@@ -192,7 +193,7 @@ else
     {
         authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        if (user.Identity.IsAuthenticated)
+        if (user.Identity?.IsAuthenticated == true)
         {
             currentUser = await UserManager.GetUserAsync(user);
             isLawRep = RepCodeContext.CurrentRepCode == "LAW";
@@ -213,13 +214,13 @@ else
     {
         if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
         {
-            var ExcelFileName = $"Chapin Monthly Sales Report({currentUser.RepCode}).xlsx";
+            var ExcelFileName = $"Chapin Monthly Sales Report({EffectiveRepCode}).xlsx";
             ExcelExportProperties exportProperties = new ExcelExportProperties
             {
                     FileName = ExcelFileName
             };
             await ActivityLogService.LogReportUsageActivityAsync("Monthly Invoiced Sales Report Rep Export", ExcelFileName);
-            await this.Grid.ExportToExcelAsync(exportProperties);
+            await Grid.ExportToExcelAsync(exportProperties);
         }
     }
     private void ConvertToDictionaries(List<Dictionary<string, object>> records)
@@ -243,7 +244,7 @@ else
 
 	    // Extract column names from expando object keys
 	    var allColumns = records
-		    .SelectMany(r => ((IDictionary<string, object>)r).Keys)
+		    .SelectMany(r => GetExpandoDictionary(r).Keys)
 		    .Where(k =>
 			    !IsFixedColumn(k) &&
 			    (currentFYMonths.Contains(k) || allowedPrefixes.Any(p => k.StartsWith(p, StringComparison.OrdinalIgnoreCase))))
@@ -362,17 +363,19 @@ else
     {
         foreach (var record in records)
         {
-            dynamic expando = new ExpandoObject();
-            var dict = expando as IDictionary<string, object>;
+            var dict = new Dictionary<string, object>();
 
             foreach (var kvp in record)
             {
-                dict[kvp.Key] = kvp.Value;
+                dict[kvp.Key] = kvp.Value ?? string.Empty;
             }
 
-            SalesData.Add(expando);
+            SalesData.Add(dict);
         }
     }
+
+    private static IDictionary<string, object?> GetExpandoDictionary(ExpandoObject expando) =>
+        (IDictionary<string, object?>)expando;
 
  
 }

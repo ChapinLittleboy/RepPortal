@@ -30,6 +30,11 @@ public class DownloadFormsService : IFormsDownloadService
 
     public async Task<List<FormsDownloadFolder>> GetFormsDownFoldersAsync()
     {
+        if (string.IsNullOrWhiteSpace(_root))
+        {
+            return new List<FormsDownloadFolder>();
+        }
+
         const string sql = @"
             SELECT Id, DisplayName, FolderRelativePath
               FROM dbo.FormsFolders
@@ -42,7 +47,7 @@ public class DownloadFormsService : IFormsDownloadService
         foreach (var folder in folders)
         {
             // _root comes from config["PriceBooks:RootPath"] == "\\\\ciiws01\\ChapinRepDocs"
-            var physical = Path.Combine(_root, folder.FolderRelativePath);
+            var physical = Path.Combine(_root, folder.FolderRelativePath ?? string.Empty);
             if (!Directory.Exists(physical))
             {
                 // you may log a warning here

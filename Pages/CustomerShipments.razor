@@ -120,9 +120,9 @@
 		        <GridColumn HeaderText="Qty Shipped" TextAlign="TextAlign.Right" Width="100">
 			        <Template>
 				        @{
-					        var sd = (context as CustomerShipment);
+					        var sd = context as CustomerShipment;
 					        <div class="right-padding">
-						        @sd.ShipQty
+						        @(sd?.ShipQty ?? 0)
 					        </div>
 				        }
 			        </Template>
@@ -145,18 +145,18 @@
 							<GridAggregateColumn Field=@nameof(CustomerShipment.ExtLinePrice) Type="AggregateType.Sum" Format="C2">
 					        <GroupFooterTemplate>
 						        @{
-							        var aggregate = (context as AggregateTemplateContext);
+							        var aggregate = context as AggregateTemplateContext;
 							        <div>
-								        <p>Sum: @aggregate.Sum</p>
+								        <p>Sum: @aggregate?.Sum</p>
 							        </div>
 						        }
 					        </GroupFooterTemplate>
 					        <FooterTemplate>
 						        @{
-							        var aggregate = (context as AggregateTemplateContext);
+							        var aggregate = context as AggregateTemplateContext;
 						        }
 						        <div>
-							        <p>Total: @aggregate.Sum</p>
+							        <p>Total: @aggregate?.Sum</p>
 						        </div>
 					        </FooterTemplate>
 				        </GridAggregateColumn>
@@ -171,51 +171,36 @@
 
 
 @code {
-	private SfGrid<CustomerShipment>? Grid;
+	private SfGrid<CustomerShipment> Grid = default!;
 	private List<CustomerShipment> ShipmentsData = new List<CustomerShipment>();
 
 	private bool isLoading = false;
 	private bool showTip = false;
-	private IEnumerable<string>? CustomerTypes;
 	private bool isReady = false;
 	private int NumericValue = 50; // Default value for the combo box DeBounceDelay
-	private IEnumerable<Customer>? CustomerEList;
 	private List<Customer> CustomerList = new List<Customer>();
-	private string WantedCustNum = string.Empty;
 	public SfComboBox<string, Customer>? WantedCust { get; set; }
 	private bool isLawlessRep = false;
-	private IEnumerable<CustType>? CustomerTypesList;
-
-
-	private AuthenticationState? authState;
-	private ApplicationUser? currentUser;
+	private IEnumerable<CustType> CustomerTypesList = Array.Empty<CustType>();
 
 	private SalesService.ShipmentsParameters parameters = new SalesService.ShipmentsParameters();
 
 	protected override async Task OnInitializedAsync()
 	{
-		authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+		var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
 		var user = authState.User;
-		if (user.Identity.IsAuthenticated)
+		if (user.Identity?.IsAuthenticated == true)
 		{
-			currentUser = await UserManager.GetUserAsync(user);
-			// parameters.RepCode = currentUser.RepCode;
 			parameters.RepCode = RepCodeContext.CurrentRepCode;
             isLawlessRep = RepCodeContext.CurrentRepCode == "LAW";
-
-
-          
-
 		}
 
 
 		parameters.BeginShipDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
 		parameters.EndShipDate = DateTime.Now; // Default to today
 
-		CustomerTypes = await CustomerService.GetCustomerTypesAsync();
 		CustomerTypesList = await CustomerService.GetCustomerTypesListAsync();
 
-		//CustomerEList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
 		CustomerList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
 		isReady = true;
 
@@ -230,7 +215,7 @@
 	{
 		showTip = true;
 		isLoading = true;
-		parameters.CustNum = WantedCust.Value;
+		parameters.CustNum = WantedCust?.Value;
 		parameters.ShipToRegion = RepCodeContext.RepRegion;
 
 		// Serialize parameters for logging
@@ -239,9 +224,6 @@
 
 		ShipmentsData = await SalesService.GetShipmentsData(parameters);
 		isLoading = false;
-
-        var X = await SalesService.GetShipmentsData(parameters); //.GetShipmentsData(parameters);)
-        Console.WriteLine("Hey");
     }
 
 	public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
@@ -253,7 +235,7 @@
 			{
 				FileName = ExcelFileName
 			};
-			await this.Grid.ExportToExcelAsync(exportProperties);
+			await Grid.ExportToExcelAsync(exportProperties);
 		}
 	}
 

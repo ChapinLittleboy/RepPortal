@@ -99,7 +99,7 @@ else
 
 
 @code {
-    private SfGrid<ExpandoObject>? Grid;
+    private SfGrid<ExpandoObject> Grid = default!;
     private List<Dictionary<string, object>> SalesData = new List<Dictionary<string, object>>();
     private List<string> DynamicColumns = new List<string>();
     private List<ExpandoObject> eSalesData = new List<ExpandoObject>();
@@ -113,9 +113,6 @@ else
     private Dictionary<string, decimal> CalculatedSums = new Dictionary<string, decimal>();
     public List<string> DynamicColumnsToShow { get; private set; } = new List<string>();
 
-
-    // Flag to indicate if calculation is done
-    private bool aggregatesCalculated = false;
 
     // Define ALL keys that require aggregation
     private List<string> KeysToAggregatexx = new List<string> {
@@ -140,11 +137,10 @@ else
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
-        aggregatesCalculated = false;
 
         authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        if (user.Identity.IsAuthenticated)
+        if (user.Identity?.IsAuthenticated == true)
         {
             currentUser = await UserManager.GetUserAsync(user);
         }
@@ -191,7 +187,6 @@ else
         CalculatedSums.Clear();
         if (eSalesData == null || !eSalesData.Any())
         {
-            aggregatesCalculated = true;
             return;
         }
 
@@ -200,7 +195,7 @@ else
         {
             // Check if the key exists in the first row just to be safe
             // (Assumes all rows have the same keys as the first)
-            var firstRow = eSalesData.First() as IDictionary<string, object>;
+            var firstRow = GetExpandoDictionary(eSalesData.First());
             if (!firstRow.ContainsKey(columnKey))
             {
                 Console.WriteLine($"Warning: Key '{columnKey}' not found in data, skipping aggregation.");
@@ -211,7 +206,7 @@ else
             decimal currentSum = 0;
             foreach (var rowObject in eSalesData)
             {
-                var rowDict = (IDictionary<string, object>)rowObject;
+                var rowDict = GetExpandoDictionary(rowObject);
                 if (rowDict.TryGetValue(columnKey, out var value) && value != null)
                 {
                     if (decimal.TryParse(value.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal decimalValue))
@@ -223,7 +218,6 @@ else
             CalculatedSums[columnKey] = currentSum; // Store sum for this key
             Console.WriteLine($"DEBUG MANUAL SUM: Key='{columnKey}', Sum={currentSum}"); // Optional debug log
         }
-        aggregatesCalculated = true;
         Console.WriteLine("Finished Calculating Manual Aggregates.");
     }
 
@@ -238,7 +232,7 @@ else
             {
                 FileName = ExcelFileName
             };
-            await this.Grid.ExportToExcelAsync(exportProperties);
+            await Grid.ExportToExcelAsync(exportProperties);
         }
     }
     private void ConvertToDictionaries(List<Dictionary<string, object>> records)
@@ -392,15 +386,14 @@ else
     {
         foreach (var record in records)
         {
-            dynamic expando = new ExpandoObject();
-            var dict = expando as IDictionary<string, object>;
+            var dict = new Dictionary<string, object>();
 
             foreach (var kvp in record)
             {
-                dict[kvp.Key] = kvp.Value;
+                dict[kvp.Key] = kvp.Value ?? string.Empty;
             }
 
-            SalesData.Add(expando);
+            SalesData.Add(dict);
         }
     }
 
@@ -417,7 +410,7 @@ else
 
 
         showRevenue = !showRevenue;
-        Grid.RefreshColumnsAsync();
+        _ = Grid.RefreshColumnsAsync();
         Console.WriteLine("Dynamic Columns after toggle: " + string.Join(", ", DynamicColumns));
         Console.WriteLine("Dynamic Columns to show after toggle: " + string.Join(", ", DynamicColumnsToShow));
     }
@@ -442,6 +435,9 @@ else
 
         Console.WriteLine($"Updated DynamicColumnsToShow (Show Revenue: {showRevenue}): {string.Join(", ", DynamicColumnsToShow)}");
     }
+
+    private static IDictionary<string, object?> GetExpandoDictionary(ExpandoObject expando) =>
+        (IDictionary<string, object?>)expando;
 
     private void ProcessDynamicColumnsAndPopulateKeysToAggregate(List<Dictionary<string, object>> records)
     {

@@ -161,8 +161,6 @@
     private string _csvOutputPath = "";
     private bool _csvExportEnabled = false;
 
-    private SfGrid<IdoPropertyRow>? Grid;
-
     private List<IdoCollectionRow> IdoList = new();
     private string? SelectedIdo;
 
@@ -172,7 +170,7 @@
     private string StatusMessage = "";
     private int _nextSelectedOrder = 1;
 
-    private SfGrid<IdoPropertyRow>? GridRef;
+    private SfGrid<IdoPropertyRow> GridRef = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -590,7 +588,7 @@ ORDER BY PropertyName;
 
     private void ExcelHeaderQueryCellInfoHandler(ExcelHeaderQueryCellInfoEventArgs args)
     {
-        if (args.Column.HeaderText == "DerivedCode")
+        if (args.Column?.HeaderText == "DerivedCode" && args.Style is not null)
         {
             args.Style.WrapText = true;
         }
@@ -598,7 +596,7 @@ ORDER BY PropertyName;
 
     private void ExcelQueryCellInfoHandler(ExcelQueryCellInfoEventArgs<IdoPropertyRow> args)
     {
-        if (args.Column.Field == "PropertyValue")
+        if (args.Column?.Field == "PropertyValue" && args.Style is not null)
         {
             args.Style.WrapText = true;
         }

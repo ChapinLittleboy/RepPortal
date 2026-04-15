@@ -52,9 +52,15 @@ Width="100%">
         if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
         {
             if (args.Action == "Add")
-                await FileService.AddFileAsync(args.Data);
+            {
+                if (args.Data is not null)
+                    await FileService.AddFileAsync(args.Data);
+            }
             else if (args.Action == "Edit")
-                await FileService.UpdateFileAsync(args.Data);
+            {
+                if (args.Data is not null)
+                    await FileService.UpdateFileAsync(args.Data);
+            }
         }
         else if (args.RequestType == Syncfusion.Blazor.Grids.Action.Delete)
         {

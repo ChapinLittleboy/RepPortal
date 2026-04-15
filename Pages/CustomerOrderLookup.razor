@@ -116,7 +116,7 @@
                 <Template>
                     @{
                         var data = context as OrderLookupLine;
-                        <text>@GetLineStatusDescription(data.LineStatus)</text>
+                        <text>@GetLineStatusDescription(data?.LineStatus ?? string.Empty)</text>
                     }
                 </Template>
             </GridColumn>
@@ -160,17 +160,18 @@
         Header = null;
         LineItems.Clear();
 
-        if (string.IsNullOrWhiteSpace(WantedCust.Value) || string.IsNullOrWhiteSpace(CustomerPo))
+        var wantedCustomer = WantedCust?.Value;
+        if (string.IsNullOrWhiteSpace(wantedCustomer) || string.IsNullOrWhiteSpace(CustomerPo))
             return;
 
         normalizedPo = NormalizePo(CustomerPo);
 
-        var logParams = new { CustNum = WantedCust.Value, CustomerPo = normalizedPo, RepCode = RepCodeContext.CurrentRepCode };
+        var logParams = new { CustNum = wantedCustomer, CustomerPo = normalizedPo, RepCode = RepCodeContext.CurrentRepCode };
         var paramJson = System.Text.Json.JsonSerializer.Serialize(logParams);
         await ActivityLogService.LogReportUsageActivityAsync("Customer Order Lookup", paramJson);
 
         var (header, lines) = await SalesService.GetOrderLookupAsync(
-            WantedCust.Value, normalizedPo, RepCodeContext.CurrentRepCode);
+            wantedCustomer, normalizedPo, RepCodeContext.CurrentRepCode);
 
         if (header is null) return;
 

@@ -24,5 +24,5 @@ public class InvoiceRptDetail
     public string? ShipToRegion { get; set; }
 
     // Computed property for Cust_Num
-    public string Cust_Num => Cust.PadLeft(7);
+    public string Cust_Num => (Cust ?? string.Empty).PadLeft(7);
 }

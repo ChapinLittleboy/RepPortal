@@ -11,7 +11,7 @@ public interface IEmailService
         string subject,
         string body,
         bool isHtml = true,
-        List<EmailAttachment> attachments = null
+        List<EmailAttachment>? attachments = null
     );
 }
 
@@ -43,7 +43,7 @@ public class SmtpEmailService : IEmailService
         string subject,
         string body,
         bool isHtml = true,
-        List<EmailAttachment> attachments = null)
+        List<EmailAttachment>? attachments = null)
     {
         using var message = new MailMessage();
         message.From = new MailAddress(_fromAddress);
@@ -56,6 +56,11 @@ public class SmtpEmailService : IEmailService
         {
             foreach (var att in attachments)
             {
+                if (att.Content is null || att.FileName is null || att.ContentType is null)
+                {
+                    continue;
+                }
+
                 var stream = new MemoryStream(att.Content);
                 message.Attachments.Add(new Attachment(stream, att.FileName, att.ContentType));
             }

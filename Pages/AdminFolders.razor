@@ -63,14 +63,21 @@
         if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
         {
             if (args.Action == "Add")
-                await FolderService.AddFolderAsync(SelectedTable, args.Data);
+            {
+                if (args.Data is not null)
+                    await FolderService.AddFolderAsync(SelectedTable, args.Data);
+            }
             else if (args.Action == "Edit")
-                await FolderService.UpdateFolderAsync(SelectedTable, args.Data);
+            {
+                if (args.Data is not null)
+                    await FolderService.UpdateFolderAsync(SelectedTable, args.Data);
+            }
         }
         else if (args.RequestType == Syncfusion.Blazor.Grids.Action.Delete)
         {
-            Debug.Assert(args != null, nameof(args) + " != null");
-            await FolderService.DeleteFolderAsync(SelectedTable, (int)args.Data.Id);
+            var id = args.Data?.Id;
+            if (id.HasValue)
+                await FolderService.DeleteFolderAsync(SelectedTable, id.Value);
         }
 
         await LoadFolders();

@@ -111,12 +111,7 @@ public class ExportService
         worksheet.Range["A14"].Text = "General Notes:";
         worksheet.Range["B14"].Text = header.GeneralNotes;
 
-        if (1 == 2)
-        {
-            worksheet.Range["A15"].Text = "Market Type:";
-            worksheet.Range["B15"].Text = header.MarketType;
-            worksheet.Range["A2:A15"].CellStyle.Font.Bold = true;
-        }
+        worksheet.Range["A2:A14"].CellStyle.Font.Bold = true;
 
         // Add a separator row
         worksheet.Range["A17:B17"].Merge();
@@ -133,16 +128,13 @@ public class ExportService
 
         // Populate PCFItemDTO Data
         int rowIndex = 19; // Start writing item data at row 20
-        foreach (var item in header.PCFLines.OrderBy(line => line.ItemNum))
+        foreach (var item in (header.PCFLines ?? Enumerable.Empty<PCFItem>()).OrderBy(line => line.ItemNum))
         {
-            worksheet.Range[rowIndex, 1].Text = item.ItemNum;
-            worksheet.Range[rowIndex, 2].Text = item.ItemDesc;
-            if (item != null)
-            {
-                worksheet.Range[rowIndex, 3].Number = (double)item.ApprovedPrice;
-                worksheet.Range[rowIndex, 4].Text = item.Family_Code;
-                worksheet.Range[rowIndex, 5].Text = item.Family_Code_Description;
-            }
+            worksheet.Range[rowIndex, 1].Text = item.ItemNum ?? string.Empty;
+            worksheet.Range[rowIndex, 2].Text = item.ItemDesc ?? string.Empty;
+            worksheet.Range[rowIndex, 3].Number = item.ApprovedPrice;
+            worksheet.Range[rowIndex, 4].Text = item.Family_Code ?? string.Empty;
+            worksheet.Range[rowIndex, 5].Text = item.Family_Code_Description ?? string.Empty;
 
 
             rowIndex++;
@@ -256,7 +248,7 @@ public class ExportService
 
         if (!header.PromoPaymentTerms.IsNullOrEmpty())
         {
-            string paymentTerms = header.PromoPaymentTermsText;
+            string paymentTerms = header.PromoPaymentTermsText ?? string.Empty;
             graphics.DrawString($"Payment Terms: {paymentTerms}", infoFont, PdfBrushes.Black,
                 new PointF(marginX, yPosition));
             yPosition += 15;
@@ -264,7 +256,7 @@ public class ExportService
 
         if (!header.FreightTerms.IsNullOrEmpty())
         {
-            string freightTerms = header.FreightTerms;
+            string freightTerms = header.FreightTerms ?? string.Empty;
             graphics.DrawString($"Freight Terms: {freightTerms}", infoFont, PdfBrushes.Black,
                 new PointF(marginX, yPosition));
             yPosition += 15;
@@ -335,13 +327,13 @@ Prices and product availability are also subject to change at any time due to ma
 
 
 
-        foreach (var item in header.PCFLines)
+        foreach (var item in header.PCFLines ?? Enumerable.Empty<PCFItem>())
         {
             PdfGridRow row = grid.Rows.Add();
 
-            row.Cells[0].Value = item.ItemNum;
-            row.Cells[1].Value = item.ItemDesc;
-            if (item.ApprovedPrice != null) row.Cells[2].Value = item.ApprovedPrice.ToString("C2");
+            row.Cells[0].Value = item.ItemNum ?? string.Empty;
+            row.Cells[1].Value = item.ItemDesc ?? string.Empty;
+            row.Cells[2].Value = item.ApprovedPrice.ToString("C2");
         }
 
 
@@ -362,7 +354,7 @@ Prices and product availability are also subject to change at any time due to ma
 
 
     public void SendPcfPdfEmailWithAttachmentDONOTUSE(PCFHeader header, string EmailAddress,
-        string CCEmailAddress = null)
+        string? CCEmailAddress = null)
     {
         // Generate the PDF
         MemoryStream pdfStream = CreatePCFPDF(header);
@@ -508,9 +500,9 @@ Prices and product availability are also subject to change at any time due to ma
             PdfFont tableCellFont = new PdfStandardFont(PdfFontFamily.Helvetica, 12);
 
             // Helper function to draw a label and its value.
-            void DrawDetail(string label, string value)
+            void DrawDetail(string label, string? value)
             {
-                graphics.DrawString($"{label}: {value}", labelFont, PdfBrushes.Black, margin, yPosition);
+                graphics.DrawString($"{label}: {value ?? string.Empty}", labelFont, PdfBrushes.Black, margin, yPosition);
                 yPosition += lineSpacing;
             }
 
@@ -561,7 +553,7 @@ Prices and product availability are also subject to change at any time due to ma
             // --------------------------------------------------------------------------------
             // Draw each row for the PCF lines. Add new pages as needed.
             // --------------------------------------------------------------------------------
-            foreach (var line in pcfHeader.PCFLines)
+            foreach (var line in pcfHeader.PCFLines ?? Enumerable.Empty<PCFItem>())
             {
                 // Check if adding the next row would exceed the usable page height.
                 if (yPosition + rowHeight > page.GetClientSize().Height - margin - 50)
@@ -586,11 +578,11 @@ Prices and product availability are also subject to change at any time due to ma
                 // Draw row background and borders.
                 currentX = margin;
                 graphics.DrawRectangle(PdfPens.Black, currentX, yPosition, tableWidth, rowHeight);
-                graphics.DrawString(line.ItemNum, tableCellFont, PdfBrushes.Black,
+                graphics.DrawString(line.ItemNum ?? string.Empty, tableCellFont, PdfBrushes.Black,
                     currentX + 2, yPosition + 2);
                 currentX += columnWidths[0];
 
-                graphics.DrawString(line.ItemDesc, tableCellFont, PdfBrushes.Black,
+                graphics.DrawString(line.ItemDesc ?? string.Empty, tableCellFont, PdfBrushes.Black,
                     currentX + 2, yPosition + 2);
                 currentX += columnWidths[1];
 
@@ -598,7 +590,7 @@ Prices and product availability are also subject to change at any time due to ma
                     currentX + 2, yPosition + 2);
                 currentX += columnWidths[2];
 
-                graphics.DrawString(line.ItemStatus, tableCellFont, PdfBrushes.Black,
+                graphics.DrawString(line.ItemStatus ?? string.Empty, tableCellFont, PdfBrushes.Black,
                     currentX + 2, yPosition + 2);
                 yPosition += rowHeight;
             }
@@ -627,6 +619,8 @@ Prices and product availability are also subject to change at any time due to ma
 
         using (PdfDocument pdfDocument = new PdfDocument())
         {
+            static string Safe(string? value) => value ?? string.Empty;
+
             PdfPage page = pdfDocument.Pages.Add();
             PdfGraphics graphics = page.Graphics;
             SizeF clientSize = page.GetClientSize();
@@ -711,25 +705,25 @@ Prices and product availability are also subject to change at any time due to ma
             float y1 = currentY, y2 = currentY, y3 = currentY;
             // ... (Calls to DrawLabelAndValue for all header fields as before) ...
             // Column 1
-            y1 = DrawLabelAndValue(graphics, "Customer Number:", pcfHeader.CustomerNumber, labelFont, valueFont, col1X, y1, colWidth);
-            y1 = DrawLabelAndValue(graphics, "PCF Type:", pcfHeader.PCFTypeDescription, labelFont, valueFont, col1X, y1, colWidth);
+            y1 = DrawLabelAndValue(graphics, "Customer Number:", Safe(pcfHeader.CustomerNumber), labelFont, valueFont, col1X, y1, colWidth);
+            y1 = DrawLabelAndValue(graphics, "PCF Type:", Safe(pcfHeader.PCFTypeDescription), labelFont, valueFont, col1X, y1, colWidth);
             string billToFullAddress = $"{pcfHeader.BillToAddress}, {pcfHeader.BillToCity}, {pcfHeader.BTState} {pcfHeader.BTZip}";
             y1 = DrawLabelAndValue(graphics, "Bill To Address:", billToFullAddress, labelFont, valueFont, col1X, y1, colWidth);
-            y1 = DrawLabelAndValue(graphics, "Buying Group:", pcfHeader.BuyingGroup, labelFont, valueFont, col1X, y1, colWidth);
-            y1 = DrawLabelAndValue(graphics, "Rep Code:", pcfHeader.RepCode, labelFont, valueFont, col1X, y1, colWidth);
-            y1 = DrawLabelAndValue(graphics, "General Notes:", pcfHeader.GeneralNotes, labelFont, valueFont, col1X, y1, colWidth);
-            y1 = DrawLabelAndValue(graphics, "Sales Manager:", pcfHeader.SalesManager, labelFont, valueFont, col1X, y1, colWidth);
+            y1 = DrawLabelAndValue(graphics, "Buying Group:", Safe(pcfHeader.BuyingGroup), labelFont, valueFont, col1X, y1, colWidth);
+            y1 = DrawLabelAndValue(graphics, "Rep Code:", Safe(pcfHeader.RepCode), labelFont, valueFont, col1X, y1, colWidth);
+            y1 = DrawLabelAndValue(graphics, "General Notes:", Safe(pcfHeader.GeneralNotes), labelFont, valueFont, col1X, y1, colWidth);
+            y1 = DrawLabelAndValue(graphics, "Sales Manager:", Safe(pcfHeader.SalesManager), labelFont, valueFont, col1X, y1, colWidth);
 
             // Column 2
-            y2 = DrawLabelAndValue(graphics, "Customer Name:", pcfHeader.CustomerName, labelFont, valueFont, col2X, y2, colWidth);
+            y2 = DrawLabelAndValue(graphics, "Customer Name:", Safe(pcfHeader.CustomerName), labelFont, valueFont, col2X, y2, colWidth);
             y2 = DrawLabelAndValue(graphics, "Start Date:", pcfHeader.StartDate.ToString("MM-dd-yyyy"), labelFont, valueFont, col2X, y2, colWidth);
             y2 += (labelFont.MeasureString("X").Height + labelValueSpacing + lineSpacing) * 2; // Spacers
-            y2 = DrawLabelAndValue(graphics, "Rep Name:", pcfHeader.RepName, labelFont, valueFont, col2X, y2, colWidth);
+            y2 = DrawLabelAndValue(graphics, "Rep Name:", Safe(pcfHeader.RepName), labelFont, valueFont, col2X, y2, colWidth);
             y2 += labelFont.MeasureString("X").Height + labelValueSpacing + lineSpacing; // Spacer
             y2 = DrawLabelAndValue(graphics, "Approval Date:", pcfHeader.VPSalesDate.HasValue ? pcfHeader.VPSalesDate.Value.ToString("MM-dd-yyyy") : "N/A", labelFont, valueFont, col2X, y2, colWidth);
 
             // Column 3
-            y3 = DrawLabelAndValue(graphics, "PCF Number:", pcfHeader.PcfNumber, labelFont, valueFont, col3X, y3, colWidth);
+            y3 = DrawLabelAndValue(graphics, "PCF Number:", Safe(pcfHeader.PcfNumber), labelFont, valueFont, col3X, y3, colWidth);
             y3 = DrawLabelAndValue(graphics, "End Date:", pcfHeader.EndDate.ToString("MM-dd-yyyy"), labelFont, valueFont, col3X, y3, colWidth);
 
 
@@ -737,7 +731,7 @@ Prices and product availability are also subject to change at any time due to ma
 
 
             y3 += (labelFont.MeasureString("X").Height + labelValueSpacing + lineSpacing) * 2; // Spacers
-            y3 = DrawLabelAndValue(graphics, "Rep Agency:", pcfHeader.RepAgency, labelFont, valueFont, col3X, y3, colWidth);
+            y3 = DrawLabelAndValue(graphics, "Rep Agency:", Safe(pcfHeader.RepAgency), labelFont, valueFont, col3X, y3, colWidth);
 
 
             var freightTermsDisplay = GetFreightTermsDisplay(pcfHeader);
@@ -812,12 +806,12 @@ Prices and product availability are also subject to change at any time due to ma
 
 
 
-                foreach (var item in pcfHeader.PCFLines)
+                foreach (var item in pcfHeader.PCFLines ?? Enumerable.Empty<PCFItem>())
                 {
                     PdfGridRow row = grid.Rows.Add();
 
-                    row.Cells[0].Value = item.ItemNum;
-                    row.Cells[1].Value = item.ItemDesc;
+                    row.Cells[0].Value = item.ItemNum ?? string.Empty;
+                    row.Cells[1].Value = item.ItemDesc ?? string.Empty;
                     row.Cells[2].Value = item.ApprovedPrice.ToString("C2");
                 }
 

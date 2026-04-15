@@ -10,7 +10,7 @@ namespace RepPortal.Services;
 public interface IItemService
 {
     Task<List<ItemInfo>> GetItemsAsync();
-    Task<ItemDetail> GetItemDetailAsync(string item);
+    Task<ItemDetail?> GetItemDetailAsync(string item);
 }
 
 
@@ -53,16 +53,17 @@ public class ItemService : IItemService
                         FROM item_mst
                         ORDER BY Item";
         var list = await connection.QueryAsync<ItemInfo>(sql);
-        return list.ToList();
+        _itemsCache = list.ToList();
+        return _itemsCache;
     }
 
-    public async Task<ItemDetail> GetItemDetailAsync(string item)
+    public async Task<ItemDetail?> GetItemDetailAsync(string item)
     {
         _detailsCache ??= new();
         if (_detailsCache.TryGetValue(item, out var cached))
             return cached;
 
-        ItemDetail result;
+        ItemDetail? result;
 
         if (_csiOptions.UseApi)
         {

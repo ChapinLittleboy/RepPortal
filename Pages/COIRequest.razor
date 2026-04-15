@@ -168,6 +168,11 @@ else
                 }
             }
 
+            if (string.IsNullOrWhiteSpace(recipientEmail))
+            {
+                throw new InvalidOperationException("COI recipient email is not configured.");
+            }
+
             await EmailService.SendEmailAsync(recipientEmail, subject, body, true, attachments);
 
             if (EmailMeCopy)

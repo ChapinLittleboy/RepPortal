@@ -47,7 +47,7 @@ else
                     <Template>
                         @{
                             var header = (PCFHeader)@context;
-                            string status = header.PCFStatusDescription;
+                            string status = header.PCFStatusDescription ?? string.Empty;
                             @if (status == "New")
                             {
                                 <div class="statusback e-newcolor">
@@ -100,10 +100,10 @@ else
 @code {
 	
 	private string? _errorMessage;
-	private bool isLoading = false;
+	private bool isLoading = true;
 
 	private List<PCFHeader> pcfHeaders = new List<PCFHeader>();
-	private SfGrid<PCFHeader>? MyGrid;
+	private SfGrid<PCFHeader> MyGrid = default!;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -111,13 +111,8 @@ else
 		await ActivityLogService.LogReportUsageActivityAsync("PCF Listing Report", "");
 		try
 		{
-			pcfHeaders = await PcfService.GetPCFHeadersForRepBySlsman();
+			pcfHeaders = await PcfService.GetPCFHeadersForRepBySlsman() ?? new List<PCFHeader>();
             Logger.LogInformation("starting try");
-			if (pcfHeaders != null)
-			{
-
-				Console.WriteLine(pcfHeaders.Count);
-			}
 			if (pcfHeaders.Any())
 			{
 				var firstRecord = pcfHeaders.First();
@@ -148,13 +143,16 @@ else
 			{
 				FileName = ExcelFileName
 			};
-			await this.MyGrid.ExportToExcelAsync(exportProperties);
+			await MyGrid.ExportToExcelAsync(exportProperties);
 		}
 	}
 
-	private  void NavigateToPCFDetails(string pcfNumber)
+	private void NavigateToPCFDetails(string? pcfNumber)
 	{
-	
+		if (string.IsNullOrWhiteSpace(pcfNumber))
+		{
+			return;
+		}
 
 		NavigationManager.NavigateTo($"/pcfviewer/{pcfNumber}");
 

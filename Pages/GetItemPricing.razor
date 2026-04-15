@@ -40,7 +40,7 @@
 			
 
 			
-					<img src="@GetImageUrl(detail.Item)" alt="Item" style="max-width: 200px; width: auto; margin-left: 20px; margin-right: 40px;" />
+					<img src="@GetImageUrl(detail.Item ?? string.Empty)" alt="Item" style="max-width: 200px; width: auto; margin-left: 20px; margin-right: 40px;" />
 				
 					<div>
 						<p><strong>Part #:</strong> @detail.Item</p>
@@ -123,19 +123,11 @@
 
 
 @code {
-	private List<ItemInfo> items = new();
 	private string? selectedItem;
 	private ItemDetail? detail;
-	private bool isLoading;
 	private bool lookupPerformed;
-	private bool isReady = false;
 	public List<PriceBookFolder> PriceBookFolders = new();
 
-	public string ChangeValue { get; set; } = "Give Bill a raise";
-	public void OnChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, ItemInfo> args)
-	{
-		//this.ChangeValue = args.items?.Text;
-	}
 	protected override async Task OnInitializedAsync()
 	{
 		string StaticRequestPath = "/RepDocs";
@@ -159,10 +151,6 @@
 		{
 			Logger.LogWarning("The folder '/RepDocs' was not found.");
 		}
-		//items = await ItemService.GetItemsAsync();
-		//Logger.LogInformation("DIAGNOSTIC: Loaded {Count} items", items.Count);
-		isReady = true;
-
 	}
 
 	private async Task LoadItem()
@@ -170,33 +158,17 @@
 		lookupPerformed = false;
 		detail = null;
 
-		if (string.IsNullOrWhiteSpace(selectedItem))
+        if (string.IsNullOrWhiteSpace(selectedItem))
 			return;
         // Log report usage (no parameters for listing page)
         await ActivityLogService.LogReportUsageActivityAsync("Item Price Lookup", selectedItem);
-		isLoading = true;
 		detail = await ItemService.GetItemDetailAsync(selectedItem);
-		isLoading = false;
 		lookupPerformed = true;
 	}
 
 	private string GetImageUrl(string item)
-	{// mirror your old ASP logic
-	
-		var x = $"/product-images/{item}_Web_Main.png";
-			return $"/product-images/{item}_Web_Main.jpg";
-		
-		
-	}
-
-
-	private string GetImageUrlOld(string item)
 	{
-		// mirror your old ASP logic
-		if (item.Contains("-"))
-			return $"https://www.chapinportal.com/Images/Parts/{item}.jpg";
-		else
-			return $"https://www.chapinportal.com/Images/Sprayers/{item}.gif";
+		return $"/product-images/{item}_Web_Main.jpg";
 	}
 }
 

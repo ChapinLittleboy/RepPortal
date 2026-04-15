@@ -30,6 +30,11 @@ public class DownloadMarketingInfoService : IMarketingService
 
     public async Task<List<MarketingFolder>> GetMarketingFoldersAsync()
     {
+        if (string.IsNullOrWhiteSpace(_root))
+        {
+            return new List<MarketingFolder>();
+        }
+
         const string folderSql = @"
         SELECT Id, DisplayName, FolderRelativePath
           FROM dbo.MarketingFolders
@@ -50,7 +55,7 @@ public class DownloadMarketingInfoService : IMarketingService
 
         foreach (var folder in folders)
         {
-            var physical = Path.Combine(_root, folder.FolderRelativePath);
+            var physical = Path.Combine(_root, folder.FolderRelativePath ?? string.Empty);
             var isFakeFolder = folder.FolderRelativePath == "FakePlaceholder";
 
             if (isFakeFolder)
@@ -60,20 +65,20 @@ public class DownloadMarketingInfoService : IMarketingService
                      .Where(f => f.FolderRelativePath == "/")
                      .Select(f =>
                      {
-                         var physicalPath = Path.Combine(_root, f.FileName);
+                         var physicalPath = Path.Combine(_root, f.FileName ?? string.Empty);
                          if (!File.Exists(physicalPath))
-                             return null;
+                              return null;
 
                          var info = new FileInfo(physicalPath);
                          return new MarketingFile
                          {
-                             Name = f.DisplayName ?? f.FileName,
-                             Url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(f.FileName)}",
+                             Name = f.DisplayName ?? f.FileName ?? string.Empty,
+                             Url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(f.FileName ?? string.Empty)}",
                              SizeText = $"{Math.Round(info.Length / 1024.0, 2)} KB"
                          };
                      })
-                     .Where(f => f != null)
-
+                     .Where(f => f is not null)
+                     .Select(f => f!)
                      .ToList();
 
                 folder.Files = folderFiles;
@@ -93,7 +98,7 @@ public class DownloadMarketingInfoService : IMarketingService
                         return new MarketingFile
                         {
                             Name = name,
-                            Url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(folder.FolderRelativePath)}/{Uri.EscapeDataString(name)}",
+                            Url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(folder.FolderRelativePath ?? string.Empty)}/{Uri.EscapeDataString(name)}",
                             SizeText = $"{Math.Round(info.Length / 1024.0, 2)} KB"
                         };
                     })

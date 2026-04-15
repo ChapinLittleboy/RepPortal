@@ -137,18 +137,18 @@
                             <GridAggregateColumn Field=@nameof(InvoiceRptDetail.ExtPrice) Type="AggregateType.Sum" Format="C2">
                                 <GroupFooterTemplate>
                                     @{
-                                        var aggregate = (context as AggregateTemplateContext);
+                                        var aggregate = context as AggregateTemplateContext;
                                         <div>
-                                            <p>Sum: @aggregate.Sum</p>
+                                            <p>Sum: @aggregate?.Sum</p>
                                         </div>
                                     }
                                 </GroupFooterTemplate>
                                 <FooterTemplate>
                                     @{
-                                        var aggregate = (context as AggregateTemplateContext);
+                                        var aggregate = context as AggregateTemplateContext;
                                     }
                                     <div>
-                                        <p>Total: @aggregate.Sum</p>
+                                        <p>Total: @aggregate?.Sum</p>
                                     </div>
                                 </FooterTemplate>
                             </GridAggregateColumn>
@@ -164,20 +164,15 @@
     // Optional route parameter (null when not supplied)
     [Parameter] public string? OrderNo { get; set; }
 
-    private SfGrid<InvoiceRptDetail>? Grid;
+    private SfGrid<InvoiceRptDetail> Grid = default!;
     private List<InvoiceRptDetail> InvoiceData = new List<InvoiceRptDetail>();
-    private IEnumerable<string>? CustomerTypes;
-    private IEnumerable<Customer>? CustomerEList;
     private List<Customer> CustomerList = new List<Customer>();
-    private string WantedCustNum = string.Empty;
     private int NumericValue = 50; // Default value for the combo box DeBounceDelay
     private bool isLoading = false;
     private bool showTip = false;
     private bool isReady = false;
-    private IEnumerable<CustType>? CustomerTypesList;
+    private IEnumerable<CustType> CustomerTypesList = Array.Empty<CustType>();
 
-    private AuthenticationState? authState;
-    private ApplicationUser? currentUser;
     public SfComboBox<string, Customer>? WantedCust { get; set; }
 
     private SalesService.InvoiceRptParameters parameters = new SalesService.InvoiceRptParameters();
@@ -189,11 +184,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        if (user.Identity.IsAuthenticated)
+        if (user.Identity?.IsAuthenticated == true)
         {
-            currentUser = await UserManager.GetUserAsync(user);
             parameters.RepCode = RepCodeContext.CurrentRepCode;
         }
 
@@ -202,7 +196,6 @@
         parameters.BeginInvoiceDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); 
         parameters.EndInvoiceDate = DateTime.Now; 
 
-        CustomerTypes = await CustomerService.GetCustomerTypesAsync();
         CustomerTypesList = await CustomerService.GetCustomerTypesListAsync();
         CustomerList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
         isReady = true;
@@ -280,7 +273,7 @@
             {
                 FileName = ExcelFileName
             };
-            await this.Grid.ExportToExcelAsync(exportProperties);
+            await Grid.ExportToExcelAsync(exportProperties);
         }
     }
 
@@ -293,7 +286,10 @@
     {
         args.PreventDefaultAction = true;
         var query = new Query().Where(new WhereFilter() { Field = "Text", Operator = "contains", value = args.Text, IgnoreCase = true });
-        await WantedCust.FilterAsync(CustomerList, query);
+        if (WantedCust is not null)
+        {
+            await WantedCust.FilterAsync(CustomerList, query);
+        }
     }
 }
 

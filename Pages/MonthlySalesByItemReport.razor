@@ -54,9 +54,9 @@ else
                     <GridAggregateColumn Field="FY2024" Type="AggregateType.Sum" Format="C0">
                     <GroupFooterTemplate>
                         @{
-                            var aggregate = (context as AggregateTemplateContext);
+                            var aggregate = context as AggregateTemplateContext;
                             <div>
-                                <p>@aggregate.Sum</p>
+                                <p>@aggregate?.Sum</p>
                             </div>
                         }
                     </GroupFooterTemplate>
@@ -64,9 +64,9 @@ else
                     <GridAggregateColumn Field="FY2025" Type="AggregateType.Sum" Format="C0">
                         <GroupFooterTemplate>
                             @{
-                                var aggregate = (context as AggregateTemplateContext);
+                                var aggregate = context as AggregateTemplateContext;
                                 <div>
-                                    <p>@aggregate.Sum</p>
+                                    <p>@aggregate?.Sum</p>
                                 </div>
                             }
                         </GroupFooterTemplate>
@@ -98,7 +98,7 @@ else
 
 
 @code {
-    private SfGrid<ExpandoObject>? Grid;
+    private SfGrid<ExpandoObject> Grid = default!;
     private List<Dictionary<string, object>> SalesData = new List<Dictionary<string, object>>();
     private List<string> DynamicColumns = new List<string>();
     private List<ExpandoObject> eSalesData = new List<ExpandoObject>();
@@ -106,6 +106,7 @@ else
    
     private AuthenticationState? authState;
     private ApplicationUser? currentUser;
+    private string EffectiveRepCode => currentUser?.RepCode ?? RepCodeContext.CurrentRepCode ?? "Unknown";
 
 
 
@@ -113,7 +114,7 @@ else
     {
         authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        if (user.Identity.IsAuthenticated)
+        if (user.Identity?.IsAuthenticated == true)
         {
             currentUser = await UserManager.GetUserAsync(user);
         }
@@ -140,14 +141,14 @@ else
     {
         if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
         {
-            var ExcelFileName = $"Chapin Monthly Sales Report({currentUser.RepCode}).xlsx";
+            var ExcelFileName = $"Chapin Monthly Sales Report({EffectiveRepCode}).xlsx";
             ExcelExportProperties exportProperties = new ExcelExportProperties
             {
                     FileName = ExcelFileName
             };
             // Log report usage (no parameters for listing page)
             await ActivityLogService.LogReportUsageActivityAsync("Monthly Sales by Item Report", ExcelFileName);
-            await this.Grid.ExportToExcelAsync(exportProperties);
+            await Grid.ExportToExcelAsync(exportProperties);
         }
     }
     private void ConvertToDictionaries(List<Dictionary<string, object>> records)
@@ -295,15 +296,14 @@ else
     {
         foreach (var record in records)
         {
-            dynamic expando = new ExpandoObject();
-            var dict = expando as IDictionary<string, object>;
+            var dict = new Dictionary<string, object>();
 
             foreach (var kvp in record)
             {
-                dict[kvp.Key] = kvp.Value;
+                dict[kvp.Key] = kvp.Value ?? string.Empty;
             }
 
-            SalesData.Add(expando);
+            SalesData.Add(dict);
         }
     }
 

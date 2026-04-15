@@ -71,13 +71,14 @@
 	private async Task Add()
 	{
 		if (string.IsNullOrWhiteSpace(newCode)) return;
-		await CreditHoldService.AddAsync(newCode.Trim(), newDescription?.Trim());
+		await CreditHoldService.AddAsync(newCode.Trim(), newDescription?.Trim() ?? string.Empty);
 		codes = await CreditHoldService.GetAllAsync();
 		newCode = newDescription = string.Empty;
 	}
 
-	private async Task Remove(string code)
+	private async Task Remove(string? code)
 	{
+		if (string.IsNullOrWhiteSpace(code)) return;
 		await CreditHoldService.DeleteAsync(code);
 		codes = await CreditHoldService.GetAllAsync();
 	}

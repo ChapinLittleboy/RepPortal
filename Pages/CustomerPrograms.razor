@@ -84,36 +84,28 @@
 }
 @code {
 
-	private SfGrid<CustomerShipment>? Grid;
+	private SfGrid<CustomerShipment> Grid = default!;
 	private List<CustomerShipment> ShipmentsData = new List<CustomerShipment>();
 
 	private bool isLoading = false;
 	private bool showTip = false;
-	private IEnumerable<string>? CustomerTypes;
 	private bool isReady = false;
 	private int NumericValue = 50; // Default value for the combo box DeBounceDelay
-	private IEnumerable<Customer>? CustomerEList;
 	private List<Customer> CustomerList = new List<Customer>();
-	private string WantedCustNum = string.Empty;
 	public SfComboBox<string, Customer>? WantedCust { get; set; }
 	private bool isLawlessRep = false;
-	private IEnumerable<CustType>? CustomerTypesList;
+	private IEnumerable<CustType> CustomerTypesList = Array.Empty<CustType>();
 
-
-	private AuthenticationState? authState;
-	private ApplicationUser? currentUser;
 
 	private SalesService.ShipmentsParameters parameters = new SalesService.ShipmentsParameters();
 
 	
     protected override async Task OnInitializedAsync()
     {
-        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        if (user.Identity.IsAuthenticated)
+        if (user.Identity?.IsAuthenticated == true)
         {
-            currentUser = await UserManager.GetUserAsync(user);
-            // parameters.RepCode = currentUser.RepCode;
             parameters.RepCode = RepCodeContext.CurrentRepCode;
             isLawlessRep = RepCodeContext.CurrentRepCode == "LAW";
 
@@ -126,13 +118,12 @@
         parameters.BeginShipDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1); // Default to the first day of the current month
         parameters.EndShipDate = DateTime.Now; // Default to today
 
-        CustomerTypes = await CustomerService.GetCustomerTypesAsync();
         CustomerTypesList = await CustomerService.GetCustomerTypesListAsync();
 
         //CustomerEList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
         CustomerList = await CustomerService.GetCustomersDetailsByRepCodeAsync();
         var filteredCustomers = CustomerList
-            .Where(c => !c.Cust_Name.Contains("Do Not Use", StringComparison.OrdinalIgnoreCase))
+            .Where(c => !(c.Cust_Name?.Contains("Do Not Use", StringComparison.OrdinalIgnoreCase) ?? false))
             .ToList();
         CustomerList = filteredCustomers;
         isReady = true;
@@ -151,7 +142,7 @@
 	{
 		showTip = true;
 		isLoading = true;
-		parameters.CustNum = WantedCust.Value;
+		parameters.CustNum = WantedCust?.Value;
 		parameters.ShipToRegion = RepCodeContext.RepRegion;
 
 		// Serialize parameters for logging
@@ -171,7 +162,7 @@
 			{
 				FileName = ExcelFileName
 			};
-			await this.Grid.ExportToExcelAsync(exportProperties);
+			await Grid.ExportToExcelAsync(exportProperties);
 		}
 	}
 

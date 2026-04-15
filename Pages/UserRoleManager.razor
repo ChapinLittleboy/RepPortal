@@ -27,7 +27,7 @@ else
             @foreach (var user in users)
             {
                 <tr>
-                    <td>@user.User.Email</td>
+                    <td>@user.User?.Email</td>
                     <td>
                         @foreach (var role in user.Roles)
                         {
@@ -51,7 +51,7 @@ else
                                 }
                             }
                         </select>
-                        <button class="btn btn-sm btn-primary ms-2" @onclick="() => AddRole(user.User, user.SelectedRole)">Add</button>
+                         <button class="btn btn-sm btn-primary ms-2" @onclick="() => AddRole(user.User, user.SelectedRole)">Add</button>
                     </td>
                 </tr>
             }
@@ -68,7 +68,10 @@ else
     {
 		
 
-        allRoles = await RoleManager.Roles.Select(r => r.Name).ToListAsync();
+        allRoles = (await RoleManager.Roles.Select(r => r.Name).ToListAsync())
+            .Where(r => !string.IsNullOrWhiteSpace(r))
+            .Select(r => r!)
+            .ToList();
         var userList = await UserManager.Users.ToListAsync();
 
         users = new List<UserWithRoles>();
@@ -85,9 +88,9 @@ else
         }
     }
 
-    private async Task AddRole(ApplicationUser user, string role)
+    private async Task AddRole(ApplicationUser? user, string? role)
     {
-        if (!string.IsNullOrEmpty(role))
+        if (user is not null && !string.IsNullOrEmpty(role))
         {
             await UserManager.AddToRoleAsync(user, role);
             await RefreshUsers();
@@ -105,8 +108,13 @@ else
         }
     }
 
-    private async Task RemoveRole(ApplicationUser user, string role)
+    private async Task RemoveRole(ApplicationUser? user, string role)
     {
+        if (user is null)
+        {
+            return;
+        }
+
         await UserManager.RemoveFromRoleAsync(user, role);
         await RefreshUsers();
     }
@@ -131,7 +139,7 @@ else
     private class UserWithRoles
     {
         public ApplicationUser? User { get; set; }
-        public List<string>? Roles { get; set; }
+        public List<string> Roles { get; set; } = new();
         public string? SelectedRole { get; set; }
         
     }

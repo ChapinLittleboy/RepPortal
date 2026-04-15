@@ -11,22 +11,22 @@ namespace RepPortal.Pages
     [Authorize]
     public partial class CustomerList : ComponentBase
     {
-        [Inject] protected AuthenticationStateProvider? AuthenticationStateProvider { get; set; }
-        [Inject] protected UserManager<ApplicationUser>? UserManager { get; set; }
-        [Inject] protected CustomerService? CustomerService { get; set; }
-        [Inject] protected IRepCodeContext? RepCodeContext { get; set; }
-        [Inject] protected TitleService? TitleService { get; set; }
-        [Inject] protected RepPortal.Services.IActivityLogService? ActivityLogService { get; set; }
+        [Inject] protected AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
+        [Inject] protected UserManager<ApplicationUser> UserManager { get; set; } = default!;
+        [Inject] protected CustomerService CustomerService { get; set; } = default!;
+        [Inject] protected IRepCodeContext RepCodeContext { get; set; } = default!;
+        [Inject] protected TitleService TitleService { get; set; } = default!;
+        [Inject] protected RepPortal.Services.IActivityLogService ActivityLogService { get; set; } = default!;
 
         private IEnumerable<Customer>? customers;
         private string? repCode;
         private bool isLoading = true;
-        private SfGrid<Customer>? Grid;
+        private SfGrid<Customer> Grid = default!;
         //private List<CreditHoldReasonCode> reasonCodeList = new List<CreditHoldReasonCode>();
         public string? _state;
         private List<CreditHoldReasonCode> _creditHoldReasons = new();
         private Dictionary<string, string> _reasonLookup = new();
-        private IEnumerable<CustType>? CustomerTypesList;
+        private IEnumerable<CustType> CustomerTypesList = Array.Empty<CustType>();
 
         protected override async Task OnInitializedAsync()
         {
@@ -45,20 +45,22 @@ namespace RepPortal.Pages
             CustomerTypesList = await CustomerService.GetCustomerTypesListAsync();
 
             repCode = RepCodeContext.CurrentRepCode;
-            if (user.Identity.IsAuthenticated)
+            if (user.Identity?.IsAuthenticated == true)
             {
-                var currentUser = await UserManager.GetUserAsync(user);
                 if (!string.IsNullOrEmpty(repCode))
                 {
                     var allowedTypes = new HashSet<string>(
-                        CustomerTypesList.Select(ct => ct.CustomerType),
+                        CustomerTypesList
+                            .Select(ct => ct.CustomerType)
+                            .Where(ct => !string.IsNullOrWhiteSpace(ct))!
+                            .Select(ct => ct!),
                         StringComparer.OrdinalIgnoreCase // Case-insensitive comparison
                     );
 
                     var allCustomers = await CustomerService.GetCustomersDetailsByRepCodeAsync();
                     foreach (var cust in allCustomers)
                     {
-                        if (!allowedTypes.Contains(cust.BuyingGroup))
+                        if (string.IsNullOrWhiteSpace(cust.BuyingGroup) || !allowedTypes.Contains(cust.BuyingGroup))
                         {
                             cust.BuyingGroup = null; // or string.Empty if you prefer
                             cust.BuyingGroupDescription = null; // or string.Empty if you prefer
@@ -88,14 +90,16 @@ namespace RepPortal.Pages
         {
             if (Enum.TryParse<Customer.CustomerStatus>(status, out var customerStatus))
             {
-                return customerStatus.ToDescription();
+                return customerStatus.ToDescription() ?? "Unknown";
             }
             return "Unknown";
         }
 
         private string YesNoAccessor(object data, string field)
         {
-            var isActive = (int)data.GetType().GetProperty(field).GetValue(data, null);
+            var property = data.GetType().GetProperty(field);
+            var rawValue = property?.GetValue(data, null);
+            var isActive = rawValue is int value ? value : 0;
             return isActive == 1 ? "Yes" : "No";
         }
 
@@ -131,7 +135,7 @@ namespace RepPortal.Pages
 
         public class CreditHoldDateComparer : IComparer<object>
         {
-            public int Compare(object XRowDataToCompare, object YRowDataToCompare)
+            public int Compare(object? XRowDataToCompare, object? YRowDataToCompare)
             {
                 var xCust = XRowDataToCompare as Customer;
                 var yCust = YRowDataToCompare as Customer;

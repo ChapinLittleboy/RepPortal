@@ -106,7 +106,7 @@ public sealed class ExcelReportExporter: IExcelReportExporter
                 }
             }
 
-            ws.UsedRange.AutofitColumns();
+            ws.UsedRange?.AutofitColumns();
 
             using var ms = new MemoryStream();
             workbook.SaveAs(ms);

@@ -52,7 +52,6 @@
 
 @code {
 	public List<MarketingFolder> MarketingFolders = new();
-	private bool isReady = true;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -78,8 +77,5 @@
 		{
 			Logger.LogWarning("The folder '/RepDocs' was not found.");
 		}
-		//items = await ItemService.GetItemsAsync();
-		//Logger.LogInformation("DIAGNOSTIC: Loaded {Count} items", items.Count);
-		isReady = true;
 	}
 }

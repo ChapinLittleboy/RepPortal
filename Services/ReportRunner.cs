@@ -1,10 +1,8 @@
 ﻿// Services/ReportRunner.cs
-using System;
 using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Threading.Tasks;
 using Hangfire;
-using MailKit;
 using Microsoft.Extensions.Logging;
 using RepPortal.Models;
 using RepPortal.Services.ReportExport;
@@ -53,13 +51,6 @@ namespace RepPortal.Services
 
             var userCtx = await _userCtx.ResolveByEmailAsync(req.Email)
                           ?? throw new InvalidOperationException($"No user context for {req.Email}");
-            var (repCode, regions) = (userCtx.RepCode, (IReadOnlyList<string>?)userCtx.AllowedRegions);
-
-            // Translate DateRangeCodeType -> concrete range (use user's timezone if applicable)
-            var (start, end) = ToDateRange(rangeCode, TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time"));
-
-            List<Dictionary<string, object>> data;
-            List<InvoiceRptDetail> invData;
             switch (req.ReportType)
             {
                 case ReportType.InvoicedAccounts:
