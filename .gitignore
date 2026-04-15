@@ -365,3 +365,5 @@ FodyWeavers.xsd
 /Pages/MonthlyItemSalesWithQuantity.razor.txt
 /wwwroot/videos/PivotViewDemo.mp4
 /CLAUDE.md.old
+/.dotnet/.dotnet/TelemetryStorageService
+/.dotnet/.dotnet
