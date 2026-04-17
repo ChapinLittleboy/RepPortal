@@ -31,10 +31,9 @@ public class DbConnectionFactory : IDbConnectionFactory
     {
         _configuration = configuration;
 
-
-        _pcfConnectionString = _configuration.GetConnectionString("PcfConnection");
-        _batConnectionString = _configuration.GetConnectionString("BatAppConnection");
-        _repConnectionString = _configuration.GetConnectionString("RepPortalConnection");
+        _pcfConnectionString = _configuration.GetRequiredResolvedConnectionString("PcfConnection");
+        _batConnectionString = _configuration.GetRequiredResolvedConnectionString("BatAppConnection");
+        _repConnectionString = _configuration.GetRequiredResolvedConnectionString("RepPortalConnection");
 
 
     }

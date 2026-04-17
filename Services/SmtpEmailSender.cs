@@ -38,7 +38,7 @@ public class SmtpEmailSender : IEmailSender, IAttachmentEmailSender
         var host = _config["Smtp:Host"] ?? throw new InvalidOperationException("Smtp:Host missing");
         var portStr = _config["Smtp:Port"] ?? "25";
         var user = _config["Smtp:Username"];
-        var pass = _config["Smtp:Password"];
+        var pass = _config.GetSmtpPassword();
         var sslMode = (_config["Smtp:SecureSocketOptions"] ?? "StartTls").Trim(); // Auto|None|SslOnConnect|StartTls
 
         var message = new MimeMessage();

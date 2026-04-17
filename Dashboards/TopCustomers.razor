@@ -135,7 +135,7 @@
 
     private async Task<List<CustomerViewModel>> GetTopCustomers(int count)
     {
-        using (var connection = new SqlConnection(Configuration.GetConnectionString("BatAppConnection")))
+        using (var connection = new SqlConnection(Configuration.GetRequiredResolvedConnectionString("BatAppConnection")))
         {
             await connection.OpenAsync();
 
@@ -185,7 +185,7 @@
 
     private async Task<List<MonthlyData>> GetCustomerMonthlyData(int customerId)
     {
-        using (var connection = new SqlConnection(Configuration.GetConnectionString("BatAppConnection")))
+        using (var connection = new SqlConnection(Configuration.GetRequiredResolvedConnectionString("BatAppConnection")))
         {
             await connection.OpenAsync();
 

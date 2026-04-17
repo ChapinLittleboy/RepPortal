@@ -176,7 +176,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _connectionString = Configuration.GetConnectionString("BatAppConnection") ?? "";
+        _connectionString = Configuration.GetRequiredResolvedConnectionString("BatAppConnection");
         _csvOutputPath = Configuration["IdoReference:CsvOutputPath"] ?? "";
         _csvExportEnabled = !string.IsNullOrWhiteSpace(_csvOutputPath) && Directory.Exists(_csvOutputPath);
 

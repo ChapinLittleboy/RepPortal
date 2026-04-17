@@ -10,7 +10,7 @@ public class MarketingFileService
 
     public MarketingFileService(IConfiguration config)
     {
-        _connString = config.GetConnectionString("RepPortalConnection");
+        _connString = config.GetRequiredResolvedConnectionString("RepPortalConnection");
     }
 
     public async Task<List<MarketingFileSingle>> GetFilesAsync()

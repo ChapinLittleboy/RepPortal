@@ -403,37 +403,23 @@ Prices and product availability are also subject to change at any time due to ma
         Attachment attachment = new Attachment(pdfStream, filename, "application/pdf");
         mail.Attachments.Add(attachment);
 
-        // Configure the SMTP client
-        var smtpPassword =
-            _configuration
-                ["SmtpSettings:Password"]; // reads from appsettings.json or secrets.json in my APPDATA folder for Dev only
-        // _logger.LogInformation("The smtpPassword appsettings or secrets is {smtpPassword}", smtpPassword);
-
-        if (string.IsNullOrEmpty(smtpPassword))
+        // Prefer secrets/user secrets first, then the IIS-friendly ADMIN_PWD environment variable.
+        var smtpPassword = _configuration.GetSmtpPassword();
+        if (string.IsNullOrWhiteSpace(smtpPassword))
         {
-            smtpPassword = Environment.GetEnvironmentVariable("SMTPpassword"); // set in IIS under configuration editor
-            _logger.LogInformation("The Env smtpPassword is {smtpPassword}", smtpPassword);
-
-            smtpPassword = string.Empty;
-            // _logger.LogInformation("The  Env override smtpPassword is {smtpPassword}", smtpPassword);
-
+            throw new InvalidOperationException("SMTP credentials are missing. Configure Smtp:Password or ADMIN_PWD.");
         }
 
-        if (string.IsNullOrEmpty(smtpPassword))
-        {
-            smtpPassword = "D,$k3brpg8qrJ;_~";
-            //  _logger.LogInformation("The hardcodded smtpPassword is {smtpPassword}", smtpPassword);
+        var smtpHost = _configuration["Smtp:Host"] ?? "CIIEXCH16";
+        var smtpPort = int.TryParse(_configuration["Smtp:Port"], out var parsedPort) ? parsedPort : 25;
+        var smtpUser = _configuration["Smtp:Username"] ?? "Administrator";
 
-        }
-
-        var smtpClient = new SmtpClient("CIIEXCH16")
+        var smtpClient = new SmtpClient(smtpHost)
         {
-            Port = 25, // Typically, port 25 is used for Exchange Server
-            Credentials = new NetworkCredential("Administrator", smtpPassword),
+            Port = smtpPort,
+            Credentials = new NetworkCredential(smtpUser, smtpPassword),
             EnableSsl = false, // Usually, SSL is not used for local Exchange Servers
         };
-
-        // _logger.LogInformation("The final smtpPassword is {smtpPassword}", smtpPassword);
 
         // Send the email
         try

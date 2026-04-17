@@ -27,6 +27,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Update="web.config">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="SqlScripts\001_CreateFirstSixTables.sql" />
     <EmbeddedResource Include="SqlScripts\002_CreateRepCodeIndexes.sql" />
     <EmbeddedResource Include="SqlScripts\003_Change datetime to datetime2(0).sql" />

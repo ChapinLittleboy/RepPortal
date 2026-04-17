@@ -41,8 +41,7 @@ public class SalesService : ISalesService
         ICsiRestClient csiRestClient,
         IOptions<CsiOptions> csiOptions)
     {
-        _connectionString = configuration.GetConnectionString("BatAppConnection")
-                            ?? throw new InvalidOperationException("Missing BatAppConnection connection string.");
+        _connectionString = configuration.GetRequiredResolvedConnectionString("BatAppConnection");
         _authenticationStateProvider = authenticationStateProvider;
         _repCodeContext = repCodeContext;
         _dbConnectionFactory = dbConnectionFactory;

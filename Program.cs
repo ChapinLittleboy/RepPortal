@@ -90,7 +90,7 @@ var disableHangfire = builder.Configuration.GetValue<bool>("TestSettings:Disable
 
 
 // Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("RepPortalConnection") ?? throw new InvalidOperationException("Connection string 'RepPortalConnection' not found.");
+var connectionString = builder.Configuration.GetRequiredResolvedConnectionString("RepPortalConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -189,7 +189,7 @@ if (!disableHangfire)
        .UseSimpleAssemblyNameTypeSerializer()
        .UseRecommendedSerializerSettings()
        .UseSerilogLogProvider()
-       .UseSqlServerStorage(builder.Configuration.GetConnectionString("RepPortalConnection"),
+       .UseSqlServerStorage(builder.Configuration.GetRequiredResolvedConnectionString("RepPortalConnection"),
            new SqlServerStorageOptions
            {
                SchemaName = "HangFire",
@@ -218,9 +218,9 @@ builder.Services.AddScoped<IReportSubscriptionStore, HangfireReportSubscriptionS
 builder.Services.AddSingleton<IUserContextResolver>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
-    var cs = config.GetConnectionString("RepPortalConnection"); // or however you store it
+    var cs = config.GetRequiredResolvedConnectionString("RepPortalConnection");
     var logger = sp.GetService<ILogger<UserContextResolver>>();
-    return new UserContextResolver(cs!, logger);
+    return new UserContextResolver(cs, logger);
 });
 builder.Services.AddScoped<ReportRunner>();            // the job body
 builder.Services.AddScoped<SubscriptionService>();     // creates/updates jobs

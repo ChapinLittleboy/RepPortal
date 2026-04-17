@@ -25,7 +25,9 @@ public  class UserContextResolver : IUserContextResolver
 
     public UserContextResolver(string? connectionString,  ILogger<UserContextResolver>? logger = null)
         {
-            _connectionString = connectionString ?? "Data Source=ciisql10;Database=RepPortal;User Id=sa;Password='*id10t*';TrustServerCertificate=True;";
+            _connectionString = !string.IsNullOrWhiteSpace(connectionString)
+                ? connectionString
+                : throw new InvalidOperationException("RepPortal connection string is required.");
             _logger = logger;
         
         }

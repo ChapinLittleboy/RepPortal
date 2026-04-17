@@ -21,7 +21,7 @@ public class AdminFormsFileService : IAdminFormsFileService
 
     public AdminFormsFileService(IConfiguration config)
     {
-        _connString = config.GetConnectionString("RepPortalConnection");
+        _connString = config.GetRequiredResolvedConnectionString("RepPortalConnection");
         _root = Path.GetFullPath(config["PriceBooks:RootPath"]
             ?? throw new InvalidOperationException("PriceBooks:RootPath is not configured."));
         _route = config["PriceBooks:RequestPath"] ?? "/RepDocs";

@@ -26,7 +26,7 @@ namespace RepPortal.Services
         public UsageAnalyticsService(IConfiguration configuration)
         {
             // Best practice: Store your connection string in appsettings.json
-            _connectionString = configuration.GetConnectionString("RepPortalConnection");
+            _connectionString = configuration.GetRequiredResolvedConnectionString("RepPortalConnection");
         }
 
         private IDbConnection CreateConnection() => new SqlConnection(_connectionString);

@@ -35,8 +35,7 @@ public class PackingListService
         _idoService = idoService;
         _csiOptions = csiOptions.Value;
 
-        _appDb = cfg.GetConnectionString("BatAppConnection")
-                 ?? throw new InvalidOperationException("Missing connection string 'BAT'.");
+        _appDb = cfg.GetRequiredResolvedConnectionString("BatAppConnection");
 
         _spShipmentsByOrder = cfg["Procedures:ShipmentsByOrder"]
                  ?? "dbo.usp_Shipments_ByOrder";
@@ -47,13 +46,13 @@ public class PackingListService
         foreach (var siteSection in sitesSection.GetChildren())
         {
             var key = siteSection.Key; // "BAT", "KENT"
-            var cs = siteSection["ConnectionString"];
+            var rawConnectionString = siteSection["ConnectionString"];
             var sp = siteSection["PackingListProc"] ?? "dbo.Rep_Rpt_PackingSlipByBOLSp";
-            if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(cs))
+            if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(rawConnectionString))
             {
                 _siteMap[key] = new SiteProcConfig
                 {
-                    ConnectionString = cs,
+                    ConnectionString = cfg.ResolveConnectionString(rawConnectionString, $"Sites:{key}:ConnectionString"),
                     PackingListProc = sp
                 };
             }

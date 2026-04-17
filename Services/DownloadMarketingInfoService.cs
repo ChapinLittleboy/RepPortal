@@ -22,7 +22,7 @@ public class DownloadMarketingInfoService : IMarketingService
 
     public DownloadMarketingInfoService(IConfiguration config, IWebHostEnvironment env)
     {
-        _connString = config.GetConnectionString("RepPortalConnection");
+        _connString = config.GetRequiredResolvedConnectionString("RepPortalConnection");
         _env = env;
         _root = config["MarketingInfo:RootPath"];
         _route = config["MarketingInfo:RequestPath"] ?? "/RepDocs";

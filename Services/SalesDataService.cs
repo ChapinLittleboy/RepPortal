@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Dapper;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Data.SqlClient; // per your preference
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace RepPortal.Services
@@ -15,9 +16,9 @@ namespace RepPortal.Services
         private readonly string _connectionString;
         private readonly ILogger<SalesDataService>? _logger;
 
-        public SalesDataService( ILogger<SalesDataService>? logger = null)
+        public SalesDataService(IConfiguration configuration, ILogger<SalesDataService>? logger = null)
         {
-            _connectionString = "Data Source=ciisql10;Database=RepPortal;User Id=sa;Password='*id10t*';TrustServerCertificate=True;";
+            _connectionString = configuration.GetRequiredResolvedConnectionString("RepPortalConnection");
             _logger = logger;
         }
 

@@ -11,7 +11,7 @@ public class FolderAdminService
 
     public FolderAdminService(IConfiguration config)
     {
-        _connString = config.GetConnectionString("RepPortalConnection");
+        _connString = config.GetRequiredResolvedConnectionString("RepPortalConnection");
     }
 
     public async Task<List<FolderRecord>> GetFoldersAsync(string tableName)

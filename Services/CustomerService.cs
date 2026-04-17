@@ -22,7 +22,7 @@ public class CustomerService : ICustomerLookupService
 
     public CustomerService(IConfiguration config, IRepCodeContext repCodeContext, CreditHoldExclusionService creditHoldExclusionService, IIdoService idoService, IOptions<CsiOptions> csiOptions)
     {
-        _batAppConnection = config.GetConnectionString("BatAppConnection");
+        _batAppConnection = config.GetRequiredResolvedConnectionString("BatAppConnection");
         _repCodeContext = repCodeContext;
         _idoService = idoService;
         _csiOptions = csiOptions.Value;

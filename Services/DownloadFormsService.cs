@@ -22,7 +22,7 @@ public class DownloadFormsService : IFormsDownloadService
 
     public DownloadFormsService(IConfiguration config, IWebHostEnvironment env)
     {
-        _connString = config.GetConnectionString("RepPortalConnection");
+        _connString = config.GetRequiredResolvedConnectionString("RepPortalConnection");
         _env = env;
         _root = config["PriceBooks:RootPath"];
         _route = config["PriceBooks:RequestPath"] ?? "/RepDocs";
