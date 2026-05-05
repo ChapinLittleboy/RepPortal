@@ -36,7 +36,7 @@ else
 	<div style="margin-top: 5px; color: red; font-size: small">
 		Tip: Set Items per page to 'ALL' before grouping records
 	</div>
-	<SfGrid ID="DetailsGrid" @ref="DetailsGrid" DataSource="@openOrderDetails" AllowPaging="@( !isLawlessRep )" AllowSorting="true" AllowReordering="true" AllowResizing="true" ShowColumnChooser="true" EnablePersistence="true"
+	<SfGrid ID="DetailsGrid" @ref="DetailsGrid" RowHeight="18" CssClass="open-orders-grid" DataSource="@openOrderDetails" AllowPaging="@( !isLawlessRep )" AllowSorting="true" AllowReordering="true" AllowResizing="true" ShowColumnChooser="true" EnablePersistence="true"
 	AllowExcelExport="true" Toolbar="@(new List<string>() { "ExcelExport", "Search" , "ColumnChooser"})" AllowGrouping="true" AllowTextWrap="true" AllowFiltering="true" >
 		<GridEvents  OnToolbarClick="ToolbarClickHandler" TValue="OrderDetail"></GridEvents>
 		<GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
@@ -75,21 +75,29 @@ else
 		</GridAggregates>
 
 		<GridColumns>
-			<GridColumn Field=@nameof(OrderDetail.Cust) HeaderText="Customer #" Width="120" TextAlign="TextAlign.Left"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.CustName) HeaderText="Customer Name" Width="250"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.ShipToNum) HeaderText="Ship To #" Width="120"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.ShipToName) HeaderText="Name" Width="200"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.Cust) HeaderText="Customer #" Width="100" TextAlign="TextAlign.Left"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.CustName) HeaderText="Customer Name" Width="220"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.ShipToNum) HeaderText="Ship To #" Width="100"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.ShipToName) HeaderText="Name" Width="170"></GridColumn>
 			<GridColumn Field=@nameof(OrderDetail.ShipToRegion) HeaderText="Region" Width="100" Visible="@(RepCodeContext.CurrentRepCode == "LAW")"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.ItemNumber) HeaderText="Item" Width="120"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.ItemDesc) HeaderText="Item Description" Width="200"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.OpenQty) HeaderText="Open Units" Format="N0" Width="150" TextAlign="TextAlign.Right"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.Price) HeaderText="Price" Format="C2" Width="150" TextAlign="TextAlign.Right"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.OpenDollars) HeaderText="Open $" Format="C2" Width="150" TextAlign="TextAlign.Right"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.OrdDate) HeaderText="Order Date" Format="d" Type="ColumnType.Date" Width="100"></GridColumn>			
-			<GridColumn Field=@nameof(OrderDetail.DueDate) HeaderText="Expected Ship Date" Format="d" Type="ColumnType.Date" Width="100"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.CustPO) HeaderText="Customer PO" Width="150"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.CoNum) HeaderText="Order #" Width="100"></GridColumn>
-			<GridColumn Field=@nameof(OrderDetail.CoStatusDescription) HeaderText="Order Status" Width="130"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.ItemNumber) HeaderText="Item" Width="100"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.ItemDesc) HeaderText="Item Description" Width="180"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.OpenQty) HeaderText="Open Units" Format="N0" Width="110" TextAlign="TextAlign.Right"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.Price) HeaderText="Price" Format="C2" Width="100" TextAlign="TextAlign.Right"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.OpenDollars) HeaderText="Open $" Format="C2" Width="110" TextAlign="TextAlign.Right"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.OrdDate) HeaderText="Order Date" Format="d" Type="ColumnType.Date" Width="95"></GridColumn>			
+			<GridColumn Field=@nameof(OrderDetail.DueDate) HeaderText="Expected Ship Date" Format="d" Type="ColumnType.Date" Width="95"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.CustPO) HeaderText="Customer PO" Width="120"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.CoNum) HeaderText="Order #" Width="90"></GridColumn>
+			<GridColumn Field=@nameof(OrderDetail.CoStatusDescription) HeaderText="Order Status" Width="115">
+				<Template>
+					@{
+						var order = context as OrderDetail;
+						var isStopped = string.Equals(order?.CoStatusDescription, "Stopped", StringComparison.OrdinalIgnoreCase);
+					}
+					<span class="@(isStopped ? "open-orders-status-stopped" : null)">@order?.CoStatusDescription</span>
+				</Template>
+			</GridColumn>
 
 
 
@@ -98,6 +106,33 @@ else
 
 	</SfGrid>
 }
+
+<style>
+	.open-orders-grid .e-gridheader .e-headercell,
+	.open-orders-grid .e-gridcontent .e-rowcell,
+	.open-orders-grid .e-summarycell,
+	.open-orders-grid .e-gridcontent .e-rowcell > div,
+	.open-orders-grid .e-summarycell > div {
+		font-size: 0.55rem !important;
+		line-height: 1 !important;
+		padding-top: 0.1rem;
+		padding-bottom: 0.1rem;
+	}
+
+	.open-orders-grid .e-gridheader .e-headercelldiv {
+		font-size: 0.55rem !important;
+		line-height: 1 !important;
+	}
+
+	.open-orders-grid .e-row {
+		height: 18px;
+	}
+
+	.open-orders-status-stopped {
+		color: red;
+		font-weight: 600;
+	}
+</style>
 
 @code {
 
