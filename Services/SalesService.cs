@@ -1000,6 +1000,7 @@ public class SalesService : ISalesService
             , ci.qty_ordered - ci.qty_shipped AS OpenQty
             , (ci.qty_ordered - ci.qty_shipped) * ci.price AS OpenDollars
             , cu.Uf_SalesRegion AS ShipToRegion
+            , co.stat as CoStatus
         FROM BAT_App.dbo.coitem_mst ci
         JOIN BAT_App.dbo.co_mst co ON co.co_num = ci.co_num 
         JOIN Bat_App.dbo.customer_mst cu ON co.cust_num = cu.cust_num AND co.cust_seq = cu.cust_seq

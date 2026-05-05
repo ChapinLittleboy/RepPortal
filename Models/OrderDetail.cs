@@ -69,6 +69,17 @@ public class OrderDetail
     [CsiField("SalesRegion")]
     public string? ShipToRegion { get; set; }
 
+    [CsiField("Stat")]
+    public string? CoStatus { get; set; }
+
+    public string? CoStatusDescription => CoStatus?.Trim().ToUpperInvariant() switch
+    {
+        "O" => "Ordered",
+        "P" => "Planned",
+        "S" => "Stopped",
+        "F" => "Filled",
+        _ => null
+    };
 
     // Updated Status Category based on DueDate relative to today + 30 days
 
