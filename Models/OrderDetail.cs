@@ -29,6 +29,14 @@ public class OrderDetail
     [CsiField("Item")]
     public string? ItemNumber { get; set; }
 
+    // Dapper maps by property name on SQL-backed queries that still project `Item`.
+    [JsonIgnore]
+    public string? Item
+    {
+        get => ItemNumber;
+        set => ItemNumber = value;
+    }
+
     [CsiField("Description")]
     public string? ItemDesc { get; set; }
 

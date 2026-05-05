@@ -950,7 +950,7 @@ public class SalesService : ISalesService
                 ORDERS.PromDate AS PromDate,
                 ORDERS.CustPO,
                 ORDERS.CONUM AS CoNum,
-                ORDERS.ITEM AS Item,
+                ORDERS.ITEM AS ItemNumber,
                 ORDERS.PRICE AS Price,
                 ORDERS.ORDQTY AS OrdQty,
                 (ORDERS.Price * ORDERS.OrdQty) AS Dollars,
@@ -993,7 +993,7 @@ public class SalesService : ISalesService
             , co.order_date AS OrdDate
             , co.Cust_PO AS CustPO
             , co.co_num AS CoNum
-            , ci.ITEM AS Item
+            , ci.ITEM AS ItemNumber
             , ISNULL(Item.Description, ci.Item) AS ItemDesc
             , ci.PRICE AS Price
             , ci.qty_ordered AS OrdQty
