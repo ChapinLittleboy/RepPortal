@@ -143,7 +143,8 @@ namespace RepPortal.Services
 
 
         public async Task<List<Dictionary<string, object>>> GetSalesReportData(string repCode,
-            IEnumerable<string>? allowedRegions)
+            IEnumerable<string>? allowedRegions,
+            string yearMode = "FY")
         {
 
             if (string.IsNullOrWhiteSpace(repCode))
@@ -156,50 +157,31 @@ namespace RepPortal.Services
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var (query, fy) = BuildSalesPivotQuery(allowedRegions);
+            var (query, yearLabel) = BuildSalesPivotQuery(allowedRegions, yearMode);
             var parameters = new { RepCode = repCode, AllowedRegions = allowedRegions };
             var rows = await connection.QueryAsync(query, parameters, commandType: CommandType.Text);
 
-            _logger?.LogInformation("GetSalesReportData FY used: {FY}", fy);
+            _logger?.LogInformation("GetSalesReportData {YearMode} used: {YearLabel}", yearMode, yearLabel);
 
             return MaterializeToDictionaries(rows);
         }
 
 
 
-        private (string query, int fiscalYear) BuildSalesPivotQuery(IEnumerable<string>? allowedRegions = null)
+        private (string query, string currentYearLabel) BuildSalesPivotQuery(
+            IEnumerable<string>? allowedRegions = null,
+            string yearMode = "FY")
         {
-            var today = DateTime.Today;
+            var period = SalesReportPeriodHelper.Create(yearMode);
 
-            // Fiscal year rolls on Sep 1 -> Aug 31 (FY = next calendar year once we hit Sep)
-            var fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
+            var colsPivot = string.Join(",", period.AllMonths.Select(m => $"[{m}]"));
+            var currentYearColList = string.Join(",", period.CurrentYearMonths.Select(m => $"ISNULL([{m}], 0) AS [{m}]"));
 
-            // current FY start (Sep 1 of prior year) and 3 FYs ago
-            var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
-            var fyMinus3Start = new DateTime(fiscalYear - 4, 9, 1);
-            var fyCurrentEnd = new DateTime(fiscalYear, 8, 31);
-
-            int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
-
-            var monthsCount = 36 + currentFiscalMonth;
-            var allMonths = Enumerable.Range(0, monthsCount)
-                .Select(i => fyMinus3Start.AddMonths(i))
-                .Select(d => d.ToString("MMM") + d.Year)
-                .ToList();
-
-            var fyMinus3Months = allMonths.Take(12).ToList();
-            var fyMinus2Months = allMonths.Skip(12).Take(12).ToList();
-            var fyMinus1Months = allMonths.Skip(24).Take(12).ToList();
-            var currentFYMonths = allMonths.Skip(36).Take(currentFiscalMonth).ToList();
-
-            var colsPivot = string.Join(",", allMonths.Select(m => $"[{m}]"));
-            var currentFYColList = string.Join(",", currentFYMonths.Select(m => $"ISNULL([{m}], 0) AS [{m}]"));
-
-            var fyMinus3Sum = string.Join(" + ", fyMinus3Months.Select(m => $"ISNULL([{m}],0)"));
-            var fyMinus2Sum = string.Join(" + ", fyMinus2Months.Select(m => $"ISNULL([{m}],0)"));
-            var fyMinus1Sum = string.Join(" + ", fyMinus1Months.Select(m => $"ISNULL([{m}],0)"));
-            var fyCurrentSum = currentFYMonths.Any()
-                ? string.Join(" + ", currentFYMonths.Select(m => $"ISNULL([{m}],0)"))
+            var priorYear3Sum = string.Join(" + ", period.PriorYear3Months.Select(m => $"ISNULL([{m}],0)"));
+            var priorYear2Sum = string.Join(" + ", period.PriorYear2Months.Select(m => $"ISNULL([{m}],0)"));
+            var priorYear1Sum = string.Join(" + ", period.PriorYear1Months.Select(m => $"ISNULL([{m}],0)"));
+            var currentYearSum = period.CurrentYearMonths.Any()
+                ? string.Join(" + ", period.CurrentYearMonths.Select(m => $"ISNULL([{m}],0)"))
                 : "0";
 
             var regionFilter = (allowedRegions != null && allowedRegions.Any())
@@ -226,7 +208,7 @@ namespace RepPortal.Services
     JOIN Bat_App.dbo.custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
     JOIN Bat_App.dbo.customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
     LEFT JOIN Bat_App.dbo.Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
-    WHERE ih.inv_date >= '{fyMinus3Start:yyyy-MM-dd}'
+    WHERE ih.inv_date >= '{period.HistoryStart:yyyy-MM-dd}'
       AND cu.slsman = @RepCode{regionFilter}
     GROUP BY 
         ih.cust_num, ca0.Name, ih.cust_seq, ca.City, ca.State,
@@ -246,11 +228,11 @@ SELECT
     [Bill To State],
     Uf_SalesRegion,
     RegionName,
-    {fyMinus3Sum} AS FY{fiscalYear - 3},
-    {fyMinus2Sum} AS FY{fiscalYear - 2},
-    {fyMinus1Sum} AS FY{fiscalYear - 1},
-    {fyCurrentSum} AS FY{fiscalYear},
-    {currentFYColList}
+    {priorYear3Sum} AS {period.PriorYear3Label},
+    {priorYear2Sum} AS {period.PriorYear2Label},
+    {priorYear1Sum} AS {period.PriorYear1Label},
+    {currentYearSum} AS {period.CurrentYearLabel},
+    {currentYearColList}
 FROM (
     {BaseSelect("Bat_App")}
     UNION ALL
@@ -260,9 +242,9 @@ PIVOT (
     SUM(ExtPrice)
     FOR Period IN ({colsPivot})
 ) AS pvt
-ORDER BY FY{fiscalYear - 1} DESC;";
+ORDER BY {period.PriorYear1Label} DESC;";
 
-            return (query, fiscalYear);
+            return (query, period.CurrentYearLabel);
         }
     }
 }

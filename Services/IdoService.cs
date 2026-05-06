@@ -586,28 +586,15 @@ public class IdoService : IIdoService
 
     public async Task<List<Dictionary<string, object>>> GetSalesReportDataUsingInvRepAsync(
         string repCode,
-        IEnumerable<string>? allowedRegions)
+        IEnumerable<string>? allowedRegions,
+        string yearMode = "FY")
     {
-        var today = DateTime.Today;
-        int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
-        var fyMinus3Start = new DateTime(fiscalYear - 4, 9, 1);
-
-        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
-
-        var allMonths = Enumerable.Range(0, 36 + currentFiscalMonth)
-            .Select(i => fyMinus3Start.AddMonths(i))
-            .Select(d => d.ToString("MMM") + d.Year)
-            .ToList();
-
-        var fyMinus3Months = allMonths.Take(12).ToList();
-        var fyMinus2Months = allMonths.Skip(12).Take(12).ToList();
-        var fyMinus1Months = allMonths.Skip(24).Take(12).ToList();
-        var currentFYMonths = allMonths.Skip(36).Take(currentFiscalMonth).ToList();
+        var reportPeriod = SalesReportPeriodHelper.Create(yearMode);
 
         var hdrQuery = new Dictionary<string, string>
         {
             ["props"] = "InvNum,InvSeq,CustNum,CustSeq,Slsman,InvDate,AddrName,State",
-            ["filter"] = $"{Eq("Slsman", repCode)} AND InvDate >= '{fyMinus3Start:yyyyMMdd}'",
+            ["filter"] = $"{Eq("Slsman", repCode)} AND InvDate >= '{reportPeriod.HistoryStart:yyyyMMdd}'",
             ["rowcap"] = "0",
             ["loadtype"] = "FIRST",
             ["bookmark"] = "0",
@@ -777,28 +764,15 @@ public class IdoService : IIdoService
             ));
         }
 
-        return BuildSalesPivotResults(joined, fiscalYear, fyMinus3Months, fyMinus2Months, fyMinus1Months, currentFYMonths);
+        return BuildSalesPivotResults(joined, reportPeriod);
     }
 
     public async Task<List<Dictionary<string, object>>> GetSalesReportDataAsync(
         string repCode,
-        IEnumerable<string>? allowedRegions)
+        IEnumerable<string>? allowedRegions,
+        string yearMode = "FY")
     {
-        var today = DateTime.Today;
-        int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
-        var fyMinus3Start = new DateTime(fiscalYear - 4, 9, 1);
-
-        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
-
-        var allMonths = Enumerable.Range(0, 36 + currentFiscalMonth)
-            .Select(i => fyMinus3Start.AddMonths(i))
-            .Select(d => d.ToString("MMM") + d.Year)
-            .ToList();
-
-        var fyMinus3Months = allMonths.Take(12).ToList();
-        var fyMinus2Months = allMonths.Skip(12).Take(12).ToList();
-        var fyMinus1Months = allMonths.Skip(24).Take(12).ToList();
-        var currentFYMonths = allMonths.Skip(36).Take(currentFiscalMonth).ToList();
+        var reportPeriod = SalesReportPeriodHelper.Create(yearMode);
 
         var custQuery = new Dictionary<string, string>
         {
@@ -863,7 +837,7 @@ public class IdoService : IIdoService
                 var hdrQuery = new Dictionary<string, string>
                 {
                     ["props"] = "InvNum,InvSeq,CustNum,CustSeq,InvDate,AddrName,State",
-                    ["filter"] = In("CustNum", batch) + $" AND InvDate >= '{fyMinus3Start:yyyyMMdd}'",
+                    ["filter"] = In("CustNum", batch) + $" AND InvDate >= '{reportPeriod.HistoryStart:yyyyMMdd}'",
                     ["rowcap"] = "0",
                     ["loadtype"] = "FIRST",
                     ["bookmark"] = "0",
@@ -1012,7 +986,7 @@ public class IdoService : IIdoService
             ));
         }
 
-        return BuildSalesPivotResults(joined, fiscalYear, fyMinus3Months, fyMinus2Months, fyMinus1Months, currentFYMonths);
+        return BuildSalesPivotResults(joined, reportPeriod);
     }
 
     private async Task<List<InvLineRawRow>> FetchKentLinesViaStandardIdosAsync(
@@ -1110,11 +1084,7 @@ public class IdoService : IIdoService
         List<(string Customer, string CustomerName, int ShipToNum, string ShipToCity, string ShipToState,
             string Slsman, string Name, string BillToState, string UfSalesRegion, string RegionName,
             string Period, decimal ExtPrice)> joined,
-        int fiscalYear,
-        List<string> fyMinus3Months,
-        List<string> fyMinus2Months,
-        List<string> fyMinus1Months,
-        List<string> currentFYMonths)
+        SalesReportPeriod period)
     {
         var grouped = joined
             .GroupBy(r => new
@@ -1138,11 +1108,6 @@ public class IdoService : IIdoService
             })
             .ToList();
 
-        var fyMinus3Label = $"FY{fiscalYear - 3}";
-        var fyMinus2Label = $"FY{fiscalYear - 2}";
-        var fyMinus1Label = $"FY{fiscalYear - 1}";
-        var fyCurrentLabel = $"FY{fiscalYear}";
-
         var results = new List<Dictionary<string, object>>();
 
         foreach (var g in grouped)
@@ -1164,19 +1129,19 @@ public class IdoService : IIdoService
             decimal SumFy(List<string> months) =>
                 months.Sum(m => g.PeriodTotals.TryGetValue(m, out decimal v) ? v : 0m);
 
-            dict[fyMinus3Label] = SumFy(fyMinus3Months);
-            dict[fyMinus2Label] = SumFy(fyMinus2Months);
-            dict[fyMinus1Label] = SumFy(fyMinus1Months);
-            dict[fyCurrentLabel] = SumFy(currentFYMonths);
+            dict[period.PriorYear3Label] = SumFy(period.PriorYear3Months);
+            dict[period.PriorYear2Label] = SumFy(period.PriorYear2Months);
+            dict[period.PriorYear1Label] = SumFy(period.PriorYear1Months);
+            dict[period.CurrentYearLabel] = SumFy(period.CurrentYearMonths);
 
-            foreach (var month in currentFYMonths)
+            foreach (var month in period.CurrentYearMonths)
                 dict[month] = g.PeriodTotals.TryGetValue(month, out decimal v) ? v : 0m;
 
             results.Add(dict);
         }
 
         return results
-            .OrderByDescending(d => d.TryGetValue(fyMinus1Label, out object? v) && v is decimal dec ? dec : 0m)
+            .OrderByDescending(d => d.TryGetValue(period.PriorYear1Label, out object? v) && v is decimal dec ? dec : 0m)
             .ToList();
     }
 

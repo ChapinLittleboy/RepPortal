@@ -8,8 +8,8 @@ public interface IIdoService
     Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQtyAsync(string repCode, List<string> allowedRegions);
     Task<List<CustomerShipment>> GetShipmentsDataAsync(SalesService.ShipmentsParameters parameters, string repCode, IEnumerable<string>? allowedRegions);
     Task<List<InvoiceRptDetail>> GetInvoiceRptDataAsync(SalesService.InvoiceRptParameters parameters, string repCode);
-    Task<List<Dictionary<string, object>>> GetSalesReportDataUsingInvRepAsync(string repCode, IEnumerable<string>? allowedRegions);
-    Task<List<Dictionary<string, object>>> GetSalesReportDataAsync(string repCode, IEnumerable<string>? allowedRegions);
+    Task<List<Dictionary<string, object>>> GetSalesReportDataUsingInvRepAsync(string repCode, IEnumerable<string>? allowedRegions, string yearMode = "FY");
+    Task<List<Dictionary<string, object>>> GetSalesReportDataAsync(string repCode, IEnumerable<string>? allowedRegions, string yearMode = "FY");
     Task<PackingList> GetPackingListByShipmentAsync(string packNum);
     Task<List<PackingList>> GetPackingListsByOrderAsync(string coNum);
     Task<List<Customer>> GetCustomersDetailsByRepCodeAsync(string repCode);

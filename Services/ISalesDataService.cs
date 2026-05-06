@@ -12,6 +12,7 @@ namespace RepPortal.Services
         Task<List<Dictionary<string, object>>> GetSalesReportData(
         
             string repCode,
-            IEnumerable<string>? allowedRegions);
+            IEnumerable<string>? allowedRegions,
+            string yearMode = "FY");
     }
 }

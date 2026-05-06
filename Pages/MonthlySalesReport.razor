@@ -28,6 +28,11 @@ else
 	    <div>
 		    <div class="active-filters">
 			    <button @onclick="ClearFilters">Clear Filters</button>
+                <label for="yearModeSelect" class="ms-3">View By:</label>
+                <select id="yearModeSelect" class="form-select d-inline-block w-auto ms-2" value="@selectedYearMode" @onchange="OnYearModeChanged">
+                    <option value="FY">Fiscal Year</option>
+                    <option value="CY">Calendar Year</option>
+                </select>
         
 			    <!--
         <span class="divider">|</span>
@@ -39,9 +44,9 @@ else
 	    </div>
 
 
-        <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowGrouping="true" ShowColumnChooser="true"
+        <SfGrid ID="Grid" @ref="Grid" DataSource="@eSalesData" AllowSorting="true" AllowGrouping="true" ShowColumnChooser="false"
                 AllowFiltering="true" AllowPaging="true" AllowExcelExport="true" AllowResizing="true" AllowTextWrap="true"
-                Toolbar="@(new List<string>() { "Export to Excel", "ColumnChooser" })" AllowReordering="true">
+                Toolbar="@(new List<string>() { "Export to Excel" })" AllowReordering="true">
 
 	        <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="ExpandoObject"></GridEvents>
 	        <GridTextWrapSettings WrapMode="WrapMode.Header"></GridTextWrapSettings>
@@ -126,6 +131,7 @@ else
     private List<ExpandoObject> eSalesData = new List<ExpandoObject>();
     private bool isLoading = true;
     private bool isReady = false;
+    private string selectedYearMode = "FY";
 
 
     private AuthenticationState? authState;
@@ -135,58 +141,7 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        
-	    List<Dictionary<string, object>> rawData;
-
-    
-	    if (salesmanType == "cu")   // uses slsman on the customer record
-	    {
-		    rawData = await SalesService.GetSalesReportData();
-	    }
-	    else if (salesmanType == "ih") // uses slsman on the invoice header record
-	    {
-		    rawData = await SalesService.GetSalesReportDataUsingInvRep();
-	    }
-
-	    else
-	    {
-		    rawData = new List<Dictionary<string, object>>(); // fallback
-	    }
-
-
-	    // var rawData = await SalesService.GetSalesReportData();
-	    //ProcessDynamicColumns(rawData);
-	    ConvertToDictionaries(rawData);
-
-	    eSalesData = SalesData.Select(d => d.ToExpando()).ToList();
-        
-	    // get rid of future months
-	    var today = DateTime.Today;
-	    int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
-	    var fyStart = new DateTime(fiscalYear - 1, 9, 1);
-	    int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
-
-	    var allowedMonths = Enumerable.Range(0, currentFiscalMonth)
-		    .Select(i => fyStart.AddMonths(i).ToString("MMM") + fyStart.AddMonths(i).Year)
-		    .ToHashSet();
-
-	    foreach (IDictionary<string, object> row in eSalesData)
-	    {
-		    var monthKeysToRemove = row.Keys
-			    .Where(k => Regex.IsMatch(k, @"^[A-Z][a-z]{2}\d{4}$") && !allowedMonths.Contains(k))
-			    .ToList();
-
-		    foreach (var key in monthKeysToRemove)
-			    row.Remove(key);
-	    }
-
-	    ProcessDynamicColumns(eSalesData);
-
-	    await base.OnInitializedAsync();
-	    // Hide the spinner
-	    isLoading = false;
-	    //spinner.HideAsync();
-	    isReady = true;
+        await LoadReportAsync();
     }
     protected override async Task OnInitializedAsync()
     {
@@ -208,6 +163,19 @@ else
 
     }
 
+    private async Task OnYearModeChanged(Microsoft.AspNetCore.Components.ChangeEventArgs args)
+    {
+        var nextMode = args.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(nextMode) ||
+            string.Equals(nextMode, selectedYearMode, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        selectedYearMode = nextMode.ToUpperInvariant();
+        await LoadReportAsync();
+    }
+
 
     public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
     {
@@ -227,50 +195,45 @@ else
         // No conversion needed since records is already List<Dictionary<string, object>>
         SalesData = records;
     }
-    private void ProcessDynamicColumns(List<ExpandoObject> records)
+    private async Task LoadReportAsync()
     {
-	    var today = DateTime.Today;
-	    int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
-	    var fyStart = new DateTime(fiscalYear - 1, 9, 1);
-	    int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
+        isLoading = true;
+        isReady = false;
 
-	    // Build current FY month column names like "Sep2024", "Oct2024", etc.
-	    var currentFYMonths = Enumerable.Range(0, currentFiscalMonth)
-		    .Select(i => fyStart.AddMonths(i).ToString("MMM") + fyStart.AddMonths(i).Year)
-		    .ToHashSet();
+        List<Dictionary<string, object>> rawData;
 
-	    var allowedPrefixes = new[] { "FY" };
+        if (salesmanType == "cu")   // uses slsman on the customer record
+        {
+            rawData = await SalesService.GetSalesReportData(selectedYearMode);
+        }
+        else if (salesmanType == "ih") // uses slsman on the invoice header record
+        {
+            rawData = await SalesService.GetSalesReportDataUsingInvRep(selectedYearMode);
+        }
+        else
+        {
+            rawData = new List<Dictionary<string, object>>();
+        }
 
-	    // Extract column names from expando object keys
-	    var allColumns = records
-		    .SelectMany(r => ((IDictionary<string, object>)r).Keys)
-		    .Where(k =>
-			    !IsFixedColumn(k) &&
-			    (currentFYMonths.Contains(k) || allowedPrefixes.Any(p => k.StartsWith(p, StringComparison.OrdinalIgnoreCase))))
-		    .Distinct()
-		    .OrderBy(GetColumnOrder) // reverse month order
-		    .ToList();
+        ConvertToDictionaries(rawData);
+        eSalesData = SalesData.Select(d => d.ToExpando()).ToList();
+        ProcessDynamicColumns(eSalesData);
 
-	    DynamicColumns = allColumns;
-
-	    Console.WriteLine("Dynamic Columns: " + string.Join(", ", DynamicColumns));
+        isLoading = false;
+        isReady = true;
     }
 
-
-    private void ProcessDynamicColumnsfromList(List<Dictionary<string, object>> records)
+    private void ProcessDynamicColumns(List<ExpandoObject> records)
     {
-        // Get all possible dynamic column names
-        var allColumns = records
-            .SelectMany(r => r.Keys)
-            .Where(k => !IsFixedColumn(k))
-            .Distinct()
-            .OrderBy(GetColumnOrder)
+        var period = SalesReportPeriodHelper.Create(selectedYearMode);
+        var availableColumns = records
+            .SelectMany(r => ((IDictionary<string, object>)r).Keys)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        DynamicColumns = period.YearLabels
+            .Concat(period.CurrentYearMonths.AsEnumerable().Reverse())
+            .Where(availableColumns.Contains)
             .ToList();
-
-        DynamicColumns = allColumns;
-
-        // Debugging: Log the dynamic columns
-        Console.WriteLine("Dynamic Columns: " + string.Join(", ", DynamicColumns));
     }
 
     private bool IsFixedColumn(string columnName)
@@ -283,81 +246,6 @@ else
         };
         return fixedColumns.Contains(columnName);
     }
-    private int GetColumnOrder(string columnName)
-    {
-        // Handle fixed columns (if needed)
-        var fixedColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "Customer", 0 },
-            { "Customer Name", 1 },
-            { "Ship To Num", 2 },
-            { "Ship To City", 3 },
-            { "Ship To State", 4 },
-            { "Slsman", 5 },
-            { "Name", 6 },
-            { "Bill To State", 7 },
-            { "Uf_SalesRegion", 8 },
-            { "RegionName", 9 }
-        };
-
-        if (fixedColumnOrder.ContainsKey(columnName))
-        {
-            return fixedColumnOrder[columnName];
-        }
-
-        // Handle dynamic columns (chronological order)
-        if (columnName.StartsWith("FY", StringComparison.OrdinalIgnoreCase))
-        {
-            // Extract the integer part after "FY"
-            if (int.TryParse(columnName.Substring(2), out int year))
-            {
-                // Return a value based on the year
-                // For example, FY2024 returns 10, FY2025 returns 11, etc.
-                return year - 2014; // Adjust the offset as needed
-            }
-            else
-            {
-                // Handle the case where the column name doesn't contain a valid year
-                return int.MaxValue; // Place invalid FY columns at the end
-            }
-        }
-        // Parse month-year columns (e.g., SEP2024, OCT2024, etc.)
-        if (columnName.Length >= 3)
-        {
-            var monthPart = columnName.Substring(0, 3);
-            var yearPart = columnName.Length > 3 ? columnName.Substring(3) : "";
-
-            int previouscolumns = 11;
-            var monthOrder = monthPart.ToUpper() switch
-            {
-                "SEP" => previouscolumns + 12,
-                "OCT" => previouscolumns + 11,
-                "NOV" => previouscolumns + 10,
-                "DEC" => previouscolumns + 9,
-                "JAN" => previouscolumns + 8,
-                "FEB" => previouscolumns + 7,
-                "MAR" => previouscolumns + 6,
-                "APR" => previouscolumns + 5,
-                "MAY" => previouscolumns + 4,
-                "JUN" => previouscolumns + 3,
-                "JUL" => previouscolumns + 2,
-                "AUG" => previouscolumns + 1,
-                
-                _ => -1 // Unknown month
-            };
-
-            if (monthOrder != -1)
-            {
-                return monthOrder;
-            }
-        }
-
-        // Default for unmatched columns
-        return int.MaxValue; // Place unmatched columns at the end
-    }
-
-
-
     private void ConvertToExpandoObjects(List<SalesRecord> records)
     {
         foreach (var record in records)
