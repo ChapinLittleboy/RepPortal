@@ -21,8 +21,8 @@ string GetDynamicQueryForItemsMonthlyWithQty(IEnumerable<string>? allowedRegions
 Task<List<InvoiceRptDetail>> GetInvoiceRptData(SalesService.InvoiceRptParameters parameters);
     Task<List<InvoiceRptDetail>> GetInvoiceRptDataApiAsync(SalesService.InvoiceRptParameters parameters);
 Task<List<Dictionary<string, object>>> GetItemSalesReportData();
-Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQty();
-Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQtyApiAsync();
+Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQty(string yearMode = "FY");
+Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQtyApiAsync(string yearMode = "FY");
 Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQtyOLD();
 Task<List<OrderDetail>> GetOpenOrderDetailsAsync(string customerId);
 Task<List<CustomerOrderSummary>> GetOpenOrderSummariesAsync();

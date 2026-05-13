@@ -356,32 +356,17 @@ public class IdoService : IIdoService
 
     public async Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQtyAsync(
         string repCode,
-        List<string> allowedRegions)
+        List<string> allowedRegions,
+        string yearMode = "FY")
     {
-        var today = DateTime.Today;
-        int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
-
-        var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
-        var fyCurrentEnd = new DateTime(fiscalYear, 8, 31);
-        var fyMinus3Start = new DateTime(fiscalYear - 4, 9, 1);
-        var fyMinus3End = new DateTime(fiscalYear - 3, 8, 31);
-        var fyMinus2Start = new DateTime(fiscalYear - 3, 9, 1);
-        var fyMinus2End = new DateTime(fiscalYear - 2, 8, 31);
-        var fyMinus1Start = new DateTime(fiscalYear - 2, 9, 1);
-        var fyMinus1End = new DateTime(fiscalYear - 1, 8, 31);
-
-        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
-
-        var currentFYMonths = Enumerable.Range(0, currentFiscalMonth)
-            .Select(i => fyCurrentStart.AddMonths(i))
-            .Select(d => d.ToString("MMM") + d.Year)
-            .ToList();
+        var reportPeriod = SalesReportPeriodHelper.Create(yearMode);
+        var reportEndDate = DateTime.Today;
 
         var filters = new List<string>
         {
             Eq("Slsman", repCode),
-            $"InvDate >= '{fyMinus3Start:yyyyMMdd}'",
-            $"InvDate <= '{fyCurrentEnd:yyyyMMdd}'"
+            $"InvDate >= '{reportPeriod.HistoryStart:yyyyMMdd}'",
+            $"InvDate <= '{reportEndDate:yyyyMMdd}'"
         };
 
         if (allowedRegions is { Count: > 0 })
@@ -422,7 +407,7 @@ public class IdoService : IIdoService
                 _logger.LogInformation(
                     "Chap_InvoiceLines not available on {Site} ({Msg}); falling back to SLInvHdrs + SLInvItemAlls",
                     site, siteResponse.Message);
-                lines.AddRange(await FetchKentLinesViaStandardIdosAsync(repCode, fyMinus3Start, fyCurrentEnd, authOverride));
+                lines.AddRange(await FetchKentLinesViaStandardIdosAsync(repCode, reportPeriod.HistoryStart, reportEndDate, authOverride));
             }
             else
             {
@@ -524,15 +509,6 @@ public class IdoService : IIdoService
                 .ToList();
         }
 
-        string GetFyLabel(DateTime d)
-        {
-            if (d >= fyMinus3Start && d <= fyMinus3End) return $"FY{fiscalYear - 3}";
-            if (d >= fyMinus2Start && d <= fyMinus2End) return $"FY{fiscalYear - 2}";
-            if (d >= fyMinus1Start && d <= fyMinus1End) return $"FY{fiscalYear - 1}";
-            if (d >= fyCurrentStart && d <= fyCurrentEnd) return $"FY{fiscalYear}";
-            return string.Empty;
-        }
-
         var grouped = lines
             .GroupBy(l => (CustNum: l.CustNum ?? "", CustSeq: l.CustSeq, Item: l.Item ?? ""))
             .ToList();
@@ -561,15 +537,23 @@ public class IdoService : IIdoService
                 ["ItemDescription"] = itemDesc ?? ""
             };
 
-            foreach (int offset in new[] { 3, 2, 1, 0 })
+            foreach (var (label, months) in new[]
             {
-                string fyLabel = $"FY{fiscalYear - offset}";
-                var fyLines = group.Where(l => GetFyLabel(l.InvDate!.Value) == fyLabel).ToList();
-                row[$"{fyLabel}_Rev"] = fyLines.Sum(l => l.NetRevenue);
-                row[$"{fyLabel}_Qty"] = fyLines.Sum(l => l.QtyInvoiced);
+                (reportPeriod.PriorYear3Label, reportPeriod.PriorYear3Months),
+                (reportPeriod.PriorYear2Label, reportPeriod.PriorYear2Months),
+                (reportPeriod.PriorYear1Label, reportPeriod.PriorYear1Months),
+                (reportPeriod.CurrentYearLabel, reportPeriod.CurrentYearMonths)
+            })
+            {
+                var yearLines = group
+                    .Where(l => months.Contains(l.Period ?? string.Empty, StringComparer.OrdinalIgnoreCase))
+                    .ToList();
+
+                row[$"{label}_Rev"] = yearLines.Sum(l => l.NetRevenue);
+                row[$"{label}_Qty"] = yearLines.Sum(l => l.QtyInvoiced);
             }
 
-            foreach (var monthKey in currentFYMonths)
+            foreach (var monthKey in reportPeriod.CurrentYearMonths)
             {
                 var monthLines = group
                     .Where(l => string.Equals(l.Period, monthKey, StringComparison.OrdinalIgnoreCase))

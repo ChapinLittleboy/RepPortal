@@ -243,38 +243,20 @@ public class SalesService : ISalesService
         return MaterializeToDictionaries(rows);
     }
 
-    public async Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQty()
+    public async Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQty(string yearMode = "FY")
     {
         EnsureRepContext();
 
         if (_csiOptions.UseApi)
-            return await GetItemSalesReportDataWithQtyApiAsync();
+            return await GetItemSalesReportDataWithQtyApiAsync(yearMode);
 
         var repCode = _repCodeContext!.CurrentRepCode;
         var allowedRegions = _repCodeContext.CurrentRegions;
-
-        var today = DateTime.Today;
-        int fiscalYear = today.Month >= 9 ? today.Year + 1 : today.Year;
-
-        var fyCurrentStart = new DateTime(fiscalYear - 1, 9, 1);
-        var fyCurrentEnd = new DateTime(fiscalYear, 8, 31);
-
-        var fyMinus1Start = fyCurrentStart.AddYears(-1);
-        var fyMinus1End = fyCurrentEnd.AddYears(-1);
-        var fyMinus2Start = fyCurrentStart.AddYears(-2);
-        var fyMinus2End = fyCurrentEnd.AddYears(-2);
-        var fyMinus3Start = fyCurrentStart.AddYears(-3);
-        var fyMinus3End = fyCurrentEnd.AddYears(-3);
-
-        int currentFiscalMonth = today.Month >= 9 ? today.Month - 8 : today.Month + 4;
-
-        var currentFYMonths = Enumerable.Range(0, currentFiscalMonth)
-            .Select(i => fyCurrentStart.AddMonths(i))
-            .Select(d => d.ToString("MMM") + d.Year)
-            .ToList();
+        var period = SalesReportPeriodHelper.Create(yearMode);
+        var reportEndDate = DateTime.Today;
 
         var monthColumns = new StringBuilder();
-        foreach (var monthName in currentFYMonths)
+        foreach (var monthName in period.CurrentYearMonths)
         {
             var safe = monthName.Replace("'", "''");
             monthColumns.AppendLine($@"
@@ -291,6 +273,16 @@ public class SalesService : ISalesService
             ? " AND cu.Uf_SalesRegion IN @AllowedRegions"
             : string.Empty;
 
+        static string BuildPeriodCaseSum(IEnumerable<string> months, string valueColumn)
+        {
+            var monthList = months.ToList();
+            if (!monthList.Any())
+                return "0";
+
+            var inList = string.Join(", ", monthList.Select(m => $"'{m.Replace("'", "''")}'"));
+            return $"SUM(CASE WHEN Period IN ({inList}) THEN {valueColumn} ELSE 0 END)";
+        }
+
         string BaseSelect(string db) => $@"
         SELECT
             ih.cust_num AS Customer,
@@ -306,12 +298,6 @@ public class SalesService : ISalesService
             ii.item      AS Item,
             im.Description AS ItemDescription,
             FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR(4)) AS Period,
-            CASE
-                WHEN ih.inv_date BETWEEN '{fyMinus3Start:yyyy-MM-dd}' AND '{fyMinus3End:yyyy-MM-dd}' THEN 'FY{fiscalYear - 3}'
-                WHEN ih.inv_date BETWEEN '{fyMinus2Start:yyyy-MM-dd}' AND '{fyMinus2End:yyyy-MM-dd}' THEN 'FY{fiscalYear - 2}'
-                WHEN ih.inv_date BETWEEN '{fyMinus1Start:yyyy-MM-dd}' AND '{fyMinus1End:yyyy-MM-dd}' THEN 'FY{fiscalYear - 1}'
-                WHEN ih.inv_date BETWEEN '{fyCurrentStart:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}' THEN 'FY{fiscalYear}'
-            END AS FiscalYear,
             (ii.qty_invoiced * (ii.price * ((100 - ISNULL(ih.disc, 0.0)) / 100))) AS RevAmount,
             ii.qty_invoiced AS QtyInvoiced
         FROM {db}.dbo.inv_item_mst ii WITH (NOLOCK)
@@ -321,7 +307,7 @@ public class SalesService : ISalesService
         JOIN Bat_App.dbo.custaddr_mst   ca  WITH (NOLOCK) ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
         LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
         LEFT JOIN Bat_App.dbo.Item_mst im WITH (NOLOCK) ON ii.item = im.item
-        WHERE ih.inv_date BETWEEN '{fyMinus3Start:yyyy-MM-dd}' AND '{fyCurrentEnd:yyyy-MM-dd}'
+        WHERE ih.inv_date BETWEEN '{period.HistoryStart:yyyy-MM-dd}' AND '{reportEndDate:yyyy-MM-dd}'
           AND cu.slsman = @RepCode{regionFilter}";
 
         var sql = $@"
@@ -334,27 +320,27 @@ public class SalesService : ISalesService
         SELECT
             Customer, [Customer Name], [Ship To Num], [Ship To City], [Ship To State],
             slsman, SalespersonName, [Bill To State], Uf_SalesRegion, RegionName,
-            Item, ItemDescription, Period, FiscalYear,
+            Item, ItemDescription, Period,
             SUM(RevAmount)   AS RevAmount,
             SUM(QtyInvoiced) AS QtyInvoiced
         FROM InvoiceData
         GROUP BY
             Customer, [Customer Name], [Ship To Num], [Ship To City], [Ship To State],
             slsman, SalespersonName, [Bill To State], Uf_SalesRegion, RegionName,
-            Item, ItemDescription, Period, FiscalYear
+            Item, ItemDescription, Period
     )
     SELECT
         Customer, [Customer Name], [Ship To Num], [Ship To City], [Ship To State],
         slsman, SalespersonName, [Bill To State], Uf_SalesRegion, RegionName,
         Item, ItemDescription,
-        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear - 3}' THEN RevAmount   ELSE 0 END) AS [FY{fiscalYear - 3}_Rev],
-        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear - 3}' THEN QtyInvoiced ELSE 0 END) AS [FY{fiscalYear - 3}_Qty],
-        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear - 2}' THEN RevAmount   ELSE 0 END) AS [FY{fiscalYear - 2}_Rev],
-        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear - 2}' THEN QtyInvoiced ELSE 0 END) AS [FY{fiscalYear - 2}_Qty],
-        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear - 1}' THEN RevAmount   ELSE 0 END) AS [FY{fiscalYear - 1}_Rev],
-        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear - 1}' THEN QtyInvoiced ELSE 0 END) AS [FY{fiscalYear - 1}_Qty],
-        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear}'     THEN RevAmount   ELSE 0 END) AS [FY{fiscalYear}_Rev],
-        SUM(CASE WHEN FiscalYear = 'FY{fiscalYear}'     THEN QtyInvoiced ELSE 0 END) AS [FY{fiscalYear}_Qty],
+        {BuildPeriodCaseSum(period.PriorYear3Months, "RevAmount")}   AS [{period.PriorYear3Label}_Rev],
+        {BuildPeriodCaseSum(period.PriorYear3Months, "QtyInvoiced")} AS [{period.PriorYear3Label}_Qty],
+        {BuildPeriodCaseSum(period.PriorYear2Months, "RevAmount")}   AS [{period.PriorYear2Label}_Rev],
+        {BuildPeriodCaseSum(period.PriorYear2Months, "QtyInvoiced")} AS [{period.PriorYear2Label}_Qty],
+        {BuildPeriodCaseSum(period.PriorYear1Months, "RevAmount")}   AS [{period.PriorYear1Label}_Rev],
+        {BuildPeriodCaseSum(period.PriorYear1Months, "QtyInvoiced")} AS [{period.PriorYear1Label}_Qty],
+        {BuildPeriodCaseSum(period.CurrentYearMonths, "RevAmount")}   AS [{period.CurrentYearLabel}_Rev],
+        {BuildPeriodCaseSum(period.CurrentYearMonths, "QtyInvoiced")} AS [{period.CurrentYearLabel}_Qty],
         {monthColumns}
     FROM AggregatedData
     GROUP BY
@@ -369,8 +355,6 @@ public class SalesService : ISalesService
         if (allowedRegions != null && allowedRegions.Any())
             param.Add("@AllowedRegions", allowedRegions);
 
-
-        _logger?.LogInformation("GetItemSalesReportDataWithQty SQL:\n{Sql}", sql);
 
         _logger?.LogInformation("GetItemSalesReportDataWithQty SQL:\n{Sql}", sql);
 
@@ -398,12 +382,12 @@ public class SalesService : ISalesService
     /// Customer names come from a secondary SLCustomers call (CustSeq=0);
     /// item descriptions from a secondary SLItems call.
     /// </summary>
-    public async Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQtyApiAsync()
+    public async Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQtyApiAsync(string yearMode = "FY")
     {
         EnsureRepContext();
         var repCode = _repCodeContext!.CurrentRepCode;
         var allowedRegions = _repCodeContext.CurrentRegions;
-        var results = await _idoService!.GetItemSalesReportDataWithQtyAsync(repCode, allowedRegions);
+        var results = await _idoService!.GetItemSalesReportDataWithQtyAsync(repCode, allowedRegions, yearMode);
         await LogReportUsageAsync(repCode, "GetItemSalesReportDataWithQtyApi");
         return results;
     }
