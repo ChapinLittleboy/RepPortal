@@ -975,7 +975,7 @@ public class SalesService : ISalesService
               co.Cust_Num AS Cust
             , cc.Name AS CustName
             , co.cust_seq AS ShipToNum
-            , ca.name AS ShipToName
+            , ca.name AS ShipToName          
             , ci.due_date AS DueDate
             , co.order_date AS OrdDate
             , co.Cust_PO AS CustPO
@@ -991,7 +991,7 @@ public class SalesService : ISalesService
         FROM BAT_App.dbo.coitem_mst ci
         JOIN BAT_App.dbo.co_mst co ON co.co_num = ci.co_num 
         JOIN Bat_App.dbo.customer_mst cu ON co.cust_num = cu.cust_num AND co.cust_seq = cu.cust_seq
-        JOIN Bat_App.dbo.custaddr_mst ca ON co.cust_num = ca.cust_num AND ca.cust_seq = 0
+        JOIN Bat_App.dbo.custaddr_mst ca ON co.cust_num = ca.cust_num AND ca.cust_seq = co.cust_seq     
         LEFT JOIN CIISQL10.BAT_App.DBO.Item_mst Item ON Item.Item = ci.Item
         LEFT JOIN CIISQL10.BAT_App.dbo.Customer_CorpCust_Vw cc ON cu.cust_num = cc.cust_num
         WHERE ci.STAT = 'O'
