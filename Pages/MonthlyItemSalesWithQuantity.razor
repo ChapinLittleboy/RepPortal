@@ -58,6 +58,7 @@ else
 
             <GridColumns>
                 <GridColumn Field="Customer" HeaderText="Customer" Width="100"></GridColumn>
+                <GridColumn Field="CorpNum" HeaderText="Corp Num" Width="100"></GridColumn>
                 <GridColumn Field="Customer Name" HeaderText="Name" Width="150"></GridColumn>
                 <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
                 <GridColumn Field="Ship To City" HeaderText="Ship City" Width="120"></GridColumn>
@@ -226,6 +227,7 @@ else
         var fixedColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "Customer",
+            "CorpNum",
             "Customer Name",
             "Ship To Num",
             "Ship To City",

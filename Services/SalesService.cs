@@ -286,6 +286,7 @@ public class SalesService : ISalesService
         string BaseSelect(string db) => $@"
         SELECT
             ih.cust_num AS Customer,
+            ISNULL(cc.CorpCust, ih.cust_num) AS CorpNum,
             ca0.Name     AS [Customer Name],
             ih.cust_seq  AS [Ship To Num],
             ca.City      AS [Ship To City],
@@ -305,6 +306,7 @@ public class SalesService : ISalesService
         JOIN Bat_App.dbo.customer_mst   cu WITH (NOLOCK) ON ih.cust_num = cu.cust_num AND ih.cust_seq = cu.cust_seq
         JOIN Bat_App.dbo.custaddr_mst   ca0 WITH (NOLOCK) ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0
         JOIN Bat_App.dbo.custaddr_mst   ca  WITH (NOLOCK) ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
+        LEFT JOIN Bat_App.dbo.Customer_CorpCust_Vw cc WITH (NOLOCK) ON ih.cust_num = cc.cust_num
         LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK) ON rn.Region = cu.Uf_SalesRegion
         LEFT JOIN Bat_App.dbo.Item_mst im WITH (NOLOCK) ON ii.item = im.item
         WHERE ih.inv_date BETWEEN '{period.HistoryStart:yyyy-MM-dd}' AND '{reportEndDate:yyyy-MM-dd}'
@@ -318,19 +320,19 @@ public class SalesService : ISalesService
     ),
     AggregatedData AS (
         SELECT
-            Customer, [Customer Name], [Ship To Num], [Ship To City], [Ship To State],
+            Customer, CorpNum, [Customer Name], [Ship To Num], [Ship To City], [Ship To State],
             slsman, SalespersonName, [Bill To State], Uf_SalesRegion, RegionName,
             Item, ItemDescription, Period,
             SUM(RevAmount)   AS RevAmount,
             SUM(QtyInvoiced) AS QtyInvoiced
         FROM InvoiceData
         GROUP BY
-            Customer, [Customer Name], [Ship To Num], [Ship To City], [Ship To State],
+            Customer, CorpNum, [Customer Name], [Ship To Num], [Ship To City], [Ship To State],
             slsman, SalespersonName, [Bill To State], Uf_SalesRegion, RegionName,
             Item, ItemDescription, Period
     )
     SELECT
-        Customer, [Customer Name], [Ship To Num], [Ship To City], [Ship To State],
+        Customer, CorpNum, [Customer Name], [Ship To Num], [Ship To City], [Ship To State],
         slsman, SalespersonName, [Bill To State], Uf_SalesRegion, RegionName,
         Item, ItemDescription,
         {BuildPeriodCaseSum(period.PriorYear3Months, "RevAmount")}   AS [{period.PriorYear3Label}_Rev],
@@ -344,7 +346,7 @@ public class SalesService : ISalesService
         {monthColumns}
     FROM AggregatedData
     GROUP BY
-        Customer, [Customer Name], [Ship To Num], [Ship To City], [Ship To State],
+        Customer, CorpNum, [Customer Name], [Ship To Num], [Ship To City], [Ship To State],
         slsman, SalespersonName, [Bill To State], Uf_SalesRegion, RegionName,
         Item, ItemDescription
     OPTION (RECOMPILE);";
@@ -1645,6 +1647,7 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK)
         string BaseSelect(string db) => $@"
     SELECT 
         ih.cust_num AS Customer,
+        ISNULL(cc.CorpCust, ih.cust_num) AS CorpNum,
         ca0.Name AS [Customer Name],
         ih.cust_seq AS [Ship To Num],
         ca.City AS [Ship To City],
@@ -1661,11 +1664,12 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK)
     JOIN Bat_App.dbo.custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0 
     JOIN Bat_App.dbo.custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
     JOIN Bat_App.dbo.customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
+    LEFT JOIN Bat_App.dbo.Customer_CorpCust_Vw cc ON ih.cust_num = cc.cust_num
     LEFT JOIN Bat_App.dbo.Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
     WHERE ih.inv_date >= '{period.HistoryStart:yyyy-MM-dd}'
       AND cu.slsman = @RepCode{regionFilter}
     GROUP BY 
-        ih.cust_num, ca0.Name, ih.cust_seq, ca.City, ca.State,
+        ih.cust_num, ISNULL(cc.CorpCust, ih.cust_num), ca0.Name, ih.cust_seq, ca.City, ca.State,
         ca0.name, ca0.state, cu.Uf_SalesRegion, rn.RegionName,
         cu.slsman,
         FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR)";
@@ -1673,6 +1677,7 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK)
         var query = $@"
 SELECT 
     Customer,
+    CorpNum,
     [Customer Name],
     [Ship To Num],
     [Ship To City],
@@ -1729,9 +1734,10 @@ ORDER BY {period.PriorYear1Label} DESC;";
             : string.Empty;
 
         string BaseSelect(string db) => $@"
-        SELECT 
-            ih.cust_num AS Customer,
-            ca0.Name AS [Customer Name],
+    SELECT 
+        ih.cust_num AS Customer,
+        ISNULL(cc.CorpCust, ih.cust_num) AS CorpNum,
+        ca0.Name AS [Customer Name],
             ih.cust_seq AS [Ship To Num],
             ca.City AS [Ship To City],
             ca.State AS [Ship To State],
@@ -1749,12 +1755,13 @@ ORDER BY {period.PriorYear1Label} DESC;";
         JOIN Bat_App.dbo.custaddr_mst ca0 ON ih.cust_num = ca0.cust_num AND ca0.cust_seq = 0 
         JOIN Bat_App.dbo.custaddr_mst ca ON ih.cust_num = ca.cust_num AND ih.cust_seq = ca.cust_seq
         JOIN Bat_App.dbo.customer_mst cu ON ih.cust_num = cu.cust_num AND cu.cust_seq = ih.cust_seq
+        LEFT JOIN Bat_App.dbo.Customer_CorpCust_Vw cc ON ih.cust_num = cc.cust_num
         LEFT JOIN Bat_App.dbo.Chap_RegionNames rn ON rn.Region = cu.Uf_SalesRegion
         LEFT JOIN Bat_App.dbo.Item_mst im ON ii.item = im.item
         WHERE ih.inv_date >= '{fyPriorStart:yyyy-MM-dd}'
           AND cu.slsman = @RepCode{regionFilter}
         GROUP BY 
-            ih.cust_num, ca0.Name, ih.cust_seq, ca.City, ca.State,
+            ih.cust_num, ISNULL(cc.CorpCust, ih.cust_num), ca0.Name, ih.cust_seq, ca.City, ca.State,
             ca0.name, ca0.state, cu.Uf_SalesRegion, rn.RegionName,
             cu.slsman, ii.item, im.Description,
             FORMAT(ih.inv_date, 'MMM') + CAST(YEAR(ih.inv_date) AS VARCHAR)";
@@ -1762,6 +1769,7 @@ ORDER BY {period.PriorYear1Label} DESC;";
         return $@"
     SELECT 
         Customer,
+        CorpNum,
         [Customer Name],
         [Ship To Num],
         [Ship To City],

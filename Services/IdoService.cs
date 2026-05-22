@@ -427,12 +427,13 @@ public class IdoService : IIdoService
 
         var custNameLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var regionFromCustLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var corpNumLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         if (uniqueCustNums.Count > 0)
         {
             var custQuery = new Dictionary<string, string>
             {
-                ["props"] = "CustNum,CustSeq,Name,Uf_SalesRegion",
+                ["props"] = "CustNum,CustSeq,Name,Uf_SalesRegion,CorpCust",
                 ["filter"] = $"CustSeq = 0 AND {In("CustNum", uniqueCustNums)}",
                 ["rowcap"] = "0",
                 ["loadtype"] = "FIRST",
@@ -452,6 +453,9 @@ public class IdoService : IIdoService
                     custNameLookup[custRow.CustNum] = custRow.Name ?? "";
                     if (!string.IsNullOrWhiteSpace(custRow.UfSalesRegion))
                         regionFromCustLookup[custRow.CustNum] = custRow.UfSalesRegion;
+                    corpNumLookup[custRow.CustNum] = string.IsNullOrWhiteSpace(custRow.CorpCust)
+                        ? custRow.CustNum
+                        : custRow.CorpCust;
                 }
             }
             else
@@ -524,6 +528,9 @@ public class IdoService : IIdoService
             var row = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
             {
                 ["Customer"] = first.CustNum ?? "",
+                ["CorpNum"] = corpNumLookup.TryGetValue(first.CustNum ?? "", out string? corpNum)
+                    ? corpNum
+                    : first.CustNum ?? "",
                 ["Customer Name"] = custName ?? "",
                 ["Ship To Num"] = first.CustSeq,
                 ["Ship To City"] = first.ShipToCity ?? "",
@@ -652,7 +659,7 @@ public class IdoService : IIdoService
 
         var custRegionQuery = new Dictionary<string, string>
         {
-            ["props"] = "CustNum,CustSeq,Uf_SalesRegion",
+            ["props"] = "CustNum,CustSeq,Uf_SalesRegion,CorpCust",
             ["filter"] = In("CustNum", custNums),
             ["rowcap"] = "0",
             ["loadtype"] = "FIRST",
@@ -662,6 +669,7 @@ public class IdoService : IIdoService
 
         var custRegionResponse = Deserialize(await _csiRestClient.GetAsync("json/SLCustomers/adv", custRegionQuery));
         var regionLookup = new Dictionary<(string, int), string>();
+        var corpNumLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         if (custRegionResponse.MessageCode == 0)
         {
             foreach (var row in custRegionResponse.Items)
@@ -669,8 +677,12 @@ public class IdoService : IIdoService
                 var cn = GetCell(row, "CustNum")?.Trim();
                 var cs = GetCell(row, "CustSeq")?.Trim() ?? "0";
                 var region = GetCell(row, "Uf_SalesRegion")?.Trim();
+                var corpCust = GetCell(row, "CorpCust")?.Trim();
                 if (!string.IsNullOrWhiteSpace(cn) && int.TryParse(cs, out int custSeq))
+                {
                     regionLookup[(cn, custSeq)] = region ?? "";
+                    corpNumLookup[cn] = string.IsNullOrWhiteSpace(corpCust) ? cn : corpCust;
+                }
             }
         }
 
@@ -698,7 +710,7 @@ public class IdoService : IIdoService
             .GroupBy(h => (h.InvNum!, h.InvSeq))
             .ToDictionary(g => g.Key, g => g.First());
 
-        var joined = new List<(string Customer, string CustomerName, int ShipToNum,
+        var joined = new List<(string Customer, string CorpNum, string CustomerName, int ShipToNum,
             string ShipToCity, string ShipToState, string Slsman, string Name,
             string BillToState, string UfSalesRegion, string RegionName, string Period,
             decimal ExtPrice)>();
@@ -734,6 +746,7 @@ public class IdoService : IIdoService
 
             joined.Add((
                 Customer: hdr.CustNum!,
+                CorpNum: corpNumLookup.TryGetValue(hdr.CustNum!, out string? corpNum) ? corpNum : hdr.CustNum!,
                 CustomerName: billToCust?.Name ?? hdr.AddrName ?? "",
                 ShipToNum: hdr.CustSeq,
                 ShipToCity: shipToCust?.City ?? "",
@@ -760,7 +773,7 @@ public class IdoService : IIdoService
 
         var custQuery = new Dictionary<string, string>
         {
-            ["props"] = "CustNum,CustSeq,Slsman,Uf_SalesRegion",
+            ["props"] = "CustNum,CustSeq,Slsman,Uf_SalesRegion,CorpCust",
             ["filter"] = Eq("Slsman", repCode),
             ["rowcap"] = "0",
             ["loadtype"] = "FIRST",
@@ -778,8 +791,16 @@ public class IdoService : IIdoService
             var cs = GetCell(row, "CustSeq")?.Trim() ?? "0";
             var slsman = GetCell(row, "Slsman")?.Trim();
             var region = GetCell(row, "Uf_SalesRegion")?.Trim();
+            var corpCust = GetCell(row, "CorpCust")?.Trim();
             int.TryParse(cs, out int custSeq);
-            return new { CustNum = cn, CustSeq = custSeq, Slsman = slsman ?? repCode, UfSalesRegion = region ?? "" };
+            return new
+            {
+                CustNum = cn,
+                CustSeq = custSeq,
+                Slsman = slsman ?? repCode,
+                UfSalesRegion = region ?? "",
+                CorpNum = string.IsNullOrWhiteSpace(corpCust) ? cn : corpCust
+            };
         })
         .Where(c => !string.IsNullOrWhiteSpace(c.CustNum))
         .ToList();
@@ -794,6 +815,10 @@ public class IdoService : IIdoService
         var regionLookup = customers
             .GroupBy(c => (c.CustNum!, c.CustSeq))
             .ToDictionary(g => g.Key, g => g.First().UfSalesRegion);
+
+        var corpNumLookup = customers
+            .GroupBy(c => c.CustNum!)
+            .ToDictionary(g => g.Key, g => g.First().CorpNum ?? g.Key, StringComparer.OrdinalIgnoreCase);
 
         HashSet<string>? allowedCustKeys = null;
         if (allowedRegions != null && allowedRegions.Any())
@@ -917,7 +942,7 @@ public class IdoService : IIdoService
             .GroupBy(h => (h.Site, h.Hdr.InvNum!, h.Hdr.InvSeq))
             .ToDictionary(g => g.Key, g => g.First().Hdr);
 
-        var joined = new List<(string Customer, string CustomerName, int ShipToNum,
+        var joined = new List<(string Customer, string CorpNum, string CustomerName, int ShipToNum,
             string ShipToCity, string ShipToState, string Slsman, string Name,
             string BillToState, string UfSalesRegion, string RegionName, string Period,
             decimal ExtPrice)>();
@@ -956,6 +981,7 @@ public class IdoService : IIdoService
 
             joined.Add((
                 Customer: hdr.CustNum!,
+                CorpNum: corpNumLookup.TryGetValue(hdr.CustNum!, out string? corpNum) ? corpNum : hdr.CustNum!,
                 CustomerName: billToCust?.Name ?? hdr.AddrName ?? "",
                 ShipToNum: hdr.CustSeq,
                 ShipToCity: shipToCust?.City ?? "",
@@ -1065,7 +1091,7 @@ public class IdoService : IIdoService
     }
 
     private static List<Dictionary<string, object>> BuildSalesPivotResults(
-        List<(string Customer, string CustomerName, int ShipToNum, string ShipToCity, string ShipToState,
+        List<(string Customer, string CorpNum, string CustomerName, int ShipToNum, string ShipToCity, string ShipToState,
             string Slsman, string Name, string BillToState, string UfSalesRegion, string RegionName,
             string Period, decimal ExtPrice)> joined,
         SalesReportPeriod period)
@@ -1074,6 +1100,7 @@ public class IdoService : IIdoService
             .GroupBy(r => new
             {
                 r.Customer,
+                r.CorpNum,
                 r.CustomerName,
                 r.ShipToNum,
                 r.ShipToCity,
@@ -1099,6 +1126,7 @@ public class IdoService : IIdoService
             var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
             {
                 ["Customer"] = g.Key.Customer,
+                ["CorpNum"] = g.Key.CorpNum,
                 ["Customer Name"] = g.Key.CustomerName,
                 ["Ship To Num"] = g.Key.ShipToNum,
                 ["Ship To City"] = g.Key.ShipToCity,
@@ -1566,6 +1594,7 @@ public class IdoService : IIdoService
         [CsiField("CustSeq")] public int CustSeq { get; set; }
         [CsiField("Name")] public string? Name { get; set; }
         [CsiField("Uf_SalesRegion")] public string? UfSalesRegion { get; set; }
+        [CsiField("CorpCust")] public string? CorpCust { get; set; }
     }
 
     private sealed class ItemDescInfo

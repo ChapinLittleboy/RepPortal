@@ -79,6 +79,7 @@ else
 	        <GridColumns>
 		        <!-- Fixed Columns -->
 		        <GridColumn Field="Customer" HeaderText="Customer" Width="100"></GridColumn>
+		        <GridColumn Field="CorpNum" HeaderText="Corp Num" Width="100"></GridColumn>
 		        <GridColumn Field="Customer Name" HeaderText="Name" Width="150"></GridColumn>
 		        <GridColumn Field="Bill To State" HeaderText="Bill State" Width="100"></GridColumn>
 		        <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
@@ -242,7 +243,7 @@ else
         { 
             "Customer", "Customer Name", "Ship To Num", "Ship To City", "Ship To State"
             , "slsman", "name",
-            "Bill To State",  "Uf_SalesRegion" ,"RegionName"
+            "Bill To State",  "Uf_SalesRegion" ,"RegionName", "CorpNum"
         };
         return fixedColumns.Contains(columnName);
     }
