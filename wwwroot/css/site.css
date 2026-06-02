@@ -98,6 +98,12 @@ main {
 .e-sort-number {
     display: none !important;
 }
+
+.grid-header-tooltip {
+    cursor: help;
+    border-bottom: 1px dotted currentColor;
+}
+
 .appbar-content {
     display: flex;
     flex-wrap: wrap;

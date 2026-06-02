@@ -76,8 +76,16 @@ else
         </GridAggregates>
         <GridColumns>
             <!-- Fixed Columns -->
-            <GridColumn Field="Customer" HeaderText="Customer" Width="100"></GridColumn>
-            <GridColumn Field="CorpNum" HeaderText="Corp Num" Width="100"></GridColumn>
+            <GridColumn Field="Customer" HeaderText="Cust Num" Width="100">
+                <HeaderTemplate>
+                    <span class="grid-header-tooltip" title="@CustNumHeaderTooltip">Cust Num</span>
+                </HeaderTemplate>
+            </GridColumn>
+            <GridColumn Field="CorpNum" HeaderText="Corp Num" Width="100">
+                <HeaderTemplate>
+                    <span class="grid-header-tooltip" title="@CorpCustHeaderTooltip">Corp Num</span>
+                </HeaderTemplate>
+            </GridColumn>
             <GridColumn Field="Customer Name" HeaderText="Name" Width="150"></GridColumn>
             <GridColumn Field="Ship To Num" HeaderText="Ship To" Width="100"></GridColumn>
             <GridColumn Field="Ship To City" HeaderText="Ship City" Width="120"></GridColumn>
@@ -104,6 +112,8 @@ else
     private List<string> DynamicColumns = new List<string>();
     private List<ExpandoObject> eSalesData = new List<ExpandoObject>();
     private bool isLoading = true;
+    private const string CustNumHeaderTooltip = "Filter on the Cust Num field to see sales only for the selected customer numbers";
+    private const string CorpCustHeaderTooltip = "Filter on the Corp Cust field to see sales for the selected customer numbers and their subordinate customer numbers";
    
     private AuthenticationState? authState;
     private ApplicationUser? currentUser;
