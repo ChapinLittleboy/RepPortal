@@ -4,7 +4,6 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using MimeKit;
 
 public interface IAttachmentEmailSender
@@ -72,11 +71,19 @@ public class SmtpEmailSender : IEmailSender, IAttachmentEmailSender
 
         await client.ConnectAsync(host, port, secure);
 
-        // Authenticate only if credentials are provided
-        if (!string.IsNullOrWhiteSpace(user))
+        if (ShouldAuthenticate(user, pass, client.Capabilities))
+        {
             await client.AuthenticateAsync(user, pass);
+        }
 
         await client.SendAsync(message);
         await client.DisconnectAsync(true);
+    }
+
+    internal static bool ShouldAuthenticate(string? user, string? pass, SmtpCapabilities capabilities)
+    {
+        return !string.IsNullOrWhiteSpace(user)
+               && !string.IsNullOrWhiteSpace(pass)
+               && (capabilities & SmtpCapabilities.Authentication) != 0;
     }
 }
