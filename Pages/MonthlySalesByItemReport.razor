@@ -21,6 +21,7 @@
 }
 else
 {
+    <CustomerNumberExplanation></CustomerNumberExplanation>
 	<div>
 		<div class="active-filters">
 			<button @onclick="ClearFilters">Clear Filters</button>
@@ -76,14 +77,14 @@ else
         </GridAggregates>
         <GridColumns>
             <!-- Fixed Columns -->
-            <GridColumn Field="Customer" HeaderText="Cust Num" Width="100">
+            <GridColumn Field="Customer" HeaderText="Customer Number" Width="120">
                 <HeaderTemplate>
-                    <span class="grid-header-tooltip" title="@CustNumHeaderTooltip">Cust Num</span>
+                    <span class="grid-header-tooltip" title="@CustNumHeaderTooltip">Customer Number</span>
                 </HeaderTemplate>
             </GridColumn>
-            <GridColumn Field="CorpNum" HeaderText="Corp Num" Width="100">
+            <GridColumn Field="CorpNum" HeaderText="Corporate Number" Width="125">
                 <HeaderTemplate>
-                    <span class="grid-header-tooltip" title="@CorpCustHeaderTooltip">Corp Num</span>
+                    <span class="grid-header-tooltip" title="@CorpCustHeaderTooltip">Corporate Number</span>
                 </HeaderTemplate>
             </GridColumn>
             <GridColumn Field="Customer Name" HeaderText="Name" Width="150"></GridColumn>

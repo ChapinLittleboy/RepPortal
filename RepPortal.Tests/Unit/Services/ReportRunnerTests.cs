@@ -97,6 +97,23 @@ public class ReportRunnerTests
     }
 
     [Fact]
+    public async Task RunAsync_ShouldExecuteExpiringPcfJob_WithoutResolvingUserContext()
+    {
+        var userContext = new Mock<IUserContextResolver>();
+        userContext.Setup(x => x.ResolveByEmailAsync(It.IsAny<string>()))
+            .ReturnsAsync((UserContextResult?)null);
+        var expiringJob = new Mock<IExpiringPcfNotificationsJob>();
+        var runner = CreateRunner(
+            userContext: userContext.Object,
+            expiringPcfNotificationsJob: expiringJob.Object);
+
+        await runner.RunAsync(new ReportRequest(ReportType.ExpiringPCFNotications, "missing@chapinusa.com", null, null));
+
+        userContext.Verify(x => x.ResolveByEmailAsync(It.IsAny<string>()), Times.Never);
+        expiringJob.Verify(x => x.RunAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task RunAsync_ShouldSendInvoicedAccountsEmail_WhenReportTypeMatches()
     {
         var invoicedAccounts = new Mock<IInvoicedAccountsReport>();

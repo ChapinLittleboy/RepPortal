@@ -1,7 +1,5 @@
 ﻿using System.Data;
 using System.Globalization;
-using System.Net;
-using System.Net.Mail;
 using System.Text.RegularExpressions;
 using Microsoft.IdentityModel.Tokens;
 using RepPortal.Models;
@@ -20,18 +18,16 @@ namespace RepPortal.Services;
 public class ExportService
 {
     private readonly IWebHostEnvironment _hostingEnvironment;
-    private readonly IConfiguration _configuration;
     private readonly ILogger<ExportService> _logger;
     private readonly PcfPdfAssetResolver _assetResolver;
 
 
 
-    public ExportService(IWebHostEnvironment hostingEnvironment, IConfiguration configuration,
+    public ExportService(IWebHostEnvironment hostingEnvironment,
         ILogger<ExportService> logger, PcfPdfAssetResolver assetResolver)
 
     {
         _hostingEnvironment = hostingEnvironment;
-        _configuration = configuration;
         _logger = logger;
         _assetResolver = assetResolver;
 
@@ -359,85 +355,6 @@ Prices and product availability are also subject to change at any time due to ma
         return stream;
     }
 
-
-
-    public void SendPcfPdfEmailWithAttachmentDONOTUSE(PCFHeader header, string EmailAddress,
-        string CCEmailAddress = null)
-    {
-        // Generate the PDF
-        MemoryStream pdfStream = CreatePCFPDF(header);
-
-        var subject = $"PCF: {header.PcfNumber} for Customer: {header.CustomerNumber} has been approved";
-        var filename = $"PCF {header.PcfNumber}_{header.CustomerNumber}.pdf";
-        var body = @"
-            <p>We are pleased to inform you that the Pricing Control Form has been approved. Please find the attached document for your records.</p>
-            <p>Please reach out to us if you have any questions after reviewing the PCF.</p>
-            <p></p>
-            <p>Best regards,</p>
-            <p>Your friendly SalesOps team</p>
-        ";
-
-        // Create the email message
-        MailMessage mail = new MailMessage();
-        mail.From = new MailAddress("Sales-Ops@chapinmfg.com");
-
-        // Normalize email list by replacing semicolons with commas
-        string normalizedEmailList = EmailAddress.Replace(";", ",");
-
-        // Add recipients (comma-separated)
-        mail.To.Add(normalizedEmailList);
-
-        // Add CC recipients if provided
-        if (!string.IsNullOrEmpty(CCEmailAddress))
-        {
-            string normalizedCCEmailList = CCEmailAddress.Replace(";", ",");
-            mail.CC.Add(normalizedCCEmailList);
-        }
-
-        mail.Subject = subject;
-        mail.Body = body;
-        mail.IsBodyHtml = true;
-
-        // Attach the PDF
-        pdfStream.Position = 0; // Reset the stream position to the beginning
-        Attachment attachment = new Attachment(pdfStream, filename, "application/pdf");
-        mail.Attachments.Add(attachment);
-
-        // Prefer secrets/user secrets first, then the IIS-friendly ADMIN_PWD environment variable.
-        var smtpPassword = _configuration.GetSmtpPassword();
-        if (string.IsNullOrWhiteSpace(smtpPassword))
-        {
-            throw new InvalidOperationException("SMTP credentials are missing. Configure Smtp:Password or ADMIN_PWD.");
-        }
-
-        var smtpHost = _configuration["Smtp:Host"] ?? "CIIEXCH16";
-        var smtpPort = int.TryParse(_configuration["Smtp:Port"], out var parsedPort) ? parsedPort : 25;
-        var smtpUser = _configuration["Smtp:Username"] ?? "Administrator";
-
-        var smtpClient = new SmtpClient(smtpHost)
-        {
-            Port = smtpPort,
-            Credentials = new NetworkCredential(smtpUser, smtpPassword),
-            EnableSsl = false, // Usually, SSL is not used for local Exchange Servers
-        };
-
-        // Send the email
-        try
-        {
-            smtpClient.Send(mail);
-        }
-        catch (Exception ex)
-        {
-            // Handle the exception (log it, show a message, etc.)
-            Console.WriteLine("Error sending email: " + ex.Message);
-        }
-        finally
-        {
-            // Clean up
-            attachment.Dispose();
-            pdfStream.Dispose();
-        }
-    }
 
 
     public byte[] ExportPcfHeaderToPdfNotSoNice(PCFHeader pcfHeader)

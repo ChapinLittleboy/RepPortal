@@ -94,7 +94,6 @@ var connectionString = builder.Configuration.GetRequiredResolvedConnectionString
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -172,7 +171,6 @@ builder.Services.AddHttpClient<AIService>();
 builder.Services.AddScoped<AIService>();
 builder.Services.AddScoped<IUsageAnalyticsService, UsageAnalyticsService>();
 builder.Services.AddScoped<IPriceBookService, PriceBookService>();
-builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<PackingListService>();
 builder.Services.AddScoped<IPivotLayoutService, PivotLayoutService>();
 
@@ -212,6 +210,7 @@ builder.Services.AddTransient<CsiLoggingHandler>();
 builder.Services.AddTransient<RepPortal.Services.SmtpEmailSender>();      // concrete
 builder.Services.AddTransient<IEmailSender, RepPortal.Services.SmtpEmailSender>();
 builder.Services.AddTransient<IAttachmentEmailSender, RepPortal.Services.SmtpEmailSender>();
+builder.Services.AddTransient<IEmailService, RepPortal.Services.SmtpEmailSender>();
 builder.Services.AddSingleton<IRecurringJobScheduler, HangfireRecurringJobScheduler>();
 builder.Services.AddScoped<IReportSubscriptionStore, HangfireReportSubscriptionStore>();
 

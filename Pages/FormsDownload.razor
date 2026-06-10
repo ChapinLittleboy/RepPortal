@@ -55,26 +55,10 @@
 
 	protected override async Task OnInitializedAsync()
 	{
-		string StaticRequestPath = "/RepDocs";
-
         // Log report usage (no parameters for listing page)
         await ActivityLogService.LogReportUsageActivityAsync("Forms Download", "");
 			// Retrieve the folders
 			FormsDownloadFolders = await FormsDownloadService.GetFormsDownFoldersAsync();
-
-			// Log the contents of the /RepDocs folder
-			var repDocsFolder = FormsDownloadFolders.FirstOrDefault(folder => folder.FolderRelativePath == StaticRequestPath);
-			if (repDocsFolder != null)
-			{
-				foreach (var file in repDocsFolder.Files)
-				{
-					Logger.LogInformation("File: {Name}, Size: {SizeText}, URL: {Url}", file.Name, file.SizeText, file.Url);
-				}
-			}
-			else
-			{
-				Logger.LogWarning("The folder '/RepDocs' was not found.");
-			}
 			//items = await ItemService.GetItemsAsync();
 			//Logger.LogInformation("DIAGNOSTIC: Loaded {Count} items", items.Count);
 			isReady = true;

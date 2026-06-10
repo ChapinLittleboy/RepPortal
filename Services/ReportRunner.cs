@@ -51,6 +51,12 @@ namespace RepPortal.Services
             Normalize(req.ReportType, req.CustomerId, req.DateRangeCode,
                 out var cust, out var rangeCode);
 
+            if (req.ReportType == ReportType.ExpiringPCFNotications)
+            {
+                await _expiringPcfNotificationsJob.RunAsync();
+                return;
+            }
+
             var userCtx = await _userCtx.ResolveByEmailAsync(req.Email)
                           ?? throw new InvalidOperationException($"No user context for {req.Email}");
             var (repCode, regions) = (userCtx.RepCode, (IReadOnlyList<string>?)userCtx.AllowedRegions);
@@ -76,11 +82,6 @@ namespace RepPortal.Services
                     await RunShipmentsAsync(req, tz);
                     break;
                 }
-
-                case ReportType.ExpiringPCFNotications:
-                    await _expiringPcfNotificationsJob.RunAsync();
-                    
-                    break;
 
                 // TODO: other reports that don’t need customer/dateRange can have simpler calls
                 default:

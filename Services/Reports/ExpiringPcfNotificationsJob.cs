@@ -11,6 +11,8 @@ public interface IExpiringPcfNotificationsJob
 
 public sealed class ExpiringPcfNotificationsJob : IExpiringPcfNotificationsJob
 {
+    private const string FailureAlertEmail = "wlittleboy@chapinusa.com";
+
     private readonly IPcfNotificationLogRepository _notificationLog;
     private readonly ExportService _pdfService;
     private readonly PcfService _pcfService;
@@ -124,19 +126,31 @@ public sealed class ExpiringPcfNotificationsJob : IExpiringPcfNotificationsJob
     
 
 
-        await _emailService.SendEmailAsync(
-            toEmail: to,   //pcfHeader.RepEmail,  // Need to add sales mgr mail
-            subject: subject,
-            body: BuildEmailBody(pcfHeader, noticeType),
-            attachments: new List<EmailAttachment>()
-            {
-                new EmailAttachment
+        try
+        {
+            await _emailService.SendEmailAsync(
+                toEmail: to,   //pcfHeader.RepEmail,  // Need to add sales mgr mail
+                subject: subject,
+                body: BuildEmailBody(pcfHeader, noticeType),
+                attachments: new List<EmailAttachment>()
                 {
-                    FileName = $"PCF_{pcfHeader.PcfNumber}.pdf",
-                    ContentType = "application/pdf",
-                    Content = pdfBytes,
-                }
-            });
+                    new EmailAttachment
+                    {
+                        FileName = $"PCF_{pcfHeader.PcfNumber}.pdf",
+                        ContentType = "application/pdf",
+                        Content = pdfBytes,
+                    }
+                });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to send {NoticeType} PCF notice. PCF={PcfNumber}, Recipients={Recipients}",
+                noticeType, pcfHeader.PcfNumber, to);
+
+            await SendFailureAlertAsync(pcfHeader, noticeType, to, subject, ex);
+            throw;
+        }
         
       await _notificationLog.InsertAsync(
           pcfHeader.PcfNum,
@@ -144,6 +158,39 @@ public sealed class ExpiringPcfNotificationsJob : IExpiringPcfNotificationsJob
           pcfHeader.EndDate,
           to);
       
+    }
+
+    private async Task SendFailureAlertAsync(
+        PCFHeader pcfHeader,
+        PcfNoticeType noticeType,
+        string attemptedRecipients,
+        string originalSubject,
+        Exception sendException)
+    {
+        var alertSubject = $"Expiring PCF email failed: PCF {pcfHeader.PcfNumber}";
+        var alertBody = $@"
+<p>An expiring PCF notification failed to send.</p>
+<p>
+<strong>PCF:</strong> {System.Net.WebUtility.HtmlEncode(pcfHeader.PcfNumber)}<br>
+<strong>Notice Type:</strong> {System.Net.WebUtility.HtmlEncode(noticeType.ToString())}<br>
+<strong>Original Subject:</strong> {System.Net.WebUtility.HtmlEncode(originalSubject)}<br>
+<strong>Attempted Recipients:</strong> {System.Net.WebUtility.HtmlEncode(attemptedRecipients)}<br>
+<strong>Error:</strong> {System.Net.WebUtility.HtmlEncode(sendException.GetType().Name)} - {System.Net.WebUtility.HtmlEncode(sendException.Message)}
+</p>".Trim();
+
+        try
+        {
+            await _emailService.SendEmailAsync(
+                toEmail: FailureAlertEmail,
+                subject: alertSubject,
+                body: alertBody);
+        }
+        catch (Exception alertException)
+        {
+            _logger.LogError(alertException,
+                "Failed to send expiring PCF failure alert. PCF={PcfNumber}, AlertRecipient={AlertRecipient}",
+                pcfHeader.PcfNumber, FailureAlertEmail);
+        }
     }
 
     private static string BuildEmailBody(PCFHeader pcfHeader, PcfNoticeType noticeType)

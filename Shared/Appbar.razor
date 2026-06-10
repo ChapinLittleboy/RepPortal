@@ -81,7 +81,7 @@
         <medium class="text-muted me-2">@TitleService.PageSubtitle</medium>
         @if (!string.IsNullOrWhiteSpace(TitleService.PageHelpContent))
         {
-            <a href="#" @onclick="OpenHelpDialog" @onclick:preventDefault class="text-primary small">
+            <a href="#" @onclick="OpenHelpDialog" @onclick:preventDefault class="text-primary small-text">
 				@(string.IsNullOrWhiteSpace(TitleService.PageHelpLinkText) ? "Report Description/Explanation" : TitleService.PageHelpLinkText)
             </a>
         }
@@ -511,7 +511,7 @@
 		color: #0d6efd !important;
 	}
 
-	.small,
+	.small-text,
 	small {
 		font-size: 0.875em;
 	}

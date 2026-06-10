@@ -15,7 +15,7 @@ public interface IAttachmentEmailSender
         IEnumerable<(string FileName, byte[] Bytes, string ContentType)> attachments);
 }
 
-public class SmtpEmailSender : IEmailSender, IAttachmentEmailSender
+public class SmtpEmailSender : IEmailSender, IAttachmentEmailSender, IEmailService
 {
     private readonly IConfiguration _config;
 
@@ -25,6 +25,23 @@ public class SmtpEmailSender : IEmailSender, IAttachmentEmailSender
     public Task SendEmailAsync(string email, string subject, string htmlMessage) =>
         SendAsync(email, subject, htmlMessage, attachments: null);
 
+    public Task SendEmailAsync(
+        string toEmail,
+        string subject,
+        string body,
+        bool isHtml = true,
+        List<EmailAttachment>? attachments = null)
+    {
+        var attachmentTuples = attachments?
+            .Where(a => a.Content is { Length: > 0 })
+            .Select(a => (
+                FileName: a.FileName ?? "attachment",
+                Bytes: a.Content!,
+                ContentType: a.ContentType ?? "application/octet-stream"));
+
+        return SendAsync(toEmail, subject, body, attachmentTuples, isHtml);
+    }
+
     // Attachment-aware version for reports
     public async Task SendAsync(
         string toEmail,
@@ -32,8 +49,20 @@ public class SmtpEmailSender : IEmailSender, IAttachmentEmailSender
         string htmlBody,
         IEnumerable<(string FileName, byte[] Bytes, string ContentType)>? attachments)
     {
+        await SendAsync(toEmail, subject, htmlBody, attachments, isHtml: true);
+    }
+
+    private async Task SendAsync(
+        string toEmail,
+        string subject,
+        string body,
+        IEnumerable<(string FileName, byte[] Bytes, string ContentType)>? attachments,
+        bool isHtml)
+    {
         var fromName = _config["Smtp:SenderName"] ?? "Chapin Rep Portal";
-        var fromEmail = _config["Smtp:SenderEmail"] ?? "noreply@yourco.com";
+        var fromEmail = _config["Smtp:SenderEmail"]
+                        ?? _config["Smtp:NoReplyEmail"]
+                        ?? "noreply@yourco.com";
         var host = _config["Smtp:Host"] ?? throw new InvalidOperationException("Smtp:Host missing");
         var portStr = _config["Smtp:Port"] ?? "25";
         var user = _config["Smtp:Username"];
@@ -42,10 +71,12 @@ public class SmtpEmailSender : IEmailSender, IAttachmentEmailSender
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(fromName, fromEmail));
-        message.To.Add(MailboxAddress.Parse(toEmail));
+        AddRecipients(message.To, toEmail);
         message.Subject = subject;
 
-        var builder = new BodyBuilder { HtmlBody = htmlBody };
+        var builder = isHtml
+            ? new BodyBuilder { HtmlBody = body }
+            : new BodyBuilder { TextBody = body };
 
         if (attachments != null)
         {
@@ -85,5 +116,11 @@ public class SmtpEmailSender : IEmailSender, IAttachmentEmailSender
         return !string.IsNullOrWhiteSpace(user)
                && !string.IsNullOrWhiteSpace(pass)
                && (capabilities & SmtpCapabilities.Authentication) != 0;
+    }
+
+    private static void AddRecipients(InternetAddressList recipients, string toEmail)
+    {
+        var normalizedRecipients = toEmail.Replace(';', ',');
+        recipients.AddRange(InternetAddressList.Parse(normalizedRecipients));
     }
 }
