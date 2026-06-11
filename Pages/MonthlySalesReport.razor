@@ -8,11 +8,13 @@
 @using RepPortal.Models
 @using Syncfusion.Blazor.Grids
 @using System.Text.RegularExpressions
+@using Microsoft.Extensions.Options
 @inject ISalesService SalesService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject IRepCodeContext RepCodeContext
 @inject RepPortal.Services.IActivityLogService ActivityLogService
+@inject IOptions<SalesReportOptions> SalesReportOptions
 
 <SfSpinner Size="100" Type="SpinnerType.Bootstrap5" Visible="@isLoading"></SfSpinner>
 
@@ -238,12 +240,16 @@ else
     private void ProcessDynamicColumns(List<ExpandoObject> records)
     {
         var period = SalesReportPeriodHelper.Create(selectedYearMode);
+        var currentMonthLabel = SalesReportPeriodHelper.GetCurrentMonthLabel();
         var availableColumns = records
             .SelectMany(r => ((IDictionary<string, object>)r).Keys)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         DynamicColumns = period.YearLabels
-            .Concat(period.CurrentYearMonths.AsEnumerable().Reverse())
+            .Concat(period.CurrentYearMonths
+                .Where(month => SalesReportOptions.Value.ShowCurrentMonthSales ||
+                    !string.Equals(month, currentMonthLabel, StringComparison.OrdinalIgnoreCase))
+                .Reverse())
             .Where(availableColumns.Contains)
             .ToList();
     }

@@ -28,6 +28,7 @@ public class SalesService : ISalesService
     private readonly ICsiRestClient? _csiRestClient;
     private readonly IIdoService? _idoService;
     private readonly CsiOptions? _csiOptions;
+    private readonly SalesReportOptions _salesReportOptions;
 
     // Primary DI ctor
     public SalesService(
@@ -50,6 +51,9 @@ public class SalesService : ISalesService
         _idoService = idoService;
         _csiRestClient = csiRestClient;
         _csiOptions = csiOptions.Value;
+        _salesReportOptions = configuration
+            .GetSection("SalesReports")
+            .Get<SalesReportOptions>() ?? new SalesReportOptions();
         _idoService = idoService;
     }
 
@@ -60,6 +64,7 @@ public class SalesService : ISalesService
         _connectionString = string.IsNullOrWhiteSpace(connectionString)
             ? throw new ArgumentException("connectionString is required.", nameof(connectionString))
             : connectionString;
+        _salesReportOptions = new SalesReportOptions();
     }
 
     public async Task<string?> GetRepCodeByRegistrationCodeAsync(string registrationCode)
@@ -254,6 +259,7 @@ public class SalesService : ISalesService
         var allowedRegions = _repCodeContext.CurrentRegions;
         var period = SalesReportPeriodHelper.Create(yearMode);
         var reportEndDate = DateTime.Today;
+        var currentYearTotalMonths = GetCurrentYearTotalMonths(period);
 
         var monthColumns = new StringBuilder();
         foreach (var monthName in period.CurrentYearMonths)
@@ -341,8 +347,8 @@ public class SalesService : ISalesService
         {BuildPeriodCaseSum(period.PriorYear2Months, "QtyInvoiced")} AS [{period.PriorYear2Label}_Qty],
         {BuildPeriodCaseSum(period.PriorYear1Months, "RevAmount")}   AS [{period.PriorYear1Label}_Rev],
         {BuildPeriodCaseSum(period.PriorYear1Months, "QtyInvoiced")} AS [{period.PriorYear1Label}_Qty],
-        {BuildPeriodCaseSum(period.CurrentYearMonths, "RevAmount")}   AS [{period.CurrentYearLabel}_Rev],
-        {BuildPeriodCaseSum(period.CurrentYearMonths, "QtyInvoiced")} AS [{period.CurrentYearLabel}_Qty],
+        {BuildPeriodCaseSum(currentYearTotalMonths, "RevAmount")}   AS [{period.CurrentYearLabel}_Rev],
+        {BuildPeriodCaseSum(currentYearTotalMonths, "QtyInvoiced")} AS [{period.CurrentYearLabel}_Qty],
         {monthColumns}
     FROM AggregatedData
     GROUP BY
@@ -390,6 +396,7 @@ public class SalesService : ISalesService
         var repCode = _repCodeContext!.CurrentRepCode;
         var allowedRegions = _repCodeContext.CurrentRegions;
         var results = await _idoService!.GetItemSalesReportDataWithQtyAsync(repCode, allowedRegions, yearMode);
+        ExcludeCurrentMonthFromCurrentYearSales(results, yearMode);
         await LogReportUsageAsync(repCode, "GetItemSalesReportDataWithQtyApi");
         return results;
     }
@@ -1598,6 +1605,7 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK)
             ? _repCodeContext.CurrentRegions
             : null;
         var results = await _idoService!.GetSalesReportDataUsingInvRepAsync(repCode, allowedRegions, yearMode);
+        ExcludeCurrentMonthFromCurrentYearSalesAmount(results, yearMode);
         await LogReportUsageAsync(repCode, "GetSalesReportDataUsingInvRepApi");
         _logger?.LogInformation(
             "GetSalesReportDataUsingInvRepApiAsync returned {Count} rows for rep {RepCode} in {YearMode}",
@@ -1613,6 +1621,7 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK)
             ? _repCodeContext.CurrentRegions
             : null;
         var results = await _idoService!.GetSalesReportDataAsync(repCode, allowedRegions, yearMode);
+        ExcludeCurrentMonthFromCurrentYearSalesAmount(results, yearMode);
         await LogReportUsageAsync(repCode, "GetSalesReportDataApi");
         _logger?.LogInformation(
             "GetSalesReportDataApiAsync returned {Count} rows for rep {RepCode} in {YearMode}",
@@ -1629,6 +1638,7 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK)
         string yearMode = "FY")
     {
         var period = SalesReportPeriodHelper.Create(yearMode);
+        var currentYearTotalMonths = GetCurrentYearTotalMonths(period);
 
         var colsPivot = string.Join(",", period.AllMonths.Select(m => $"[{m}]"));
         var currentYearColList = string.Join(",", period.CurrentYearMonths.Select(m => $"ISNULL([{m}], 0) AS [{m}]"));
@@ -1636,8 +1646,8 @@ LEFT JOIN Bat_App.dbo.Chap_RegionNames rn WITH (NOLOCK)
         var priorYear3Sum = string.Join(" + ", period.PriorYear3Months.Select(m => $"ISNULL([{m}],0)"));
         var priorYear2Sum = string.Join(" + ", period.PriorYear2Months.Select(m => $"ISNULL([{m}],0)"));
         var priorYear1Sum = string.Join(" + ", period.PriorYear1Months.Select(m => $"ISNULL([{m}],0)"));
-        var currentYearSum = period.CurrentYearMonths.Any()
-            ? string.Join(" + ", period.CurrentYearMonths.Select(m => $"ISNULL([{m}],0)"))
+        var currentYearSum = currentYearTotalMonths.Any()
+            ? string.Join(" + ", currentYearTotalMonths.Select(m => $"ISNULL([{m}],0)"))
             : "0";
 
         var regionFilter = (allowedRegions != null && allowedRegions.Any())
@@ -1807,6 +1817,88 @@ ORDER BY {period.PriorYear1Label} DESC;";
             data.Add(dict);
         }
         return data;
+    }
+
+    private List<string> GetCurrentYearTotalMonths(SalesReportPeriod period) =>
+        GetCurrentYearTotalMonths(period.CurrentYearMonths);
+
+    private List<string> GetCurrentYearTotalMonths(IEnumerable<string> months)
+    {
+        var monthList = months.ToList();
+        if (_salesReportOptions.IncludeCurrentMonthInCurrentYearSales)
+            return monthList;
+
+        var currentMonthLabel = SalesReportPeriodHelper.GetCurrentMonthLabel();
+        return monthList
+            .Where(m => !string.Equals(m, currentMonthLabel, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private void ExcludeCurrentMonthFromCurrentYearSales(List<Dictionary<string, object>> rows, string yearMode)
+    {
+        if (_salesReportOptions.IncludeCurrentMonthInCurrentYearSales)
+            return;
+
+        var period = SalesReportPeriodHelper.Create(yearMode);
+        var currentMonthLabel = SalesReportPeriodHelper.GetCurrentMonthLabel();
+
+        foreach (var row in rows)
+        {
+            var revenueYearColumn = $"{period.CurrentYearLabel}_Rev";
+            var revenueMonthColumn = $"{currentMonthLabel}_Rev";
+            if (row.TryGetValue(revenueYearColumn, out var currentYearRevenue) &&
+                row.TryGetValue(revenueMonthColumn, out var currentMonthRevenue))
+            {
+                row[revenueYearColumn] = SubtractNumericValues(currentYearRevenue, currentMonthRevenue);
+            }
+
+            var quantityYearColumn = $"{period.CurrentYearLabel}_Qty";
+            var quantityMonthColumn = $"{currentMonthLabel}_Qty";
+            if (row.TryGetValue(quantityYearColumn, out var currentYearQuantity) &&
+                row.TryGetValue(quantityMonthColumn, out var currentMonthQuantity))
+            {
+                row[quantityYearColumn] = SubtractNumericValues(currentYearQuantity, currentMonthQuantity);
+            }
+        }
+    }
+
+    private void ExcludeCurrentMonthFromCurrentYearSalesAmount(List<Dictionary<string, object>> rows, string yearMode)
+    {
+        if (_salesReportOptions.IncludeCurrentMonthInCurrentYearSales)
+            return;
+
+        var period = SalesReportPeriodHelper.Create(yearMode);
+        var currentMonthLabel = SalesReportPeriodHelper.GetCurrentMonthLabel();
+
+        foreach (var row in rows)
+        {
+            if (row.TryGetValue(period.CurrentYearLabel, out var currentYearValue) &&
+                row.TryGetValue(currentMonthLabel, out var currentMonthValue))
+            {
+                row[period.CurrentYearLabel] = SubtractNumericValues(currentYearValue, currentMonthValue);
+            }
+        }
+    }
+
+    private static object SubtractNumericValues(object total, object amount)
+    {
+        if (total is decimal totalDecimal)
+            return totalDecimal - Convert.ToDecimal(amount, CultureInfo.InvariantCulture);
+
+        if (total is double totalDouble)
+            return totalDouble - Convert.ToDouble(amount, CultureInfo.InvariantCulture);
+
+        if (total is float totalFloat)
+            return totalFloat - Convert.ToSingle(amount, CultureInfo.InvariantCulture);
+
+        if (total is long totalLong)
+            return totalLong - Convert.ToInt64(amount, CultureInfo.InvariantCulture);
+
+        if (total is int totalInt)
+            return totalInt - Convert.ToInt32(amount, CultureInfo.InvariantCulture);
+
+        return Convert.ToDecimal(total, CultureInfo.InvariantCulture) -
+            Convert.ToDecimal(amount, CultureInfo.InvariantCulture);
     }
 
     private void EnsureAuth()

@@ -32,6 +32,12 @@ internal sealed class SalesReportPeriod
 
 internal static class SalesReportPeriodHelper
 {
+    public static string GetCurrentMonthLabel(DateTime? today = null)
+    {
+        var asOf = today?.Date ?? DateTime.Today;
+        return asOf.ToString("MMM") + asOf.Year;
+    }
+
     public static SalesReportPeriod Create(string? yearMode, DateTime? today = null)
     {
         var asOf = today?.Date ?? DateTime.Today;

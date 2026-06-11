@@ -124,6 +124,8 @@ builder.Services.AddSignalR(o =>
 });
 builder.Services.Configure<CsiOptions>(
     builder.Configuration.GetSection("CSI"));
+builder.Services.Configure<SalesReportOptions>(
+    builder.Configuration.GetSection("SalesReports"));
 
 builder.Services.AddScoped<CreditHoldExclusionService>();
 builder.Services.AddScoped<UserManager<ApplicationUser>>();

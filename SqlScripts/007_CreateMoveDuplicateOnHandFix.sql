@@ -69,7 +69,8 @@ CREATE OR ALTER PROCEDURE [dbo].[sp_FixDuplicateMoveOnHandQty]
     @ApplyChanges bit = 0,
     @StartCreateDate datetime = NULL,
     @EndCreateDate datetime = NULL,
-    @UseLastAppliedLog bit = 1
+    @UseLastAppliedLog bit = 1,
+    @CreatedBy nvarchar(128) = N'Truck'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -128,6 +129,7 @@ BEGIN
         FROM [dbo].[matltran_mst] mt
         WHERE mt.[trans_type] = 'M'
           AND mt.[ref_type] = 'I'
+          AND (@CreatedBy IS NULL OR mt.[CreatedBy] = @CreatedBy)
           AND mt.[qty] > 0
           AND mt.[createdate] >= DATEADD(second, -6, @StartCreateDate)
           AND mt.[createdate] < @EndCreateDate
@@ -201,6 +203,7 @@ BEGIN
         SELECT
             @RunId AS [RunId],
             @ApplyChanges AS [ApplyChanges],
+            @CreatedBy AS [CreatedByFilter],
             @StartCreateDate AS [StartCreateDate],
             @EndCreateDate AS [EndCreateDate],
             [OriginalTransNum],
@@ -307,6 +310,7 @@ BEGIN
     SELECT
         @RunId AS [RunId],
         @ApplyChanges AS [ApplyChanges],
+        @CreatedBy AS [CreatedByFilter],
         @StartCreateDate AS [StartCreateDate],
         @EndCreateDate AS [EndCreateDate],
         *
@@ -321,6 +325,12 @@ Preview the default window:
 EXEC [dbo].[sp_FixDuplicateMoveOnHandQty]
     @ApplyChanges = 0;
 
+Preview all CreatedBy values:
+
+EXEC [dbo].[sp_FixDuplicateMoveOnHandQty]
+    @ApplyChanges = 0,
+    @CreatedBy = NULL;
+
 Apply fixes for the default window:
 
 EXEC [dbo].[sp_FixDuplicateMoveOnHandQty]
@@ -332,5 +342,6 @@ EXEC [dbo].[sp_FixDuplicateMoveOnHandQty]
     @ApplyChanges = 0,
     @StartCreateDate = '2026-06-03T00:00:00',
     @EndCreateDate = '2026-06-04T00:00:00',
-    @UseLastAppliedLog = 0;
+    @UseLastAppliedLog = 0,
+    @CreatedBy = N'Truck';
 */
