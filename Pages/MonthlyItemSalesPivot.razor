@@ -8,6 +8,7 @@
 @using RepPortal.Models
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.PivotView
+@using Syncfusion.Blazor.Popups
 @inject ISalesService SalesService
 @inject ILogger<MonthlyItemSalesPivot> Logger
 @inject IJSRuntime JS
@@ -95,21 +96,36 @@
                             Calendar
                         </button>
                     </div>
+                    <SfTooltip Content="Modify the pivot layout"
+                               OpenDelay="150"
+                               CloseDelay="100"
+                               Position="Position.TopCenter">
                     <button type="button"
                             class="btn btn-sm btn-outline-secondary pivot-compact-btn"
                             @onclick="OpenFieldListAsync">
                         Pivot Layout
                     </button>
-                    <button type="button"
-                            class="btn btn-sm btn-outline-secondary pivot-compact-btn"
-                            @onclick="ExportPivotAsync">
-                        Export to Excel
-                    </button>
-                    <button type="button"
-                            class="btn btn-sm btn-outline-secondary pivot-compact-btn"
-                            @onclick="ExportNativePivotAsync">
-                        Export Native Pivot
-                    </button>
+                    </SfTooltip>
+                    <SfTooltip Content="Creates a static Excel file matching the layout on screen"
+                               OpenDelay="150"
+                               CloseDelay="100"
+                               Position="Position.TopCenter">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary pivot-compact-btn"
+                                @onclick="ExportPivotAsync">
+                            Export to Excel
+                        </button>
+                    </SfTooltip>
+                    <SfTooltip Content="Creates an editable Excel pivot workbook in a generic layout"
+                               OpenDelay="150"
+                               CloseDelay="100"
+                               Position="Position.TopCenter">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary pivot-compact-btn"
+                                @onclick="ExportNativePivotAsync">
+                            Export Native Pivot
+                        </button>
+                    </SfTooltip>
                 </div>
 
                 <SfPivotView @key="_pivotRenderKey" @ref="PivotRef" ID="PivotView" TValue="SaleRow" Height="600"

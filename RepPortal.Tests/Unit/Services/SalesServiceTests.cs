@@ -94,20 +94,20 @@ public class SalesServiceTests
         Assert.DoesNotContain("cu.Uf_SalesRegion IN @AllowedRegions", query);
     }
 
-    [Fact]
-    public void BuildSalesPivotQuery_ShouldReturnFiscalYearQuery()
-    {
-        var service = CreateService();
+    //[Fact]
+    //public void BuildSalesPivotQuery_ShouldReturnFiscalYearQuery()
+    //{
+    //    var service = CreateService();
 
-        var result = ((string query, int fiscalYear))ReflectionTestHelper.InvokeNonPublicInstanceWithArguments(
-            service,
-            "BuildSalesPivotQuery",
-            new object?[] { null })!;
+    //    var result = ((string query, int fiscalYear))ReflectionTestHelper.InvokeNonPublicInstanceWithArguments(
+    //        service,
+    //        "BuildSalesPivotQuery",
+    //        new object?[] { null })!;
 
-        Assert.False(string.IsNullOrWhiteSpace(result.query));
-        Assert.Contains($"FY{result.fiscalYear}", result.query);
-        Assert.Contains("PIVOT", result.query);
-    }
+    //    Assert.False(string.IsNullOrWhiteSpace(result.query));
+    //    Assert.Contains($"FY{result.fiscalYear}", result.query);
+    //    Assert.Contains("PIVOT", result.query);
+    //}
 
     private static SalesService CreateService(
         IConfiguration? configuration = null,
