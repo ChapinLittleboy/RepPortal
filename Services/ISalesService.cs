@@ -26,7 +26,7 @@ Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQtyApiAsync(str
 Task<List<Dictionary<string, object>>> GetItemSalesReportDataWithQtyOLD();
 Task<List<OrderDetail>> GetOpenOrderDetailsAsync(string customerId);
 Task<List<CustomerOrderSummary>> GetOpenOrderSummariesAsync();
-Task<List<MonthlyItemSalesPivot.SaleRow>> GetRecentSalesAsync();
+Task<List<MonthlyItemSalesPivot.SaleRow>> GetRecentSalesAsync(string periodBasis = "Fiscal");
 Task<List<RegionItem>> GetRegionInfoForRepCodeAsync(string repCode);
 Task<List<string>> GetRegionsForRepCodeAsync(string repCode);
 string? GetRepAgency(string repCode);

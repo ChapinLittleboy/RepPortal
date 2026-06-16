@@ -10,6 +10,7 @@ public interface IPivotLayoutService
     Task SaveReportAsync(string pageKey, string reportName, string report);
     Task RenameReportAsync(string pageKey, string oldName, string newName);
     Task RemoveReportAsync(string pageKey, string reportName);
+    Task CopyReportsAsync(string sourcePageKey, string targetPageKey);
 }
 
 public class PivotLayoutService : IPivotLayoutService
@@ -170,6 +171,51 @@ public class PivotLayoutService : IPivotLayoutService
             _logger.LogError(ex,
                 "Failed to remove pivot layout '{ReportName}' for RepCode {RepCode}, Page {PageKey}",
                 reportName, _repCodeContext.CurrentRepCode, pageKey);
+        }
+    }
+
+    public async Task CopyReportsAsync(string sourcePageKey, string targetPageKey)
+    {
+        if (string.Equals(sourcePageKey, targetPageKey, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        const string sql = @"
+            INSERT INTO PivotLayouts (RepCode, PageKey, ReportName, Report, CreatedAt, UpdatedAt)
+            SELECT source.RepCode,
+                   @TargetPageKey,
+                   source.ReportName,
+                   source.Report,
+                   GETDATE(),
+                   GETDATE()
+            FROM   PivotLayouts source
+            WHERE  source.RepCode = @RepCode
+              AND  source.PageKey = @SourcePageKey
+              AND  NOT EXISTS
+                   (
+                       SELECT 1
+                       FROM   PivotLayouts target
+                       WHERE  target.RepCode = source.RepCode
+                         AND  target.PageKey = @TargetPageKey
+                         AND  target.ReportName = source.ReportName
+                   );";
+
+        try
+        {
+            using var connection = _dbFactory.CreateRepConnection();
+            await connection.ExecuteAsync(sql, new
+            {
+                RepCode = _repCodeContext.CurrentRepCode,
+                SourcePageKey = sourcePageKey,
+                TargetPageKey = targetPageKey
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to copy pivot layouts for RepCode {RepCode} from Page {SourcePageKey} to Page {TargetPageKey}",
+                _repCodeContext.CurrentRepCode, sourcePageKey, targetPageKey);
         }
     }
 }

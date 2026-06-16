@@ -3,6 +3,7 @@
 @using System.Dynamic
 @using System.Globalization
 @using RepPortal.Services
+@using RepPortal.Services.ReportExport
 @using RepPortal.Data
 @using RepPortal.Models
 @using Syncfusion.Blazor.Grids
@@ -16,6 +17,7 @@
 @inject RepPortal.Services.IActivityLogService ActivityLogService
 @inject IPivotLayoutService PivotLayoutService
 @inject IConfiguration Configuration
+@inject IMonthlyItemSalesPivotWorkbookExporter NativePivotExporter
 
 <PageTitle>Pivot Table Sales by Item</PageTitle>
 <meta name="referrer" content="never" />
@@ -81,6 +83,18 @@
                     </div>
                 }
                 <div class="pivot-layout-toolbar pivot-secondary-toolbar">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Period basis">
+                        <button type="button"
+                                class="@FiscalPeriodButtonClass"
+                                @onclick="@(() => ChangePeriodBasisAsync("Fiscal"))">
+                            Fiscal
+                        </button>
+                        <button type="button"
+                                class="@CalendarPeriodButtonClass"
+                                @onclick="@(() => ChangePeriodBasisAsync("Calendar"))">
+                            Calendar
+                        </button>
+                    </div>
                     <button type="button"
                             class="btn btn-sm btn-outline-secondary pivot-compact-btn"
                             @onclick="OpenFieldListAsync">
@@ -90,6 +104,11 @@
                             class="btn btn-sm btn-outline-secondary pivot-compact-btn"
                             @onclick="ExportPivotAsync">
                         Export to Excel
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary pivot-compact-btn"
+                            @onclick="ExportNativePivotAsync">
+                        Export Native Pivot
                     </button>
                 </div>
 
@@ -103,7 +122,7 @@
                              ShowTooltip="false"
                              AllowExcelExport="true"
                              ExportAllPages="true"
-                             
+                             EnableVirtualization="true" 
                              
                              >
 
@@ -118,41 +137,29 @@
                             <CellTemplate>
                                 @{
                                     var cell = context as Syncfusion.Blazor.PivotView.AxisSet;
-
-                                    if (cell != null && cell.Axis == "column")
-                                    {
-                                        bool isFiscalYearLevel =
-                                        (cell.Hierarchy?.Contains("FiscalYear", StringComparison.OrdinalIgnoreCase) ?? false) ||
-                                        (cell.LevelUniqueName?.Contains("FiscalYear", StringComparison.OrdinalIgnoreCase) ?? false);
-
-                                        if (isFiscalYearLevel && !string.IsNullOrEmpty(cell.FormattedText))
-                                        {
-                                            @($"FY{cell.FormattedText}")
-                                        }
-                                        else
-                                        {
-                                            @cell.FormattedText
-                                        }
-                                    }
-                                    else
-                                    {
-                                        @cell?.FormattedText
-                                    }
+                                    @FormatPivotCellText(cell)
                                 }
                             </CellTemplate>
                         </PivotViewTemplates>
                         <PivotViewRows>
                             <PivotViewRow Name="CustNumWithName" Caption="CustNumName" ExpandAll="@_expandCorpLevel" AllowDragAndDrop=true/>
-                            
                             <PivotViewRow Name="ItemNumWithProduct" Caption="Item-Description" ExpandAll="@_expandItemLevel" />
                             <PivotViewRow Name="ShipToNameAddr" Caption="ShipTo" ExpandAll="@_expandShipToLevel" />
-
                         </PivotViewRows>
 
                         <PivotViewColumns>
-                            <PivotViewColumn Name="FiscalYearLabel" Caption="FiscalYear" ShowValueTypeIcon="false" />
-                            <PivotViewColumn Name="QuarterOfFiscalYearLabel" Caption="Quarter" />
-                            <PivotViewColumn Name="NumberedMonthShort" Caption="Month" />
+                            @if (IsCalendarPeriod)
+                            {
+                                <PivotViewColumn Name="CalendarYearLabel" Caption="CalendarYear" ShowValueTypeIcon="false" />
+                                <PivotViewColumn Name="CalendarQuarterLabel" Caption="Quarter" />
+                                <PivotViewColumn Name="NumberedCalendarMonthShort" Caption="Month" />
+                            }
+                            else
+                            {
+                                <PivotViewColumn Name="FiscalYearLabel" Caption="FiscalYear" ShowValueTypeIcon="false" />
+                                <PivotViewColumn Name="QuarterOfFiscalYearLabel" Caption="Quarter" />
+                                <PivotViewColumn Name="NumberedMonthShort" Caption="Month" />
+                            }
                         </PivotViewColumns>
 
                         <PivotViewValues>
@@ -178,6 +185,12 @@
                     <PivotViewEvents TValue="SaleRow"
                                      EnginePopulated="OnEnginePopulated"/>
                 </SfPivotView>
+                @if (!_isPivotReady)
+                {
+                    <div class="pivot-processing-overlay">
+                        <SfSpinner Visible="true" Label="Preparing pivot..." Size="32"></SfSpinner>
+                    </div>
+                }
             </div>
             @* Somewhere near the bottom of the page markup *@
 
@@ -202,6 +215,16 @@
 
     .pivot-wrap {
         position: relative;
+    }
+
+    .pivot-processing-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 255, 255, 0.72);
+        cursor: wait;
     }
 
     .pivot-layout-toolbar {
@@ -341,6 +364,10 @@
 
 @code {
     private const string PageKey = "MonthlyItemSalesPivot";
+    private const int PivotSettlingDelayMs = 50;
+    private const int PivotReadyTimeoutMs = 5000;
+    private const string FiscalPeriodBasis = "Fiscal";
+    private const string CalendarPeriodBasis = "Calendar";
     private SfPivotView<SaleRow> PivotRef { get; set; } = default!;
     private readonly string[] ExcludedFields =
     [
@@ -348,16 +375,34 @@
         "ProductName",
         "CustomerName",
         "ShipToName",
-        "CustNum"
+        "CustNum",
+        "CustSeq",
+        "InvoiceMonth",
+        "SalesRegion",
+        "CalendarMonth",
+        "FiscalYear",
+        "QuarterOfFiscalYear",
+        "MonthOfFiscalYear",
+        "MonthShort"
     ];
     private readonly List<PivotViewField> FieldMappings =
     [
         CreatePivotField("ShipToNameAddr", "ShipTo-CustNum"),
-        CreatePivotField("CityStateZip", "ShipTo")
+        CreatePivotField("CityStateZip", "ShipTo"),
+        CreatePivotField("State", "Ship-To State"),
+        CreatePivotField("FamilyCodeWithDescription", "Family Code"),
+        CreatePivotField("CalendarYearLabel", "Calendar Year"),
+        CreatePivotField("CalendarQuarterLabel", "Calendar Quarter"),
+        CreatePivotField("NumberedCalendarMonthShort", "Calendar Month")
     ];
     public List<SaleRow>? Sales { get; set; }
     private bool isLoading = true;
+    private bool _isPivotReady;
+    private int _pivotPreparationVersion;
+    private TaskCompletionSource<bool>? _pivotReadyCompletion;
     private bool _pivotLayoutsEnabled;
+    private bool _legacyFiscalLayoutsCopied;
+    private string _periodBasis = FiscalPeriodBasis;
     private bool _expandCorpLevel = true;
     private bool _expandItemLevel = false;
     private bool _expandShipToLevel;
@@ -369,6 +414,10 @@
     private string? _loadErrorMessage;
     private string? _activeReportName;
     private string? _selectedReportName;
+    private bool IsCalendarPeriod => string.Equals(_periodBasis, CalendarPeriodBasis, StringComparison.OrdinalIgnoreCase);
+    private string FiscalPeriodButtonClass => GetPeriodBasisButtonClass(FiscalPeriodBasis);
+    private string CalendarPeriodButtonClass => GetPeriodBasisButtonClass(CalendarPeriodBasis);
+    private string CurrentLayoutPageKey => $"{PageKey}:{_periodBasis}";
     private string? TargetReportName => !string.IsNullOrWhiteSpace(_selectedReportName) ? _selectedReportName : _activeReportName;
     private string CurrentLayoutLabel => string.IsNullOrWhiteSpace(_activeReportName)
         ? "Current: Unsaved layout"
@@ -384,14 +433,29 @@
     {
         if (!firstRender) return;
 
+        await LoadPivotDataAsync(logUsage: true);
+    }
+
+    private async Task LoadPivotDataAsync(bool logUsage)
+    {
+        isLoading = true;
+        _loadErrorMessage = null;
+        BeginPivotPreparation();
+        await InvokeAsync(StateHasChanged);
+
         try
         {
-            await ActivityLogService.LogReportUsageActivityAsync("Monthly Sales Pivot", "");
-            var salesTask = SalesService.GetRecentSalesAsync();
+            if (logUsage)
+            {
+                await ActivityLogService.LogReportUsageActivityAsync("Monthly Sales Pivot", "");
+            }
+
+            var salesTask = SalesService.GetRecentSalesAsync(_periodBasis);
 
             if (_pivotLayoutsEnabled)
             {
-                var reportNamesTask = PivotLayoutService.GetReportNamesAsync(PageKey);
+                await CopyLegacyFiscalLayoutsAsync();
+                var reportNamesTask = PivotLayoutService.GetReportNamesAsync(CurrentLayoutPageKey);
                 await Task.WhenAll(salesTask, reportNamesTask);
                 Sales = salesTask.Result;
                 _cachedReportNames = reportNamesTask.Result;
@@ -408,6 +472,7 @@
             Logger.LogError(ex, "Failed to load Monthly Item Sales Pivot for rep {RepCode}", RepCodeContext.CurrentRepCode);
             Sales = new List<SaleRow>();
             _cachedReportNames = new List<string>();
+            _isPivotReady = true;
             _loadErrorMessage = "This pivot report is taking too long to load right now. Please try again in a moment, and contact support if it keeps timing out.";
         }
         finally
@@ -415,6 +480,36 @@
             isLoading = false;
             StateHasChanged();
         }
+    }
+
+    private async Task ChangePeriodBasisAsync(string periodBasis)
+    {
+        if (string.Equals(_periodBasis, periodBasis, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _periodBasis = periodBasis;
+        _activeReportName = null;
+        _selectedReportName = null;
+        _pivotRenderKey++;
+        await LoadPivotDataAsync(logUsage: false);
+    }
+
+    private string GetPeriodBasisButtonClass(string periodBasis)
+        => string.Equals(_periodBasis, periodBasis, StringComparison.OrdinalIgnoreCase)
+            ? "btn btn-primary"
+            : "btn btn-outline-secondary";
+
+    private async Task CopyLegacyFiscalLayoutsAsync()
+    {
+        if (_legacyFiscalLayoutsCopied || !string.Equals(_periodBasis, FiscalPeriodBasis, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        await PivotLayoutService.CopyReportsAsync(PageKey, CurrentLayoutPageKey);
+        _legacyFiscalLayoutsCopied = true;
     }
 
 
@@ -443,7 +538,7 @@
         }
 
         string report = await PivotRef.GetPersistDataAsync();
-        await PivotLayoutService.SaveReportAsync(PageKey, reportName, report);
+        await PivotLayoutService.SaveReportAsync(CurrentLayoutPageKey, reportName, report);
         await RefreshAvailableReportsAsync(reportName);
     }
 
@@ -472,7 +567,7 @@
             return;
         }
 
-        await PivotLayoutService.RenameReportAsync(PageKey, existingName, newName);
+        await PivotLayoutService.RenameReportAsync(CurrentLayoutPageKey, existingName, newName);
 
         if (string.Equals(_activeReportName, existingName, StringComparison.OrdinalIgnoreCase))
         {
@@ -487,12 +582,14 @@
         if (!_pivotLayoutsEnabled) return;
         if (string.IsNullOrWhiteSpace(_selectedReportName)) return;
 
-        string? report = await PivotLayoutService.GetReportAsync(PageKey, _selectedReportName);
+        string? report = await PivotLayoutService.GetReportAsync(CurrentLayoutPageKey, _selectedReportName);
         if (string.IsNullOrWhiteSpace(report))
         {
             return;
         }
 
+        BeginPivotPreparation();
+        await InvokeAsync(StateHasChanged);
         await PivotRef.LoadPersistDataAsync(report);
         _activeReportName = _selectedReportName;
         await InvokeAsync(StateHasChanged);
@@ -510,7 +607,7 @@
             return;
         }
 
-        await PivotLayoutService.RemoveReportAsync(PageKey, reportName);
+        await PivotLayoutService.RemoveReportAsync(CurrentLayoutPageKey, reportName);
 
         if (string.Equals(_activeReportName, reportName, StringComparison.OrdinalIgnoreCase))
         {
@@ -534,15 +631,30 @@
         string repCode = RepCodeContext.CurrentRepCode;
         ExcelExportProperties excelProperties = new ExcelExportProperties
         {
-            FileName = $"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}.xlsx"
+            FileName = $"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}"
         };
 
         await PivotRef.ExportToExcelAsync(excelProperties, null, null, null, false);
     }
 
+    private async Task ExportNativePivotAsync()
+    {
+        if (Sales is null) return;
+
+        string repCode = RepCodeContext.CurrentRepCode;
+        string fileName = $"NativePivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}.xlsx";
+        byte[] workbook = NativePivotExporter.Export(Sales, _periodBasis);
+
+        await JS.InvokeVoidAsync(
+            "downloadFile",
+            fileName,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            workbook);
+    }
+
     private async Task RefreshAvailableReportsAsync(string? activeReportName = null)
     {
-        _cachedReportNames = await PivotLayoutService.GetReportNamesAsync(PageKey);
+        _cachedReportNames = await PivotLayoutService.GetReportNamesAsync(CurrentLayoutPageKey);
 
         if (!string.IsNullOrWhiteSpace(activeReportName))
         {
@@ -601,6 +713,7 @@
         _expandItemLevel = expandItem;
         _expandShipToLevel = expandShipTo;
         _expandLevel3 = expandLastLevelTo;
+        BeginPivotPreparation();
         _pivotRenderKey++;
         await InvokeAsync(StateHasChanged);
     }
@@ -610,7 +723,11 @@
     private void OnEnginePopulated(EnginePopulatedEventArgs args)
     {
         var pivotValues = args.PivotValues;
-        if (pivotValues == null) return;
+        if (pivotValues == null)
+        {
+            SchedulePivotReady();
+            return;
+        }
 
         for (int r = 0; r < pivotValues.Count(); r++)
         {
@@ -631,6 +748,131 @@
                 }
             }
         }
+
+        SchedulePivotReady();
+    }
+
+    private static string FormatPivotCellText(Syncfusion.Blazor.PivotView.AxisSet? cell)
+    {
+        if (cell == null)
+        {
+            return string.Empty;
+        }
+
+        var text = cell.FormattedText ?? string.Empty;
+        if (!string.Equals(cell.Axis, "column", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(text))
+        {
+            return text;
+        }
+
+        var fieldPath = $"{cell.Hierarchy} {cell.LevelUniqueName}";
+
+        if (ContainsField(fieldPath, "CalendarYear"))
+        {
+            return PrefixYearText(text, "CY");
+        }
+
+        if (ContainsField(fieldPath, "FiscalYear"))
+        {
+            return PrefixYearText(text, "FY");
+        }
+
+        if (ContainsField(fieldPath, "CalendarQuarter"))
+        {
+            return PrefixQuarterText(text, "Calendar");
+        }
+
+        if (ContainsField(fieldPath, "FiscalQuarter") ||
+            ContainsField(fieldPath, "QuarterOfFiscalYear"))
+        {
+            return PrefixQuarterText(text, "Fiscal");
+        }
+
+        return text;
+    }
+
+    private static bool ContainsField(string fieldPath, string fieldName)
+        => fieldPath.Contains(fieldName, StringComparison.OrdinalIgnoreCase);
+
+    private static string PrefixYearText(string text, string prefix)
+    {
+        var trimmed = text.Trim();
+        if (trimmed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return text;
+        }
+
+        if ((prefix == "CY" && trimmed.StartsWith("FY", StringComparison.OrdinalIgnoreCase)) ||
+            (prefix == "FY" && trimmed.StartsWith("CY", StringComparison.OrdinalIgnoreCase)))
+        {
+            return prefix + trimmed[2..];
+        }
+
+        return prefix + text;
+    }
+
+    private static string PrefixQuarterText(string text, string prefix)
+    {
+        var trimmed = text.Trim();
+        if (trimmed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return text;
+        }
+
+        if (prefix == "Calendar" && trimmed.StartsWith("Fiscal", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Calendar" + trimmed["Fiscal".Length..];
+        }
+
+        if (prefix == "Fiscal" && trimmed.StartsWith("Calendar", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Fiscal" + trimmed["Calendar".Length..];
+        }
+
+        return prefix + " " + text;
+    }
+
+    private void BeginPivotPreparation()
+    {
+        unchecked
+        {
+            _pivotPreparationVersion++;
+        }
+
+        _isPivotReady = false;
+        _pivotReadyCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    private void SchedulePivotReady()
+    {
+        int version = _pivotPreparationVersion;
+        _ = MarkPivotReadyAfterSettlingAsync(version);
+    }
+
+    private async Task MarkPivotReadyAfterSettlingAsync(int version)
+    {
+        await Task.Delay(PivotSettlingDelayMs);
+
+        if (version != _pivotPreparationVersion || _isPivotReady)
+        {
+            return;
+        }
+
+        _isPivotReady = true;
+        _pivotReadyCompletion?.TrySetResult(true);
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async Task WaitForPivotReadyAsync()
+    {
+        TaskCompletionSource<bool>? completion = _pivotReadyCompletion;
+        if (completion == null || completion.Task.IsCompleted)
+        {
+            return;
+        }
+
+        await Task.WhenAny(completion.Task, Task.Delay(PivotReadyTimeoutMs));
     }
 
 
@@ -646,15 +888,24 @@
         public int Quantity { get; set; }
         public decimal SalesAmount { get; set; }
         public string CustNum { get; set; } = "";
+        public int CustSeq { get; set; }
         public string ItemNum { get; set; } = "";
         public string MonthShort { get; set; } = "";
         public int FiscalYear { get; set; }
         public int MonthOfFiscalYear { get; set; }
         public int QuarterOfFiscalYear { get; set; }
         public string RegionName { get; set; } = "";
+        public string SalesRegion { get; set; } = "";
         public string City { get; set; } = "";
         public string State { get; set; } = "";
         public string Zip { get; set; } = "";
+        public string FamilyCode { get; set; } = "";
+        public string FamilyCodeDescription { get; set; } = "";
+        public DateTime InvoiceMonth { get; set; }
+        public int CalendarYear { get; set; }
+        public int CalendarQuarter { get; set; }
+        public int CalendarMonth { get; set; }
+        public string CalendarMonthShort { get; set; } = "";
 
 
    
@@ -667,6 +918,12 @@
         public string CustNumWithName => $"{CustNum} - {CustomerName}";
         public string CustNameWithNum => $"{CustomerName} - {CustNum}";
         public string FiscalYearLabel => $"FY{FiscalYear}";
+        public string FamilyCodeWithDescription => string.IsNullOrWhiteSpace(FamilyCodeDescription)
+            ? FamilyCode
+            : $"{FamilyCode} - {FamilyCodeDescription}";
+        public string CalendarYearLabel => CalendarYear > 0 ? $"CY{CalendarYear.ToString(CultureInfo.InvariantCulture)}" : "";
+        public string CalendarQuarterLabel => CalendarQuarter > 0 ? $"Calendar Q{CalendarQuarter}" : "";
+        public string NumberedCalendarMonthShort => CalendarMonth > 0 ? $"{CalendarMonth} - {CalendarMonthShort}" : CalendarMonthShort;
     public string CityStateZip => $"{City}, {State} {Zip}";
 
     }

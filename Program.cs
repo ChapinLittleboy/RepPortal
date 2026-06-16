@@ -285,6 +285,7 @@ builder.Services.AddControllers()
 // Add the new service
 builder.Services.AddScoped<IInsuranceRequestService, InsuranceRequestService>();
 builder.Services.AddSingleton<IExcelReportExporter, ExcelReportExporter>();
+builder.Services.AddSingleton<IMonthlyItemSalesPivotWorkbookExporter, MonthlyItemSalesPivotWorkbookExporter>();
 
 builder.Services.AddScoped<IPcfNotificationLogRepository, PcfNotificationLogRepository>();
 builder.Services.AddScoped<IExpiringPcfNotificationsJob, ExpiringPcfNotificationsJob>();
