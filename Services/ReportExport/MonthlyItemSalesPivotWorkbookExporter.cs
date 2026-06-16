@@ -89,7 +89,6 @@ public sealed class MonthlyItemSalesPivotWorkbookExporter : IMonthlyItemSalesPiv
 
         pivotTable.Fields[0].Axis = PivotAxisTypes.Row;
         pivotTable.Fields[1].Axis = PivotAxisTypes.Row;
-        pivotTable.Fields[2].Axis = PivotAxisTypes.Row;
 
         if (string.Equals(periodBasis, CalendarPeriodBasis, StringComparison.OrdinalIgnoreCase))
         {
