@@ -1,4 +1,5 @@
 using Syncfusion.XlsIO;
+using RepPortal.Services;
 using static RepPortal.Pages.MonthlyItemSalesPivot;
 
 namespace RepPortal.Services.ReportExport;
@@ -13,6 +14,7 @@ public sealed class MonthlyItemSalesPivotWorkbookExporter : IMonthlyItemSalesPiv
         using var excelEngine = new ExcelEngine();
         IApplication application = excelEngine.Excel;
         application.DefaultVersion = ExcelVersion.Excel2016;
+        ExportBranding.ApplyTo(application);
 
         IWorkbook workbook = application.Workbooks.Create(2);
         workbook.Version = ExcelVersion.Excel2016;
@@ -27,6 +29,7 @@ public sealed class MonthlyItemSalesPivotWorkbookExporter : IMonthlyItemSalesPiv
         CreatePivotSheet(workbook, dataSheet, pivotSheet, rows.Count, periodBasis);
 
         using var stream = new MemoryStream();
+        ExportBranding.ApplyTo(workbook);
         workbook.SaveAs(stream);
         return stream.ToArray();
     }

@@ -562,6 +562,7 @@ ORDER BY PropertyName;
             var exportProps = new ExcelExportProperties
             {
                 FileName = fileName,
+                Theme = ExportBranding.CreateExcelTheme(),
                 IncludeTemplateColumn = true,
                 Header = new ExcelHeader
                 {

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using RepPortal.Services;
 using Syncfusion.XlsIO;
 
 namespace RepPortal.Services.ReportExport;
@@ -16,6 +17,7 @@ public sealed class ExcelReportExporter: IExcelReportExporter
             using var excelEngine = new ExcelEngine();
             var app = excelEngine.Excel;
             app.DefaultVersion = ExcelVersion.Xlsx;
+            ExportBranding.ApplyTo(app);
 
         IWorkbook workbook = app.Workbooks.Create(1);
         IWorksheet ws = workbook.Worksheets[0];
@@ -109,6 +111,7 @@ public sealed class ExcelReportExporter: IExcelReportExporter
             ws.UsedRange.AutofitColumns();
 
             using var ms = new MemoryStream();
+            ExportBranding.ApplyTo(workbook);
             workbook.SaveAs(ms);
             return ms.ToArray();
         }

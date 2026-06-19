@@ -452,7 +452,7 @@
             else
             {
                 g.DrawRectangle(PdfPens.Black, logoRect);
-                var logoFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10f, PdfFontStyle.Italic);
+                var logoFont = ExportBranding.CreatePdfFont(10f, PdfFontStyle.Italic);
                 var logoText = "LOGO (2\" x 1\")";
                 var size = logoFont.MeasureString(logoText);
                 var pt = new Syncfusion.Drawing.PointF(
@@ -462,13 +462,13 @@
             }
 
             // Title
-            var titleFont = new PdfStandardFont(PdfFontFamily.Helvetica, 16f, PdfFontStyle.Bold);
+            var titleFont = ExportBranding.CreatePdfFont(16f, PdfFontStyle.Bold);
             g.DrawString("PACKING LIST", titleFont, PdfBrushes.Black, new Syncfusion.Drawing.PointF(margin + logoW + 12f, margin + 8f));
 
             // Header block
             float y = margin + logoH + 12f;
-            var labelFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10f, PdfFontStyle.Bold);
-            var textFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10f);
+            var labelFont = ExportBranding.CreatePdfFont(10f, PdfFontStyle.Bold);
+            var textFont = ExportBranding.CreatePdfFont(10f);
             float lineH = 14f;
 
             void DrawRow(string label, string? value)
@@ -537,11 +537,11 @@
             grid.Style = new PdfGridStyle
             {
                 CellPadding = new PdfPaddings(3, 3, 3, 3),
-                Font = new PdfStandardFont(PdfFontFamily.Helvetica, 9f)
+                Font = ExportBranding.CreatePdfFont(9f)
             };
             grid.Headers[0].Style = new PdfGridRowStyle
             {
-                Font = new PdfStandardFont(PdfFontFamily.Helvetica, 9f, PdfFontStyle.Bold)
+                Font = ExportBranding.CreatePdfFont(9f, PdfFontStyle.Bold)
             };
             grid.Draw(page, new Syncfusion.Drawing.PointF(margin, y));
             // If long, Syncfusion will add continuation pages for the same list.

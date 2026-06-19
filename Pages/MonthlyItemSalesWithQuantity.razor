@@ -206,10 +206,7 @@ else
             var excelFileName = $"Chapin Monthly Item Sales Report ({RepCodeContext.CurrentRepCode}) {selectedYearMode}-{metricLabel}.xlsx";
             await ActivityLogService.LogReportUsageActivityAsync("Monthly Item Sales Historic Report Export", excelFileName);
 
-            ExcelExportProperties exportProperties = new()
-            {
-                FileName = excelFileName
-            };
+            ExcelExportProperties exportProperties = ExportBranding.CreateExcelExportProperties(excelFileName);
 
             await Grid.ExportToExcelAsync(exportProperties);
         }

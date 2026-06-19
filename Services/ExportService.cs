@@ -40,6 +40,7 @@ public class ExportService
         using ExcelEngine excelEngine = new ExcelEngine();
         IApplication application = excelEngine.Excel;
         application.DefaultVersion = ExcelVersion.Xlsx;
+        ExportBranding.ApplyTo(application);
 
         // Create workbook and worksheet
         IWorkbook workbook = application.Workbooks.Create(1);
@@ -148,6 +149,7 @@ public class ExportService
 
         // Save workbook to memory stream
         using MemoryStream stream = new MemoryStream();
+        ExportBranding.ApplyTo(workbook);
         workbook.SaveAs(stream);
         return stream.ToArray();
 
@@ -219,11 +221,11 @@ public class ExportService
         }
 
         // Define fonts
-        PdfFont titleFont = new PdfStandardFont(PdfFontFamily.Helvetica, 14, PdfFontStyle.Bold);
-        PdfFont headerFont = new PdfStandardFont(PdfFontFamily.Helvetica, 12, PdfFontStyle.Bold);
-        PdfFont regularFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10);
-        PdfFont infoFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10, PdfFontStyle.Bold);
-        PdfFont smallFont = new PdfStandardFont(PdfFontFamily.Helvetica, 8);
+        PdfFont titleFont = ExportBranding.CreatePdfFont(14, PdfFontStyle.Bold);
+        PdfFont headerFont = ExportBranding.CreatePdfFont(12, PdfFontStyle.Bold);
+        PdfFont regularFont = ExportBranding.CreatePdfFont(10);
+        PdfFont infoFont = ExportBranding.CreatePdfFont(10, PdfFontStyle.Bold);
+        PdfFont smallFont = ExportBranding.CreatePdfFont(8);
 
         // Define margins
         float marginX = 40;
@@ -387,7 +389,7 @@ Prices and product availability are also subject to change at any time due to ma
             // --------------------------------------------------------------------------------
             RectangleF footerBounds = new RectangleF(0, 0, page.GetClientSize().Width, 50);
             PdfPageTemplateElement footerTemplate = new PdfPageTemplateElement(footerBounds);
-            PdfFont footerFont = new PdfStandardFont(PdfFontFamily.Helvetica, 7);
+            PdfFont footerFont = ExportBranding.CreatePdfFont(7);
             PdfBrush footerBrush = new PdfSolidBrush(Color.Black);
             PdfPageNumberField pageNumberField = new PdfPageNumberField(footerFont, footerBrush);
             PdfPageCountField pageCountField = new PdfPageCountField(footerFont, footerBrush);
@@ -406,9 +408,9 @@ Prices and product availability are also subject to change at any time due to ma
             float lineSpacing = 20;
 
             // Define fonts.
-            PdfFont labelFont = new PdfStandardFont(PdfFontFamily.Helvetica, 12);
-            PdfFont tableHeaderFont = new PdfStandardFont(PdfFontFamily.Helvetica, 12, PdfFontStyle.Bold);
-            PdfFont tableCellFont = new PdfStandardFont(PdfFontFamily.Helvetica, 12);
+            PdfFont labelFont = ExportBranding.CreatePdfFont(12);
+            PdfFont tableHeaderFont = ExportBranding.CreatePdfFont(12, PdfFontStyle.Bold);
+            PdfFont tableCellFont = ExportBranding.CreatePdfFont(12);
 
             // Helper function to draw a label and its value.
             void DrawDetail(string label, string value)
@@ -541,7 +543,7 @@ Prices and product availability are also subject to change at any time due to ma
             // Correction: Measure string using the font
             RectangleF footerBounds = new RectangleF(0, 0, clientSize.Width, 30);
             PdfPageTemplateElement footerTemplate = new PdfPageTemplateElement(footerBounds);
-            PdfFont footerFont = new PdfStandardFont(PdfFontFamily.Helvetica, 8);
+            PdfFont footerFont = ExportBranding.CreatePdfFont(8);
             PdfBrush footerBrush = PdfBrushes.Black;
             PdfPageNumberField pageNumberField = new PdfPageNumberField(footerFont, footerBrush);
             PdfPageCountField pageCountField = new PdfPageCountField(footerFont, footerBrush);
@@ -568,11 +570,11 @@ Prices and product availability are also subject to change at any time due to ma
             float labelValueSpacing = 2;
 
             // Fonts
-            PdfFont titleFont = new PdfStandardFont(PdfFontFamily.Helvetica, 16, PdfFontStyle.Bold);
-            PdfFont labelFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10, PdfFontStyle.Bold);
-            PdfFont valueFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10);
-            PdfFont tableHeaderFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10, PdfFontStyle.Bold);
-            PdfFont tableCellFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10);
+            PdfFont titleFont = ExportBranding.CreatePdfFont(16, PdfFontStyle.Bold);
+            PdfFont labelFont = ExportBranding.CreatePdfFont(10, PdfFontStyle.Bold);
+            PdfFont valueFont = ExportBranding.CreatePdfFont(10);
+            PdfFont tableHeaderFont = ExportBranding.CreatePdfFont(10, PdfFontStyle.Bold);
+            PdfFont tableCellFont = ExportBranding.CreatePdfFont(10);
 
             // Correction: Ensure using Syncfusion.Pdf.Graphics; for PdfStringFormat
             PdfStringFormat leftAlignFormat = new PdfStringFormat(PdfTextAlignment.Left, PdfVerticalAlignment.Middle);

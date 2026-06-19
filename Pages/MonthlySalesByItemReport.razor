@@ -153,10 +153,7 @@ else
         if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
         {
             var ExcelFileName = $"Chapin Monthly Sales Report({currentUser.RepCode}).xlsx";
-            ExcelExportProperties exportProperties = new ExcelExportProperties
-            {
-                    FileName = ExcelFileName
-            };
+            ExcelExportProperties exportProperties = ExportBranding.CreateExcelExportProperties(ExcelFileName);
             // Log report usage (no parameters for listing page)
             await ActivityLogService.LogReportUsageActivityAsync("Monthly Sales by Item Report", ExcelFileName);
             await this.Grid.ExportToExcelAsync(exportProperties);

@@ -116,10 +116,7 @@ namespace RepPortal.Pages
             if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
             {
                 var ExcelFileName = $"Customers Report({RepCodeContext.CurrentRepCode}).xlsx";
-                ExcelExportProperties exportProperties = new ExcelExportProperties
-                {
-                    FileName = ExcelFileName
-                };
+                ExcelExportProperties exportProperties = ExportBranding.CreateExcelExportProperties(ExcelFileName);
                 await this.Grid.ExportToExcelAsync(exportProperties);
             }
 

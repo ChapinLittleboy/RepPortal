@@ -645,10 +645,7 @@
         if (PivotRef is null) return;
 
         string repCode = RepCodeContext.CurrentRepCode;
-        ExcelExportProperties excelProperties = new ExcelExportProperties
-        {
-            FileName = $"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}"
-        };
+        ExcelExportProperties excelProperties = ExportBranding.CreateExcelExportProperties($"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}");
 
         await PivotRef.ExportToExcelAsync(excelProperties, null, null, null, false);
     }

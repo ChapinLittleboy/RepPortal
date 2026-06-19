@@ -175,11 +175,7 @@ else
 		if (args.Item.Id != null && args.Item.Id.Contains("DetailsGrid_excelexport")) // Default ID structure for Excel Export button
 		{
 
-			var exportProperties = new ExcelExportProperties
-			{
-
-				FileName = $"OpenOrders_{DateTime.Now:yyyyMMdd}.xlsx"
-			};
+			var exportProperties = ExportBranding.CreateExcelExportProperties($"OpenOrders_{DateTime.Now:yyyyMMdd}.xlsx");
 
 			await DetailsGrid.ExcelExport(exportProperties);
 

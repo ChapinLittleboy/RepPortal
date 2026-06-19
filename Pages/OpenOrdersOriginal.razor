@@ -188,6 +188,7 @@ private async Task ExportAllDetailsToExcel()
         {
             IApplication application = excelEngine.Excel;
             application.DefaultVersion = ExcelVersion.Xlsx;
+            ExportBranding.ApplyTo(application);
             IWorkbook workbook = application.Workbooks.Create(2); // Create 2 worksheets
 
             // --- Worksheet 1: Summary ---
@@ -301,6 +302,7 @@ private async Task ExportAllDetailsToExcel()
             string fileName = $"OpenOrders_SummaryAndDetails_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
             using (MemoryStream stream = new MemoryStream())
             {
+                ExportBranding.ApplyTo(workbook);
                 workbook.SaveAs(stream);
                 stream.Position = 0; 
 
@@ -376,6 +378,7 @@ private async Task ExportAllDetailsToExcel()
             {
                 IApplication application = excelEngine.Excel;
                 application.DefaultVersion = ExcelVersion.Xlsx; // Or ExcelVersion.Excel2016 etc.
+                ExportBranding.ApplyTo(application);
                 IWorkbook workbook = application.Workbooks.Create(1); // Create 1 worksheet
                 IWorksheet worksheet = workbook.Worksheets[0];
                 worksheet.Name = "Open Order Details";
@@ -415,6 +418,7 @@ private async Task ExportAllDetailsToExcel()
                 string fileName = $"OpenOrderDetails_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
                 using (MemoryStream stream = new MemoryStream())
                 {
+                    ExportBranding.ApplyTo(workbook);
                     workbook.SaveAs(stream);
                     stream.Position = 0; // Reset stream position
 
@@ -488,13 +492,8 @@ private async Task ExportAllDetailsToExcel()
             // 3. Use SfGrid's ExportToExcelAsync helper 
             if (SummaryGrid != null) // Grid reference still needed for the helper method
             {
-                var exportProperties = new ExcelExportProperties
-                {
-                    DataSource = exportData, // Provide the combined, flattened data source
-                    FileName = $"OpenOrderDetails_{DateTime.Now:yyyyMMdd}.xlsx"
-                    // You can customize columns, themes, headers etc. further here if needed
-                    // e.g., using ExportHelper.cs examples from Syncfusion docs
-                };
+                var exportProperties = ExportBranding.CreateExcelExportProperties($"OpenOrderDetails_{DateTime.Now:yyyyMMdd}.xlsx");
+                exportProperties.DataSource = exportData; // Provide the combined, flattened data source
                 Console.WriteLine($"Starting Excel export to file: {exportProperties.FileName}");
                 // This uses the *primary* grid reference but exports the *provided* DataSource
                 await SummaryGrid.ExportToExcelAsync(exportProperties);
