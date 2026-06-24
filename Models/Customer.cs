@@ -74,6 +74,9 @@ public class Customer
 
 
     public string? SalesManagerName { get; set; }
+    public string? SalesManagerDisplayName =>
+        Status == "A" ? SalesManagerName : "To be assigned";
+
     public string? SalesManagerEmail { get; set; }
     public string? PaymentTermsCode { get; set; }
     public string? PaymentTermsDescription { get; set; }
