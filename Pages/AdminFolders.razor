@@ -1,5 +1,4 @@
 @page "/admin/folders"
-@using System.Diagnostics
 @using SelectionType = Syncfusion.Blazor.Grids.SelectionType
 @inject FolderAdminService FolderService
 @inject NavigationManager Navigation
@@ -7,7 +6,7 @@
 <h3>Manage Folders</h3>
 
 <div class="d-flex gap-3 align-items-end mb-3 flex-wrap">
-    <select @bind="SelectedTable" @bind:after="LoadFolders" class="form-select" style="width: 300px">
+    <select @bind="SelectedTable" @bind:after="LoadFolderData" class="form-select" style="width: 300px">
         <option value="FormsFolders">Forms Folders</option>
         <option value="MarketingFolders">Marketing Folders</option>
         <option value="PricebookFolders">Pricebook Folders</option>
@@ -18,6 +17,11 @@
         <button class="btn btn-outline-primary" @onclick="OpenFormFileManager">Manage Files In These Folders</button>
     }
 </div>
+
+@if (!string.IsNullOrWhiteSpace(StatusMessage))
+{
+    <div class="alert @StatusCssClass" role="alert">@StatusMessage</div>
+}
 
 <SfGrid TValue="FolderRecord" @ref="GridRef"
         DataSource="@FolderList"
@@ -32,25 +36,44 @@
 
     <GridColumns>
         <GridColumn Field="Id" HeaderText="ID" IsPrimaryKey="true" Visible="false"></GridColumn>
-        <GridColumn Field="DisplayName" HeaderText="Name" Width="200"></GridColumn>
-        <GridColumn Field="FolderRelativePath" HeaderText="Path" Width="200"></GridColumn>
+        <GridColumn Field="DisplayName" HeaderText="Display Name" Width="200"></GridColumn>
+        <GridColumn Field="FolderRelativePath" HeaderText="Actual Folder Name" Width="200">
+            <EditTemplate Context="folderContext">
+                @{
+                    var folder = (FolderRecord)folderContext;
+                }
+                <SfComboBox TValue="string" TItem="string"
+                            DataSource="@GetAvailableFolderNames(folder)"
+                            AllowCustom="true"
+                            Placeholder="Select an existing folder or type the name for a new folder"
+                            Value="@folder.FolderRelativePath"
+                            ValueChanged="@(value => folder.FolderRelativePath = value)">
+                </SfComboBox>
+            </EditTemplate>
+        </GridColumn>
         <GridColumn Field="DisplayOrder" HeaderText="Order" Width="100" TextAlign="TextAlign.Right"></GridColumn>
     </GridColumns>
-    <GridEvents TValue="FolderRecord" OnActionComplete="@ActionCompleteCallback">
+    <GridEvents TValue="FolderRecord" OnActionComplete="OnGridActionComplete">
     </GridEvents>
 </SfGrid>
 
 @code {
     private string SelectedTable = "FormsFolders";
     private List<FolderRecord> FolderList = new();
+    private List<string> ExistingFolderNames = new();
     private SfGrid<FolderRecord>? GridRef;
-
-    private EventCallback<ActionEventArgs<FolderRecord>> ActionCompleteCallback =>
-        EventCallback.Factory.Create<ActionEventArgs<FolderRecord>>(this, OnGridActionComplete);
+    private string StatusMessage = string.Empty;
+    private string StatusCssClass = "alert-info";
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadFolderData();
+    }
+
+    private async Task LoadFolderData()
+    {
         await LoadFolders();
+        ExistingFolderNames = await FolderService.GetExistingPhysicalFoldersAsync(SelectedTable);
     }
 
     private async Task LoadFolders()
@@ -58,23 +81,65 @@
         FolderList = await FolderService.GetFoldersAsync(SelectedTable);
     }
 
+    private List<string> GetAvailableFolderNames(FolderRecord currentFolder)
+    {
+        var usedFolderNames = FolderList
+            .Where(folder => folder.Id != currentFolder.Id)
+            .Select(folder => folder.FolderRelativePath)
+            .Where(folderName => !string.IsNullOrWhiteSpace(folderName))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return ExistingFolderNames
+            .Where(folderName => !usedFolderNames.Contains(folderName)
+                || string.Equals(folderName, currentFolder.FolderRelativePath, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
     private async Task OnGridActionComplete(ActionEventArgs<FolderRecord> args)
     {
-        if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+        try
         {
-            if (args.Action == "Add")
-                await FolderService.AddFolderAsync(SelectedTable, args.Data);
-            else if (args.Action == "Edit")
-                await FolderService.UpdateFolderAsync(SelectedTable, args.Data);
+            if (args.RequestType == Syncfusion.Blazor.Grids.Action.Save)
+            {
+                if (args.Action == "Add")
+                    await FolderService.AddFolderAsync(SelectedTable, args.Data);
+                else if (args.Action == "Edit")
+                    await FolderService.UpdateFolderAsync(SelectedTable, args.Data);
+            }
+            else if (args.RequestType == Syncfusion.Blazor.Grids.Action.Delete)
+            {
+                if (args.Data.Id is not int id)
+                {
+                    return;
+                }
+
+                await FolderService.DeleteFolderAsync(SelectedTable, id);
+            }
+            else
+            {
+                return;
+            }
+
+            ClearStatus();
         }
-        else if (args.RequestType == Syncfusion.Blazor.Grids.Action.Delete)
+        catch (InvalidOperationException ex)
         {
-            Debug.Assert(args != null, nameof(args) + " != null");
-            await FolderService.DeleteFolderAsync(SelectedTable, (int)args.Data.Id);
+            StatusCssClass = "alert-warning";
+            StatusMessage = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            StatusCssClass = "alert-danger";
+            StatusMessage = $"Folder update failed: {ex.Message}";
         }
 
-        await LoadFolders();
-        StateHasChanged();
+        await LoadFolderData();
+    }
+
+    private void ClearStatus()
+    {
+        StatusMessage = string.Empty;
+        StatusCssClass = "alert-info";
     }
 
     private void OpenFormFileManager()
