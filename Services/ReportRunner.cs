@@ -64,8 +64,6 @@ namespace RepPortal.Services
             // Translate DateRangeCodeType -> concrete range (use user's timezone if applicable)
             var (start, end) = ToDateRange(rangeCode, TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time"));
 
-            List<Dictionary<string, object>> data;
-            List<InvoiceRptDetail> invData;
             switch (req.ReportType)
             {
                 case ReportType.InvoicedAccounts:

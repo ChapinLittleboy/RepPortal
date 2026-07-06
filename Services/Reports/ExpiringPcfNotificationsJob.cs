@@ -60,11 +60,15 @@ public sealed class ExpiringPcfNotificationsJob : IExpiringPcfNotificationsJob
                 expirationDate.ToString("yyyy-MM-dd"),
                 pcfs.Count > 0 ? string.Join(", ", pcfs) : "none");
 
-            PCFHeader pcfHeader;
-
             foreach (var pcf in pcfs)
             {
-                pcfHeader = await _pcfService.GetPCFHeaderWithItemsNoRepAsync(pcf);
+                PCFHeader? pcfHeader = await _pcfService.GetPCFHeaderWithItemsNoRepAsync(pcf);
+
+                if (pcfHeader == null)
+                {
+                    _logger.LogWarning("PCF {PcfNumber} header not found; skipping notice.", pcf);
+                    continue;
+                }
 
                 if (await _notificationLog.ExistsAsync(pcf, noticeType, pcfHeader.EndDate))
                     continue;
@@ -117,7 +121,7 @@ public sealed class ExpiringPcfNotificationsJob : IExpiringPcfNotificationsJob
         var to = string.Join(",",
             rawEmails
                 // Split on both ; and ,
-                .SelectMany(e => e.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries))
+                .SelectMany(e => e!.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries))
                 // Trim whitespace
                 .Select(e => e.Trim())
                 // Remove duplicates

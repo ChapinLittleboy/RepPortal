@@ -108,13 +108,6 @@ public class ExportService
         worksheet.Range["A14"].Text = "General Notes:";
         worksheet.Range["B14"].Text = header.GeneralNotes;
 
-        if (1 == 2)
-        {
-            worksheet.Range["A15"].Text = "Market Type:";
-            worksheet.Range["B15"].Text = header.MarketType;
-            worksheet.Range["A2:A15"].CellStyle.Font.Bold = true;
-        }
-
         // Add a separator row
         worksheet.Range["A17:B17"].Merge();
         worksheet.Range["A17"].Text = "PCF Item Details:";
@@ -130,7 +123,7 @@ public class ExportService
 
         // Populate PCFItemDTO Data
         int rowIndex = 19; // Start writing item data at row 20
-        foreach (var item in header.PCFLines.OrderBy(line => line.ItemNum))
+        foreach (var item in (header.PCFLines ?? new List<PCFItem>()).OrderBy(line => line.ItemNum))
         {
             worksheet.Range[rowIndex, 1].Text = item.ItemNum;
             worksheet.Range[rowIndex, 2].Text = item.ItemDesc;
@@ -254,7 +247,7 @@ public class ExportService
 
         if (!header.PromoPaymentTerms.IsNullOrEmpty())
         {
-            string paymentTerms = header.PromoPaymentTermsText;
+            string paymentTerms = header.PromoPaymentTermsText ?? string.Empty;
             graphics.DrawString($"Payment Terms: {paymentTerms}", infoFont, PdfBrushes.Black,
                 new PointF(marginX, yPosition));
             yPosition += 15;
@@ -262,7 +255,7 @@ public class ExportService
 
         if (!header.FreightTerms.IsNullOrEmpty())
         {
-            string freightTerms = header.FreightTerms;
+            string freightTerms = header.FreightTerms ?? string.Empty;
             graphics.DrawString($"Freight Terms: {freightTerms}", infoFont, PdfBrushes.Black,
                 new PointF(marginX, yPosition));
             yPosition += 15;
@@ -333,13 +326,13 @@ Prices and product availability are also subject to change at any time due to ma
 
 
 
-        foreach (var item in header.PCFLines)
+        foreach (var item in header.PCFLines ?? new List<PCFItem>())
         {
             PdfGridRow row = grid.Rows.Add();
 
-            row.Cells[0].Value = item.ItemNum;
-            row.Cells[1].Value = item.ItemDesc;
-            if (item.ApprovedPrice != null) row.Cells[2].Value = item.ApprovedPrice.ToString("C2");
+            row.Cells[0].Value = item.ItemNum ?? string.Empty;
+            row.Cells[1].Value = item.ItemDesc ?? string.Empty;
+            row.Cells[2].Value = item.ApprovedPrice.ToString("C2");
         }
 
 
@@ -413,7 +406,7 @@ Prices and product availability are also subject to change at any time due to ma
             PdfFont tableCellFont = ExportBranding.CreatePdfFont(12);
 
             // Helper function to draw a label and its value.
-            void DrawDetail(string label, string value)
+            void DrawDetail(string label, string? value)
             {
                 graphics.DrawString($"{label}: {value}", labelFont, PdfBrushes.Black, margin, yPosition);
                 yPosition += lineSpacing;
@@ -466,7 +459,7 @@ Prices and product availability are also subject to change at any time due to ma
             // --------------------------------------------------------------------------------
             // Draw each row for the PCF lines. Add new pages as needed.
             // --------------------------------------------------------------------------------
-            foreach (var line in pcfHeader.PCFLines)
+            foreach (var line in pcfHeader.PCFLines ?? new List<PCFItem>())
             {
                 // Check if adding the next row would exceed the usable page height.
                 if (yPosition + rowHeight > page.GetClientSize().Height - margin - 50)
@@ -491,11 +484,11 @@ Prices and product availability are also subject to change at any time due to ma
                 // Draw row background and borders.
                 currentX = margin;
                 graphics.DrawRectangle(PdfPens.Black, currentX, yPosition, tableWidth, rowHeight);
-                graphics.DrawString(line.ItemNum, tableCellFont, PdfBrushes.Black,
+                graphics.DrawString(line.ItemNum ?? string.Empty, tableCellFont, PdfBrushes.Black,
                     currentX + 2, yPosition + 2);
                 currentX += columnWidths[0];
 
-                graphics.DrawString(line.ItemDesc, tableCellFont, PdfBrushes.Black,
+                graphics.DrawString(line.ItemDesc ?? string.Empty, tableCellFont, PdfBrushes.Black,
                     currentX + 2, yPosition + 2);
                 currentX += columnWidths[1];
 
@@ -503,7 +496,7 @@ Prices and product availability are also subject to change at any time due to ma
                     currentX + 2, yPosition + 2);
                 currentX += columnWidths[2];
 
-                graphics.DrawString(line.ItemStatus, tableCellFont, PdfBrushes.Black,
+                graphics.DrawString(line.ItemStatus ?? string.Empty, tableCellFont, PdfBrushes.Black,
                     currentX + 2, yPosition + 2);
                 yPosition += rowHeight;
             }
@@ -582,7 +575,7 @@ Prices and product availability are also subject to change at any time due to ma
 
 
             // --- Helper Function DrawLabelAndValue (remains the same) ---
-            float DrawLabelAndValue(PdfGraphics gfx, string label, string value, PdfFont lblFont, PdfFont valFont, float x, float y, float maxWidth)
+            float DrawLabelAndValue(PdfGraphics gfx, string label, string? value, PdfFont lblFont, PdfFont valFont, float x, float y, float maxWidth)
             {
                 // ... (Implementation from previous answer is likely okay) ...
                 if (string.IsNullOrEmpty(label) && string.IsNullOrEmpty(value)) return y;
@@ -721,8 +714,8 @@ Prices and product availability are also subject to change at any time due to ma
                 {
                     PdfGridRow row = grid.Rows.Add();
 
-                    row.Cells[0].Value = item.ItemNum;
-                    row.Cells[1].Value = item.ItemDesc;
+                    row.Cells[0].Value = item.ItemNum ?? string.Empty;
+                    row.Cells[1].Value = item.ItemDesc ?? string.Empty;
                     row.Cells[2].Value = item.ApprovedPrice.ToString("C2");
                 }
 

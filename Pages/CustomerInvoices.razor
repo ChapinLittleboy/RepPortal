@@ -61,7 +61,7 @@
                             <label>Customer Type (Optional):</label>
                             <InputSelect @bind-Value="parameters.CustType" class="form-control">
                                 <option value="">-- Select a customer type --</option>
-                                @foreach (var type in CustomerTypesList)
+                                @foreach (var type in CustomerTypesList ?? Enumerable.Empty<CustType>())
                                 {
                                     <option value="@type.CustomerType">@type.DisplayText</option>
                                 }
@@ -139,7 +139,7 @@
                                     @{
                                         var aggregate = (context as AggregateTemplateContext);
                                         <div>
-                                            <p>Sum: @aggregate.Sum</p>
+                                            <p>Sum: @(aggregate?.Sum)</p>
                                         </div>
                                     }
                                 </GroupFooterTemplate>
@@ -148,7 +148,7 @@
                                         var aggregate = (context as AggregateTemplateContext);
                                     }
                                     <div>
-                                        <p>Total: @aggregate.Sum</p>
+                                        <p>Total: @(aggregate?.Sum)</p>
                                     </div>
                                 </FooterTemplate>
                             </GridAggregateColumn>
@@ -167,7 +167,6 @@
     private SfGrid<InvoiceRptDetail>? Grid;
     private List<InvoiceRptDetail> InvoiceData = new List<InvoiceRptDetail>();
     private IEnumerable<string>? CustomerTypes;
-    private IEnumerable<Customer>? CustomerEList;
     private List<Customer> CustomerList = new List<Customer>();
     private string WantedCustNum = string.Empty;
     private int NumericValue = 50; // Default value for the combo box DeBounceDelay
@@ -191,7 +190,7 @@
     {
         authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        if (user.Identity.IsAuthenticated)
+        if (user.Identity?.IsAuthenticated == true)
         {
             currentUser = await UserManager.GetUserAsync(user);
             parameters.RepCode = RepCodeContext.CurrentRepCode;
@@ -277,20 +276,23 @@
         {
             var ExcelFileName = $"Chapin Invoices Report({RepCodeContext.CurrentRepCode}).xlsx";
             ExcelExportProperties exportProperties = ExportBranding.CreateExcelExportProperties(ExcelFileName);
-            await this.Grid.ExportToExcelAsync(exportProperties);
+            await this.Grid!.ExportToExcelAsync(exportProperties);
         }
     }
 
     private async Task ClearFilters()
     {
-        await Grid.ClearFilteringAsync();
+        if (Grid is not null)
+        {
+            await Grid.ClearFilteringAsync();
+        }
     }
 
     public async Task OnFilteringHandler(FilteringEventArgs args)
     {
         args.PreventDefaultAction = true;
         var query = new Query().Where(new WhereFilter() { Field = "Text", Operator = "contains", value = args.Text, IgnoreCase = true });
-        await WantedCust.FilterAsync(CustomerList, query);
+        await WantedCust!.FilterAsync(CustomerList, query);
     }
 }
 

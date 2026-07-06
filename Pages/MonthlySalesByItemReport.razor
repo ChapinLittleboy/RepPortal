@@ -57,7 +57,7 @@ else
                         @{
                             var aggregate = (context as AggregateTemplateContext);
                             <div>
-                                <p>@aggregate.Sum</p>
+                                <p>@(aggregate?.Sum)</p>
                             </div>
                         }
                     </GroupFooterTemplate>
@@ -67,7 +67,7 @@ else
                             @{
                                 var aggregate = (context as AggregateTemplateContext);
                                 <div>
-                                    <p>@aggregate.Sum</p>
+                                    <p>@(aggregate?.Sum)</p>
                                 </div>
                             }
                         </GroupFooterTemplate>
@@ -125,7 +125,7 @@ else
     {
         authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        if (user.Identity.IsAuthenticated)
+        if (user.Identity?.IsAuthenticated == true)
         {
             currentUser = await UserManager.GetUserAsync(user);
         }
@@ -142,8 +142,10 @@ else
     }
     private async Task ClearFilters()
     {
-	    await Grid.ClearFilteringAsync();
-
+	    if (Grid is not null)
+	    {
+		    await Grid.ClearFilteringAsync();
+	    }
     }
 
 
@@ -152,11 +154,11 @@ else
     {
         if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
         {
-            var ExcelFileName = $"Chapin Monthly Sales Report({currentUser.RepCode}).xlsx";
+            var ExcelFileName = $"Chapin Monthly Sales Report({currentUser?.RepCode}).xlsx";
             ExcelExportProperties exportProperties = ExportBranding.CreateExcelExportProperties(ExcelFileName);
             // Log report usage (no parameters for listing page)
             await ActivityLogService.LogReportUsageActivityAsync("Monthly Sales by Item Report", ExcelFileName);
-            await this.Grid.ExportToExcelAsync(exportProperties);
+            await this.Grid!.ExportToExcelAsync(exportProperties);
         }
     }
     private void ConvertToDictionaries(List<Dictionary<string, object>> records)
@@ -305,7 +307,7 @@ else
         foreach (var record in records)
         {
             dynamic expando = new ExpandoObject();
-            var dict = expando as IDictionary<string, object>;
+            IDictionary<string, object?> dict = (ExpandoObject)expando;
 
             foreach (var kvp in record)
             {

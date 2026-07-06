@@ -65,13 +65,13 @@ else
 							        @{
 								        var aggregate = (context as AggregateTemplateContext);
 							        }
-							        <div>@aggregate.Sum</div>
+							        <div>@(aggregate?.Sum)</div>
 						        </FooterTemplate>
 						        <GroupFooterTemplate>
 							        @{
 								        var aggregate = (context as AggregateTemplateContext);
 							        }
-							        <div>@aggregate.Sum</div>
+							        <div>@(aggregate?.Sum)</div>
 						        </GroupFooterTemplate>
 					        </GridAggregateColumn>
 				        }
@@ -161,7 +161,7 @@ else
     {
         authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        if (user.Identity.IsAuthenticated)
+        if (user.Identity?.IsAuthenticated == true)
         {
             currentUser = await UserManager.GetUserAsync(user);
             isLawRep = RepCodeContext.CurrentRepCode == "LAW";
@@ -173,8 +173,10 @@ else
 
     private async Task ClearFilters()
     {
-	    await Grid.ClearFilteringAsync();
-
+	    if (Grid is not null)
+	    {
+		    await Grid.ClearFilteringAsync();
+	    }
     }
 
     private async Task OnYearModeChanged(Microsoft.AspNetCore.Components.ChangeEventArgs args)
@@ -195,10 +197,10 @@ else
     {
         if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
         {
-            var ExcelFileName = $"Chapin Monthly Sales Report({currentUser.RepCode}).xlsx";
+            var ExcelFileName = $"Chapin Monthly Sales Report({currentUser?.RepCode}).xlsx";
             ExcelExportProperties exportProperties = ExportBranding.CreateExcelExportProperties(ExcelFileName);
             await ActivityLogService.LogReportUsageActivityAsync("Monthly Invoiced Sales Report Rep Export", ExcelFileName);
-            await this.Grid.ExportToExcelAsync(exportProperties);
+            await this.Grid!.ExportToExcelAsync(exportProperties);
         }
     }
     private void ConvertToDictionaries(List<Dictionary<string, object>> records)
@@ -239,7 +241,7 @@ else
         var period = SalesReportPeriodHelper.Create(selectedYearMode);
         var currentMonthLabel = SalesReportPeriodHelper.GetCurrentMonthLabel();
         var availableColumns = records
-            .SelectMany(r => ((IDictionary<string, object>)r).Keys)
+            .SelectMany(r => ((IDictionary<string, object?>)r).Keys)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         DynamicColumns = period.YearLabels
@@ -266,7 +268,7 @@ else
         foreach (var record in records)
         {
             dynamic expando = new ExpandoObject();
-            var dict = expando as IDictionary<string, object>;
+            IDictionary<string, object?> dict = (ExpandoObject)expando;
 
             foreach (var kvp in record)
             {

@@ -17,7 +17,7 @@ public class HelpContentService
         _connection = _connectionFactory.CreateRepConnection();
     }
 
-    public async Task<HelpContent> GetHelpContentAsync(string pageKey)
+    public async Task<HelpContent?> GetHelpContentAsync(string? pageKey)
     {
         var sql = "SELECT * FROM PageHelpContent WHERE PageKey = @PageKey";
         return await _connection.QueryFirstOrDefaultAsync<HelpContent>(sql, new { PageKey = pageKey });

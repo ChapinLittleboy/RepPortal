@@ -51,7 +51,6 @@
 
 @code {
 		public List<FormsDownloadFolder> FormsDownloadFolders = new();
-		private bool isReady = true;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -61,6 +60,5 @@
 			FormsDownloadFolders = await FormsDownloadService.GetFormsDownFoldersAsync();
 			//items = await ItemService.GetItemsAsync();
 			//Logger.LogInformation("DIAGNOSTIC: Loaded {Count} items", items.Count);
-			isReady = true;
 	}
 }

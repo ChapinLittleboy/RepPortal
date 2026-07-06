@@ -27,7 +27,7 @@ public class InvoiceRptDetail
     public DateTime? Ship_Date { get; set; }
     public string? ShipToRegion { get; set; }
 
-    public string Cust_Num => Cust.PadLeft(7);
+    public string Cust_Num => Cust?.PadLeft(7) ?? string.Empty;
 
     static InvoiceRptDetail()
     {
@@ -35,6 +35,6 @@ public class InvoiceRptDetail
             typeof(InvoiceRptDetail),
             (type, columnName) => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .FirstOrDefault(prop => prop.GetCustomAttribute<ColumnAttribute>()?.Name == columnName
-                                     || prop.Name.Equals(columnName, StringComparison.OrdinalIgnoreCase))));
+                                     || prop.Name.Equals(columnName, StringComparison.OrdinalIgnoreCase))!));
     }
 }

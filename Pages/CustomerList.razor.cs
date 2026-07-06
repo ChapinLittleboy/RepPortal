@@ -31,7 +31,7 @@ namespace RepPortal.Pages
         protected override async Task OnInitializedAsync()
         {
             // Activity Logging: Log report usage to ReportUsageActivity
-            await ActivityLogService.LogReportUsageActivityAsync("Customer List Report", "");
+            await ActivityLogService!.LogReportUsageActivityAsync("Customer List Report", "");
 
             //reasonCodeList = await CustomerService.GetAllReasonCodesAsync();
             // _creditHoldReasons = await CustomerService.GetAllReasonCodesAsync();
@@ -39,26 +39,26 @@ namespace RepPortal.Pages
             //     .Where(r => !string.IsNullOrWhiteSpace(r.Code))
             //     .ToDictionary(r => r.Code, r => r.Description);
 
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var authState = await AuthenticationStateProvider!.GetAuthenticationStateAsync();
             var user = authState.User;
             repCode = user.FindFirst("RepCode")?.Value;
-            CustomerTypesList = await CustomerService.GetCustomerTypesListAsync();
+            CustomerTypesList = await CustomerService!.GetCustomerTypesListAsync();
 
-            repCode = RepCodeContext.CurrentRepCode;
-            if (user.Identity.IsAuthenticated)
+            repCode = RepCodeContext!.CurrentRepCode;
+            if (user.Identity?.IsAuthenticated == true)
             {
-                var currentUser = await UserManager.GetUserAsync(user);
+                var currentUser = await UserManager!.GetUserAsync(user);
                 if (!string.IsNullOrEmpty(repCode))
                 {
                     var allowedTypes = new HashSet<string>(
-                        CustomerTypesList.Select(ct => ct.CustomerType),
+                        CustomerTypesList.Select(ct => ct.CustomerType!),
                         StringComparer.OrdinalIgnoreCase // Case-insensitive comparison
                     );
 
                     var allCustomers = await CustomerService.GetCustomersDetailsByRepCodeAsync();
                     foreach (var cust in allCustomers)
                     {
-                        if (!allowedTypes.Contains(cust.BuyingGroup))
+                        if (!allowedTypes.Contains(cust.BuyingGroup!))
                         {
                             cust.BuyingGroup = null; // or string.Empty if you prefer
                             cust.BuyingGroupDescription = null; // or string.Empty if you prefer
@@ -75,7 +75,10 @@ namespace RepPortal.Pages
 
         private async Task ClearFilters()
         {
-            await Grid.ClearFilteringAsync();
+            if (Grid is not null)
+            {
+                await Grid.ClearFilteringAsync();
+            }
         }
 
         private string GetHoldReasonDescription(string code)
@@ -95,7 +98,7 @@ namespace RepPortal.Pages
 
         private string YesNoAccessor(object data, string field)
         {
-            var isActive = (int)data.GetType().GetProperty(field).GetValue(data, null);
+            var isActive = (int)data.GetType().GetProperty(field)!.GetValue(data, null)!;
             return isActive == 1 ? "Yes" : "No";
         }
 
@@ -115,9 +118,9 @@ namespace RepPortal.Pages
         {
             if (args.Item.Id == "Grid_Export to Excel") //Id is combination of Grid's ID and itemname
             {
-                var ExcelFileName = $"Customers Report({RepCodeContext.CurrentRepCode}).xlsx";
+                var ExcelFileName = $"Customers Report({RepCodeContext!.CurrentRepCode}).xlsx";
                 ExcelExportProperties exportProperties = ExportBranding.CreateExcelExportProperties(ExcelFileName);
-                await this.Grid.ExportToExcelAsync(exportProperties);
+                await this.Grid!.ExportToExcelAsync(exportProperties);
             }
 
             if (args.Item.Id == "Grid_Save Layout") //Id is combination of Grid's ID and itemname
@@ -128,7 +131,7 @@ namespace RepPortal.Pages
 
         public class CreditHoldDateComparer : IComparer<object>
         {
-            public int Compare(object XRowDataToCompare, object YRowDataToCompare)
+            public int Compare(object? XRowDataToCompare, object? YRowDataToCompare)
             {
                 var xCust = XRowDataToCompare as Customer;
                 var yCust = YRowDataToCompare as Customer;

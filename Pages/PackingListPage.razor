@@ -71,7 +71,7 @@
             </span>
         </div>
 
-        @foreach (var pl in Lists)
+        @foreach (var pl in Lists!)
         {
             var packNum = pl?.Header?.PackNum ?? string.Empty;
             <div class="card my-3">

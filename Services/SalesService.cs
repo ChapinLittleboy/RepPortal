@@ -123,7 +123,7 @@ public class SalesService : ISalesService
     {
         EnsureRepContext();
 
-        if (_csiOptions.UseApi)
+        if (_csiOptions!.UseApi)
             return await GetSalesReportDataUsingInvRepApiAsync(yearMode);
 
         EnsureAuth();
@@ -169,7 +169,7 @@ public class SalesService : ISalesService
     {
         EnsureRepContext();
 
-        if (_csiOptions.UseApi)
+        if (_csiOptions!.UseApi)
             return await GetSalesReportDataApiAsync(yearMode);
 
         EnsureAuth();
@@ -208,7 +208,7 @@ public class SalesService : ISalesService
     {
         EnsureRepContext();
 
-        if (_csiOptions.UseApi)
+        if (_csiOptions!.UseApi)
         {
             if (_idoService == null)
                 throw new InvalidOperationException("IIdoService is required when UseApi is enabled.");
@@ -252,7 +252,7 @@ public class SalesService : ISalesService
     {
         EnsureRepContext();
 
-        if (_csiOptions.UseApi)
+        if (_csiOptions!.UseApi)
             return await GetItemSalesReportDataWithQtyApiAsync(yearMode);
 
         var repCode = _repCodeContext!.CurrentRepCode;
@@ -724,7 +724,7 @@ public class SalesService : ISalesService
         EnsureAuth();
         EnsureRepContext();
 
-        if (!_csiOptions.UseApi)
+        if (!_csiOptions!.UseApi)
         {
 
             using var connection = new SqlConnection(_connectionString);
@@ -972,11 +972,11 @@ public class SalesService : ISalesService
         _logger?.LogInformation(
             "GetAllOpenOrderDetailsAsync started. Rep={RepCode}, UseApi={UseApi}, RegionCount={RegionCount}",
             repCode,
-            _csiOptions.UseApi,
+            _csiOptions!.UseApi,
             allowedRegions?.Count ?? 0
         );
 
-        if (!_csiOptions.UseApi)
+        if (!_csiOptions!.UseApi)
         {
 
             var sql = @"
@@ -1217,7 +1217,7 @@ public class SalesService : ISalesService
     public async Task<(OrderLookupHeader? Header, List<OrderLookupLine> Lines)> GetOrderLookupAsync(
         string custNum, string normalizedPo, string repCode)
     {
-        if (_csiOptions.UseApi)
+        if (_csiOptions!.UseApi)
         {
             if (_idoService is null)
                 throw new InvalidOperationException("IDO service is not available.");
@@ -1355,7 +1355,7 @@ public class SalesService : ISalesService
             ? _repCodeContext.CurrentRegions?.ToList() ?? new List<string>()
             : new List<string>();
 
-        if (_csiOptions.UseApi)
+        if (_csiOptions!.UseApi)
         {
             return await GetInvoiceRptDataApiAsync(parameters);
         }

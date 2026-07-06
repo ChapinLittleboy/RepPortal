@@ -26,7 +26,6 @@ public class ItemService : IItemService
     private readonly IIdoService _idoService;
     private readonly CsiOptions _csiOptions;
 
-    private List<ItemInfo>? _itemsCache;
     private Dictionary<string, ItemDetail>? _detailsCache;
 
     public ItemService(IConfiguration configuration, AuthenticationStateProvider authenticationStateProvider,
@@ -45,9 +44,6 @@ public class ItemService : IItemService
 
     public async Task<List<ItemInfo>> GetItemsAsync()
     {
-        if (_itemsCache != null)
-            return _itemsCache;
-
         using var connection = _dbConnectionFactory.CreateBatConnection();
         var sql = @"SELECT Item, Description
                         FROM item_mst
@@ -62,7 +58,7 @@ public class ItemService : IItemService
         if (_detailsCache.TryGetValue(item, out var cached))
             return cached;
 
-        ItemDetail result;
+        ItemDetail? result;
 
         if (_csiOptions.UseApi)
         {
@@ -90,6 +86,6 @@ public class ItemService : IItemService
         if (result != null)
             _detailsCache[item] = result;
 
-        return result;
+        return result!;
     }
 }

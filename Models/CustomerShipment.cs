@@ -113,7 +113,7 @@ public class CustomerShipment
             typeof(CustomerShipment),
             (type, columnName) => type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .FirstOrDefault(prop => prop.GetCustomAttribute<ColumnAttribute>()?.Name == columnName
-                                     || prop.Name.Equals(columnName, StringComparison.OrdinalIgnoreCase))));
+                                     || prop.Name.Equals(columnName, StringComparison.OrdinalIgnoreCase))!));
     }
 
     public CustomerShipment()

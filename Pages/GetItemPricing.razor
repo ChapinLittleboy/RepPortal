@@ -126,9 +126,7 @@
 	private List<ItemInfo> items = new();
 	private string? selectedItem;
 	private ItemDetail? detail;
-	private bool isLoading;
 	private bool lookupPerformed;
-	private bool isReady = false;
 	public List<PriceBookFolder> PriceBookFolders = new();
 
 	public string ChangeValue { get; set; } = "Give Bill a raise";
@@ -145,7 +143,6 @@
 		PriceBookFolders = await DownloadPriceBookService.GetPriceBookFoldersAsync();
 		//items = await ItemService.GetItemsAsync();
 		//Logger.LogInformation("DIAGNOSTIC: Loaded {Count} items", items.Count);
-		isReady = true;
 
 	}
 
@@ -158,13 +155,11 @@
 			return;
         // Log report usage (no parameters for listing page)
         await ActivityLogService.LogReportUsageActivityAsync("Item Price Lookup", selectedItem);
-		isLoading = true;
 		detail = await ItemService.GetItemDetailAsync(selectedItem);
-		isLoading = false;
 		lookupPerformed = true;
 	}
 
-	private string GetImageUrl(string item)
+	private string GetImageUrl(string? item)
 	{// mirror your old ASP logic
 	
 		var x = $"/product-images/{item}_Web_Main.png";

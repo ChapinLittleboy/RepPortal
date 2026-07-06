@@ -647,7 +647,7 @@
         string repCode = RepCodeContext.CurrentRepCode;
         ExcelExportProperties excelProperties = ExportBranding.CreateExcelExportProperties($"PivotExport ({repCode}) {DateTime.Now:yyyy-MM-dd HH-mm}");
 
-        await PivotRef.ExportToExcelAsync(excelProperties, null, null, null, false);
+        await PivotRef.ExportToExcelAsync(asMemoryStream: false, excelExportProperties: excelProperties);
     }
 
     private async Task ExportNativePivotAsync()

@@ -47,7 +47,7 @@ else
                     <Template>
                         @{
                             var header = (PCFHeader)@context;
-                            string status = header.PCFStatusDescription;
+                            string? status = header.PCFStatusDescription;
                             @if (status == "New")
                             {
                                 <div class="statusback e-newcolor">
@@ -81,7 +81,7 @@ else
 
                 <GridColumn HeaderText="Action!" Width="7%">
                     <Template Context="pcfObj">
-	                    <SfButton CssClass="custom-edit-button e-small" @onclick="() => NavigateToPCFDetails(((PCFHeader)pcfObj).PcfNumber)">Details</SfButton>
+	                    <SfButton CssClass="custom-edit-button e-small" @onclick="() => NavigateToPCFDetails(((PCFHeader)pcfObj).PcfNumber!)">Details</SfButton>
                     </Template>
                 </GridColumn>
 
@@ -118,7 +118,7 @@ else
 
 				Console.WriteLine(pcfHeaders.Count);
 			}
-			if (pcfHeaders.Any())
+			if (pcfHeaders?.Any() == true)
 			{
 				var firstRecord = pcfHeaders.First();
 				Logger.LogInformation("First PCFHeader Record:");
@@ -145,7 +145,7 @@ else
 		{
 			var ExcelFileName = $"PCFListing.xlsx";
 			ExcelExportProperties exportProperties = ExportBranding.CreateExcelExportProperties(ExcelFileName);
-			await this.MyGrid.ExportToExcelAsync(exportProperties);
+			await this.MyGrid!.ExportToExcelAsync(exportProperties);
 		}
 	}
 
@@ -173,8 +173,10 @@ else
 
 	private async Task ClearFilters()
 	{
-		await MyGrid.ClearFilteringAsync();
-		
+		if (MyGrid is not null)
+		{
+			await MyGrid.ClearFilteringAsync();
+		}
 	}
 
 }

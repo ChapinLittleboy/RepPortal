@@ -250,7 +250,7 @@
 		//Selected menu item
 		var selectedItem = args.Item.Text;
 		var selectedId = args.Item.Id;
-		string rpttype = null;
+		string? rpttype = null;
 
 		if (args.Item.HtmlAttributes != null &&
 			args.Item.HtmlAttributes.TryGetValue("title", out var tooltipObj))

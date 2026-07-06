@@ -35,7 +35,7 @@ else if (isReady)
 				<div class="row mb-2">
 					<div class="col-md-4">
 						<strong>Customer Number:</strong>
-						<div>@pcfHeader.CustomerNumber</div>
+						<div>@pcfHeader!.CustomerNumber</div>
 					</div>
 					<div class="col-md-4">
 						<strong>Customer Name:</strong>
@@ -201,7 +201,7 @@ else if (isReady)
 
 	private async void PrintPDF()
 	{
-		var pdfName = $"PCF_{pcfHeader.PcfNumber} for Customer {pcfHeader.CustomerNumber}.pdf";
+		var pdfName = $"PCF_{pcfHeader!.PcfNumber} for Customer {pcfHeader.CustomerNumber}.pdf";
 		//ExportService service = new ExportService(hostingEnvironment, Configuration);
 		var documentStream = ExportService.CreatePCFPDF(pcfHeader);
 
@@ -216,13 +216,13 @@ else if (isReady)
        pcfHeader.Dump();
 		{
 			// 1) Generate your PDF bytes
-			var pdfBytes = ExportService.ExportPcfHeaderToPdf2(pcfHeader);
+			var pdfBytes = ExportService.ExportPcfHeaderToPdf2(pcfHeader!);
 
 			// 2) Call the JS function with three args
 			await JSRuntime.InvokeVoidAsync(
 				"downloadFileFromByteArray",
 				pdfBytes,
-				$"PCF_{pcfHeader.PcfNumber}_Cust{pcfHeader.CustomerNumber}.pdf",
+				$"PCF_{pcfHeader!.PcfNumber}_Cust{pcfHeader.CustomerNumber}.pdf",
 				"application/pdf"
 			);
 		}
@@ -239,7 +239,7 @@ else if (isReady)
 		}
 
 		// Log PCFLines data
-		if (pcfHeader.PCFLines != null && pcfHeader.PCFLines.Any())
+		if (pcfHeader!.PCFLines != null && pcfHeader.PCFLines.Any())
 		{
 			Logger.LogInformation("PCFLines Details:");
 			foreach (var line in pcfHeader.PCFLines)

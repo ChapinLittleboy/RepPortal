@@ -265,7 +265,7 @@ AND (
     /// A <see cref="PCFHeader"/> object containing populated header fields and a collection of linked <see cref="PCFItem"/> objects (if present), 
     /// or <c>null</c> if not found.
     /// </returns>
-    public async Task<PCFHeader> GetPCFHeaderWithItemsAsync(int pcfNum)
+    public async Task<PCFHeader?> GetPCFHeaderWithItemsAsync(int pcfNum)
     {
         // This query retrieves header fields as well as the associated PCF items.
         // Note: The CAST converts PCFNum (int) to varchar so it can be compared to PCItems.PCFNumber.
@@ -334,6 +334,7 @@ AND (
                 // Only add the item if it's not null
                 if (item != null)
                 {
+                    currentHeader.PCFLines ??= new List<PCFItem>();
                     currentHeader.PCFLines.Add(item);
                 }
                 return currentHeader;
@@ -365,7 +366,7 @@ AND (
         return headerResult;
     }
 
-    public async Task<PCFHeader> GetPCFHeaderWithItemsNoRepAsync(int pcfNum)
+    public async Task<PCFHeader?> GetPCFHeaderWithItemsNoRepAsync(int pcfNum)
     {
         // This query retrieves header fields as well as the associated PCF items.
         // Note: The CAST converts PCFNum (int) to varchar so it can be compared to PCItems.PCFNumber.
@@ -436,6 +437,7 @@ AND (
                 // Only add the item if it's not null
                 if (item != null)
                 {
+                    currentHeader.PCFLines ??= new List<PCFItem>();
                     currentHeader.PCFLines.Add(item);
                 }
                 return currentHeader;

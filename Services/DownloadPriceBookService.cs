@@ -40,7 +40,7 @@ public class DownloadPriceBookService : IDownloadPriceBookService
         foreach (var folder in folders)
         {
             // _root comes from config["PriceBooks:RootPath"] == "\\\\ciiws01\\ChapinRepDocs"
-            var physical = Path.Combine(_root, folder.FolderRelativePath);
+            var physical = Path.Combine(_root ?? string.Empty, folder.FolderRelativePath ?? string.Empty);
             if (!Directory.Exists(physical))
             {
                 // you may log a warning here
@@ -57,7 +57,7 @@ public class DownloadPriceBookService : IDownloadPriceBookService
                     var info = new FileInfo(fp);
                     var name = info.Name;
                     // _route comes from config["PriceBooks:RequestPath"] == "/RepDocs"
-                    var url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(folder.FolderRelativePath)}/{Uri.EscapeDataString(name)}";
+                    var url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(folder.FolderRelativePath ?? string.Empty)}/{Uri.EscapeDataString(name)}";
                     var sizeKb = Math.Round(info.Length / 1024.0, 2);
 
                     return new PriceBookFile

@@ -104,7 +104,8 @@ public class SmtpEmailSender : IEmailSender, IAttachmentEmailSender, IEmailServi
 
         if (ShouldAuthenticate(user, pass, client.Capabilities))
         {
-            await client.AuthenticateAsync(user, pass);
+            // ShouldAuthenticate guarantees user and pass are non-empty here
+            await client.AuthenticateAsync(user!, pass!);
         }
 
         await client.SendAsync(message);

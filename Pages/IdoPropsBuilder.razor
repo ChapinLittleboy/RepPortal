@@ -161,8 +161,6 @@
     private string _csvOutputPath = "";
     private bool _csvExportEnabled = false;
 
-    private SfGrid<IdoPropertyRow>? Grid;
-
     private List<IdoCollectionRow> IdoList = new();
     private string? SelectedIdo;
 
@@ -585,7 +583,7 @@ ORDER BY PropertyName;
                 }
             };
 
-            await GridRef.ExportToExcelAsync(exportProps);
+            await GridRef!.ExportToExcelAsync(exportProps);
         }
     }
 

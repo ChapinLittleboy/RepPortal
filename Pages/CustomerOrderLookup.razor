@@ -116,7 +116,7 @@
                 <Template>
                     @{
                         var data = context as OrderLookupLine;
-                        <text>@GetLineStatusDescription(data.LineStatus)</text>
+                        <text>@GetLineStatusDescription(data!.LineStatus)</text>
                     }
                 </Template>
             </GridColumn>
@@ -160,7 +160,7 @@
         Header = null;
         LineItems.Clear();
 
-        if (string.IsNullOrWhiteSpace(WantedCust.Value) || string.IsNullOrWhiteSpace(CustomerPo))
+        if (string.IsNullOrWhiteSpace(WantedCust?.Value) || string.IsNullOrWhiteSpace(CustomerPo))
             return;
 
         normalizedPo = NormalizePo(CustomerPo);

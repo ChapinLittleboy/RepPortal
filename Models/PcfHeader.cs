@@ -1,14 +1,9 @@
 ﻿using System.ComponentModel;
-using Microsoft.IdentityModel.Tokens;
 
 namespace RepPortal.Models;
 
 public class PCFHeader : INotifyPropertyChanged
 {
-    #region Private Fields
-    private readonly IHttpContextAccessor? _httpContextAccessor;
-    #endregion
-
     #region Constructors
     // Parameterless constructor for Dapper
     public PCFHeader()
@@ -67,10 +62,10 @@ public class PCFHeader : INotifyPropertyChanged
     {
         get
         {
-            if (!PcfType.IsNullOrEmpty())
+            if (!string.IsNullOrEmpty(PcfType))
             {
                 // If the dictionary contains your code, return the matching description
-                if (PcfTypeDescriptions.TryGetValue(PcfType, out string description))
+                if (PcfTypeDescriptions.TryGetValue(PcfType, out string? description))
                 {
                     return description;
                 }

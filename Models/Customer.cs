@@ -116,9 +116,9 @@ public class Customer
 
 
 
-    public string? DisplayCustName => Cust_Name.Replace("&", "(and)");
+    public string? DisplayCustName => Cust_Name?.Replace("&", "(and)");
 
-    public string? CustNameWithNum => $"{Cust_Name} ({Cust_Num.Trim()})";
+    public string? CustNameWithNum => $"{Cust_Name} ({Cust_Num?.Trim()})";
 
 
 
@@ -163,7 +163,7 @@ public class Customer
 
 public static class CustomerStatusExtensions
 {
-    public static string? ToDescription(this Customer.CustomerStatus status)
+    public static string ToDescription(this Customer.CustomerStatus status)
     {
         return status switch
         {
@@ -176,7 +176,7 @@ public static class CustomerStatusExtensions
     public static string? GetDescription(this Enum value)
     {
         var field = value.GetType().GetField(value.ToString());
-        var attribute = field.GetCustomAttribute<DescriptionAttribute>();
+        var attribute = field?.GetCustomAttribute<DescriptionAttribute>();
         return attribute?.Description ?? value.ToString();
     }
 }

@@ -57,7 +57,7 @@ else
 							@{
 								var aggregate = (context as AggregateTemplateContext);
 								<div>
-									<p>Sum: @aggregate.Sum</p>
+									<p>Sum: @(aggregate?.Sum)</p>
 								</div>
 							}
 						</GroupFooterTemplate>
@@ -66,7 +66,7 @@ else
 								var aggregate = (context as AggregateTemplateContext);
 							}
 							<div>
-								<p>Total: @aggregate.Sum</p>
+								<p>Total: @(aggregate?.Sum)</p>
 							</div>
 						</FooterTemplate>
 					</GridAggregateColumn>
@@ -177,14 +177,16 @@ else
 
 			var exportProperties = ExportBranding.CreateExcelExportProperties($"OpenOrders_{DateTime.Now:yyyyMMdd}.xlsx");
 
-			await DetailsGrid.ExcelExport(exportProperties);
+			await DetailsGrid!.ExportToExcelAsync(exportProperties);
 
 		}
 	}
 	private async Task ClearFilters()
 	{
-		await DetailsGrid.ClearFilteringAsync();
-	
+		if (DetailsGrid is not null)
+		{
+			await DetailsGrid.ClearFilteringAsync();
+		}
 	}
 
 }

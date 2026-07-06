@@ -50,7 +50,7 @@ public class DownloadMarketingInfoService : IMarketingService
 
         foreach (var folder in folders)
         {
-            var physical = Path.Combine(_root, folder.FolderRelativePath);
+            var physical = Path.Combine(_root ?? string.Empty, folder.FolderRelativePath ?? string.Empty);
             var isFakeFolder = folder.FolderRelativePath == "FakePlaceholder";
 
             if (isFakeFolder)
@@ -60,7 +60,7 @@ public class DownloadMarketingInfoService : IMarketingService
                      .Where(f => f.FolderRelativePath == "/")
                      .Select(f =>
                      {
-                         var physicalPath = Path.Combine(_root, f.FileName);
+                         var physicalPath = Path.Combine(_root ?? string.Empty, f.FileName ?? string.Empty);
                          if (!File.Exists(physicalPath))
                              return null;
 
@@ -68,12 +68,11 @@ public class DownloadMarketingInfoService : IMarketingService
                          return new MarketingFile
                          {
                              Name = f.DisplayName ?? f.FileName,
-                             Url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(f.FileName)}",
+                             Url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(f.FileName ?? string.Empty)}",
                              SizeText = $"{Math.Round(info.Length / 1024.0, 2)} KB"
                          };
                      })
-                     .Where(f => f != null)
-
+                     .OfType<MarketingFile>()
                      .ToList();
 
                 folder.Files = folderFiles;
@@ -93,7 +92,7 @@ public class DownloadMarketingInfoService : IMarketingService
                         return new MarketingFile
                         {
                             Name = name,
-                            Url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(folder.FolderRelativePath)}/{Uri.EscapeDataString(name)}",
+                            Url = $"{_route.TrimEnd('/')}/{Uri.EscapeDataString(folder.FolderRelativePath ?? string.Empty)}/{Uri.EscapeDataString(name)}",
                             SizeText = $"{Math.Round(info.Length / 1024.0, 2)} KB"
                         };
                     })

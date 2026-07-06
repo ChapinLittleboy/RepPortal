@@ -20,7 +20,7 @@
         <div>
             <div class="active-filters">
                 <button @onclick="ClearFilters">Clear Filters</button>
-                <button OnClick="@(async() =>await Grid.ResetPersistDataAsync())">Reset All</button>
+                <button OnClick="@(async() =>await Grid!.ResetPersistDataAsync())">Reset All</button>
                 <!--
                 <span class="divider">|</span>
                 <strong class="small-text">Active Filters:</strong>

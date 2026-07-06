@@ -27,9 +27,9 @@ else
             @foreach (var user in users)
             {
                 <tr>
-                    <td>@user.User.Email</td>
+                    <td>@user.User!.Email</td>
                     <td>
-                        @foreach (var role in user.Roles)
+                        @foreach (var role in user.Roles!)
                         {
                             <span class="badge bg-info me-1">
                                 @role
@@ -68,7 +68,7 @@ else
     {
 		
 
-        allRoles = await RoleManager.Roles.Select(r => r.Name).ToListAsync();
+        allRoles = await RoleManager.Roles.Select(r => r.Name!).ToListAsync();
         var userList = await UserManager.Users.ToListAsync();
 
         users = new List<UserWithRoles>();

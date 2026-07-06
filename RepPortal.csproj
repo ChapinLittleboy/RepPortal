@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-RepPortal-a2f289db-5171-4465-8884-cabda6ba3a78</UserSecretsId>
     <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
+    <!-- NU1701: Microsoft.Build and its transitive Microsoft.IO.Redist are restored as .NET Framework packages; suppressed intentionally -->
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

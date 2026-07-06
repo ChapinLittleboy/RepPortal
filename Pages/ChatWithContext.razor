@@ -86,7 +86,7 @@
 
                     var param = new SalesService.InvoiceRptParameters()
                     {
-                        RepCode = repCode,
+                        RepCode = repCode!,
                         CustNum = string.IsNullOrWhiteSpace(custNum) ? null : custNum,
                         BeginInvoiceDate = DateTime.Parse(beginDate),
                         EndInvoiceDate = DateTime.Parse(endDate)

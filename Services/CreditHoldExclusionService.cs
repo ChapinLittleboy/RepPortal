@@ -51,7 +51,7 @@ public class CreditHoldExclusionService
 
     }
 
-    public async Task AddAsync(string code, string description)
+    public async Task AddAsync(string code, string? description)
     {
         using var conn = _dbConnectionFactory.CreateRepConnection();
         var sql = "INSERT INTO dbo.CreditHoldReasonCodeExclusions  (Code, Description) VALUES (@Code, @Description)";

@@ -111,7 +111,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        recipientEmail = Configuration["COIRequest:RecipientEmail"];
+        recipientEmail = Configuration["COIRequest:RecipientEmail"] ?? string.Empty;
         var repCode = RepCodeContext.CurrentRepCode;
         customerList = await CustomerService.GetCustomerNamesByRepCodeAsync();
         isLoading = false;
@@ -168,7 +168,7 @@ else
                 }
             }
 
-            await EmailService.SendEmailAsync(recipientEmail, subject, body, true, attachments);
+            await EmailService.SendEmailAsync(recipientEmail!, subject, body, true, attachments);
 
             if (EmailMeCopy)
             {

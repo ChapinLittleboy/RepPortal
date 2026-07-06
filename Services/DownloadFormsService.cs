@@ -42,7 +42,7 @@ public class DownloadFormsService : IFormsDownloadService
         foreach (var folder in folders)
         {
             // _root comes from config["PriceBooks:RootPath"] == "\\\\ciiws01\\ChapinRepDocs"
-            var physical = Path.Combine(_root, folder.FolderRelativePath);
+            var physical = Path.Combine(_root ?? string.Empty, folder.FolderRelativePath ?? string.Empty);
             if (!Directory.Exists(physical))
             {
                 // you may log a warning here
