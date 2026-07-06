@@ -12,10 +12,7 @@
         <option value="PricebookFolders">Pricebook Folders</option>
     </select>
 
-    @if (SelectedTable == "FormsFolders")
-    {
-        <button class="btn btn-outline-primary" @onclick="OpenFormFileManager">Manage Files In These Folders</button>
-    }
+    <button class="btn btn-outline-primary" @onclick="OpenFileManager">Manage Files In These Folders</button>
 </div>
 
 @if (!string.IsNullOrWhiteSpace(StatusMessage))
@@ -142,8 +139,15 @@
         StatusCssClass = "alert-info";
     }
 
-    private void OpenFormFileManager()
+    private void OpenFileManager()
     {
-        Navigation.NavigateTo("/admin/forms-files");
+        var target = SelectedTable switch
+        {
+            "MarketingFolders" => "/admin/marketing-files",
+            "PricebookFolders" => "/admin/pricebook-files",
+            _ => "/admin/forms-files"
+        };
+
+        Navigation.NavigateTo(target);
     }
 }

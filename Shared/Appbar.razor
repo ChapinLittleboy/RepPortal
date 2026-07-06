@@ -151,6 +151,7 @@
 		CreateDropDownMenuItem("Manage Folders", "managefolders"),
 		CreateDropDownMenuItem("Manage Form Files", "manageformfiles"),
 		CreateDropDownMenuItem("Manage Marketing Files", "managemarketingfiles"),
+		CreateDropDownMenuItem("Manage Pricebook Files", "managepricebookfiles"),
 		CreateDropDownMenuItem("Manage Page Help Text", "pagehelp"),
 		CreateDropDownMenuItem("Connected Users", "connectedusers"),
 		CreateDropDownMenuItem("Manage Excluded Hold Code", "manageexcludedholdcodes"),
@@ -365,7 +366,10 @@
 				Navigation.NavigateTo("/admin/forms-files");
 				break;
 			case "managemarketingfiles":
-				Navigation.NavigateTo("/admin/marketingfiles");
+				Navigation.NavigateTo("/admin/marketing-files");
+				break;
+			case "managepricebookfiles":
+				Navigation.NavigateTo("/admin/pricebook-files");
 				break;
 			case "manageexcludedholdcodes":
 				Navigation.NavigateTo("/admin/credit-hold-codes");

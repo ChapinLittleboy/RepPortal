@@ -1,13 +1,13 @@
-@page "/admin/marketing-files"
+@page "/admin/pricebook-files"
 @attribute [Authorize(Roles = "Administrator,SuperUser")]
-@inject IAdminMarketingFileService AdminMarketingFileService
+@inject IAdminPriceBookFileService AdminPriceBookFileService
 @inject RepPortal.Services.IActivityLogService ActivityLogService
 
-<PageTitle>Manage Marketing Files</PageTitle>
+<PageTitle>Manage Pricebook Files</PageTitle>
 
-<h3>Manage Marketing Files</h3>
+<h3>Manage Pricebook Files</h3>
 
-<p class="text-muted">Upload files into the marketing folders defined on the folder admin page, or archive files so they no longer appear on the Marketing download page.</p>
+<p class="text-muted">Upload files into the pricebook folders defined on the folder admin page, or archive files so they no longer appear on the Item Pricing page. Note: only .xlsx files are displayed to reps on the Item Pricing page.</p>
 
 <div class="row g-3 align-items-end mb-3">
     <div class="col-md-5">
@@ -23,7 +23,7 @@
     <div class="col-md-7">
         @if (!string.IsNullOrWhiteSpace(SelectedFolderPath))
         {
-            <div class="small text-muted">Files uploaded are immediately available on the Marketing Download page</div>
+            <div class="small text-muted">Files uploaded are immediately available on the Item Pricing page</div>
         }
     </div>
 </div>
@@ -81,7 +81,13 @@
                         @foreach (var file in CurrentFiles)
                         {
                             <tr>
-                                <td>@file.Name</td>
+                                <td>
+                                    @file.Name
+                                    @if (!file.Name.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="badge text-bg-warning ms-2" title="Only .xlsx files appear on the Item Pricing page">Not shown to reps</span>
+                                    }
+                                </td>
                                 <td>@file.LastModifiedText</td>
                                 <td>@file.SizeText</td>
                                 <td class="text-end">
@@ -118,8 +124,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Folders = await AdminMarketingFileService.GetFoldersAsync();
-        await ActivityLogService.LogReportUsageActivityAsync("Admin Marketing Files", "");
+        Folders = await AdminPriceBookFileService.GetFoldersAsync();
+        await ActivityLogService.LogReportUsageActivityAsync("Admin Pricebook Files", "");
     }
 
     private async Task OnSelectedFolderChangedAsync()
@@ -137,7 +143,7 @@
             return;
         }
 
-        CurrentFiles = await AdminMarketingFileService.GetFilesAsync(SelectedFolderPath);
+        CurrentFiles = await AdminPriceBookFileService.GetFilesAsync(SelectedFolderPath);
     }
 
     private void OnFilesSelected(InputFileChangeEventArgs args)
@@ -156,12 +162,12 @@
         try
         {
             IsBusy = true;
-            var replacedFiles = await AdminMarketingFileService.SaveFilesAsync(SelectedFolderPath, PendingUploadFiles, MaxUploadBytes);
+            var replacedFiles = await AdminPriceBookFileService.SaveFilesAsync(SelectedFolderPath, PendingUploadFiles, MaxUploadBytes);
             await RefreshFilesAsync();
             var uploadedNames = string.Join(", ", PendingUploadFiles.Select(file => file.Name));
             var replacedNames = replacedFiles.Any() ? $"; Replaced: {string.Join(", ", replacedFiles)}" : string.Empty;
             await ActivityLogService.LogReportUsageActivityAsync(
-                "Admin Marketing Files Upload",
+                "Admin Pricebook Files Upload",
                 $"Folder: {SelectedFolderPath}; Files: {uploadedNames}{replacedNames}");
 
             if (replacedFiles.Any())
@@ -193,10 +199,10 @@
         try
         {
             IsBusy = true;
-            await AdminMarketingFileService.ArchiveFileAsync(SelectedFolderPath, file.RelativePath);
+            await AdminPriceBookFileService.ArchiveFileAsync(SelectedFolderPath, file.RelativePath);
             await RefreshFilesAsync();
             await ActivityLogService.LogReportUsageActivityAsync(
-                "Admin Marketing Files Archive",
+                "Admin Pricebook Files Archive",
                 $"Folder: {SelectedFolderPath}; File: {file.RelativePath}");
             StatusCssClass = "alert-success";
             StatusMessage = $"{file.Name} was moved to the Archive folder.";
