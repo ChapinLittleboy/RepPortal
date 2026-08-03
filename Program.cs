@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using RepPortal.Areas.Identity;
 using RepPortal.Data;
 using RepPortal.Models;
@@ -122,8 +123,10 @@ builder.Services.AddSignalR(o =>
     o.KeepAliveInterval = TimeSpan.FromSeconds(10);   // default 15s
     o.ClientTimeoutInterval = TimeSpan.FromSeconds(60); // default 30s
 });
-builder.Services.Configure<CsiOptions>(
-    builder.Configuration.GetSection("CSI"));
+builder.Services.AddOptions<CsiOptions>()
+    .Bind(builder.Configuration.GetSection("CSI"))
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<CsiOptions>, CsiOptionsValidator>();
 builder.Services.Configure<SalesReportOptions>(
     builder.Configuration.GetSection("SalesReports"));
 
@@ -131,11 +134,9 @@ builder.Services.AddScoped<CreditHoldExclusionService>();
 builder.Services.AddScoped<UserManager<ApplicationUser>>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<ICustomerLookupService>(sp => sp.GetRequiredService<CustomerService>());
-builder.Services.AddScoped<IIdoService, IdoService>();
 // Core: auth-free — used by both pages and jobs
 builder.Services.AddScoped<ISalesDataService, SalesDataService>();
 //builder.Services.AddScoped<SalesService>();
-builder.Services.AddScoped<IIdoService, IdoService>();
 builder.Services.AddScoped<ISalesService, SalesService>();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddHttpContextAccessor();
@@ -146,6 +147,8 @@ builder.Services.AddScoped<SignInManager<ApplicationUser>, CustomSignInManager>(
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 
+builder.Services.AddHttpClient(IonTokenProvider.HttpClientName);
+builder.Services.AddSingleton<IIonTokenProvider, IonTokenProvider>();
 builder.Services.AddHttpClient<ICsiRestClient, CsiRestClient>()
     .AddHttpMessageHandler<CsiLoggingHandler>();
 
@@ -157,7 +160,6 @@ builder.Services.AddScoped<PcfPdfAssetResolver>();
 builder.Services.AddScoped<PcfService>();
 builder.Services.AddScoped<TitleService>();
 builder.Services.AddScoped<ExportService>();
-builder.Services.AddScoped<IIdoService, IdoService>();
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<IDownloadPriceBookService, DownloadPriceBookService>();
 builder.Services.AddScoped<IFormsDownloadService, DownloadFormsService>();

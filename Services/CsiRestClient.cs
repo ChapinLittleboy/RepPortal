@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+using System.Net;
+using System.Net.Http.Headers;
 using Microsoft.Extensions.Options;
 using RepPortal.Models;
 
@@ -6,86 +7,122 @@ namespace RepPortal.Services;
 
 public interface ICsiRestClient
 {
-    Task<string> GetAsync(string relativeUrl, IDictionary<string, string>? query = null);
-    Task<string> GetAsync(string relativeUrl, IDictionary<string, string>? query, string authorizationOverride);
+    Task<string> GetAsync(
+        string relativeUrl,
+        IDictionary<string, string>? query = null,
+        string site = "BAT",
+        CancellationToken cancellationToken = default);
 }
 
-public class CsiRestClient : ICsiRestClient
+public sealed class CsiRestClient : ICsiRestClient
 {
     private readonly HttpClient _httpClient;
+    private readonly IIonTokenProvider _tokenProvider;
+    private readonly CsiOptions _options;
 
-    public CsiRestClient(HttpClient httpClient, IOptions<CsiOptions> options)
+    public CsiRestClient(
+        HttpClient httpClient,
+        IIonTokenProvider tokenProvider,
+        IOptions<CsiOptions> options)
     {
         _httpClient = httpClient;
-
-        _httpClient.BaseAddress = new Uri(options.Value.BaseUrl);
-
-        _httpClient.DefaultRequestHeaders.Remove("Authorization");
-        _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(
-            "Authorization",
-            options.Value.Authorization);
-        _httpClient.DefaultRequestHeaders.TryAddWithoutValidation(
-            "X-Infor-MongooseSessionType",
-            "CustomUser");
+        _tokenProvider = tokenProvider;
+        _options = options.Value;
     }
 
-    public Task<string> GetAsync(
+    public async Task<string> GetAsync(
         string relativeUrl,
-        IDictionary<string, string>? query = null)
-        => GetAsyncCore(relativeUrl, query, authorizationOverride: null);
-
-    public Task<string> GetAsync(
-        string relativeUrl,
-        IDictionary<string, string>? query,
-        string authorizationOverride)
-        => GetAsyncCore(relativeUrl, query, authorizationOverride);
-
-    private async Task<string> GetAsyncCore(
-        string relativeUrl,
-        IDictionary<string, string>? query,
-        string? authorizationOverride)
+        IDictionary<string, string>? query = null,
+        string site = "BAT",
+        CancellationToken cancellationToken = default)
     {
-        var baseUrl = _httpClient.BaseAddress!.ToString().TrimEnd('/');
-        var relUrl = relativeUrl.TrimStart('/');
-
-        var url = $"{baseUrl}/{relUrl}";
-
-        if (query is { Count: > 0 })
+        if (!_options.Configurations.TryGetValue(site, out var mongooseConfiguration)
+            || string.IsNullOrWhiteSpace(mongooseConfiguration))
         {
-            var qs = string.Join("&",
-                query.Select(kvp =>
-                    $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value.Trim())}"));
-
-            url = $"{url}?{qs}";
+            throw new InvalidOperationException(
+                $"No CSI Mongoose configuration is configured for site '{site}'.");
         }
 
-        if (!string.IsNullOrWhiteSpace(authorizationOverride))
+        var url = BuildUrl(relativeUrl, query);
+        var retriedUnauthorized = false;
+        var retriedThrottled = false;
+
+        while (true)
         {
+            var token = await _tokenProvider.GetAccessTokenAsync(cancellationToken);
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.TryAddWithoutValidation("Authorization", authorizationOverride);
-            using var overrideResponse = await _httpClient.SendAsync(request);
-            var overrideContent = await overrideResponse.Content.ReadAsStringAsync();
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.TryAddWithoutValidation("X-Infor-MongooseConfig", mongooseConfiguration);
 
-            if (overrideContent.StartsWith("<", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException($"MGRest returned HTML. URL: {url}");
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
 
-            overrideResponse.EnsureSuccessStatusCode();
-            return overrideContent;
+            if (response.StatusCode == HttpStatusCode.Unauthorized && !retriedUnauthorized)
+            {
+                retriedUnauthorized = true;
+                _tokenProvider.Invalidate();
+                continue;
+            }
+
+            if ((int)response.StatusCode == 429 && !retriedThrottled)
+            {
+                retriedThrottled = true;
+                var delay = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(1);
+                await Task.Delay(delay > TimeSpan.FromSeconds(5) ? TimeSpan.FromSeconds(5) : delay,
+                    cancellationToken);
+                continue;
+            }
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (LooksLikeHtml(content))
+                throw new InvalidOperationException(
+                    $"ION Gateway returned HTML instead of an MGRest response. URL: {url}");
+
+            ThrowForUnsuccessfulStatus(response, url);
+            return content;
         }
+    }
 
-        using var response = await _httpClient.GetAsync(url);
-        var content = await response.Content.ReadAsStringAsync();
+    private string BuildUrl(string relativeUrl, IDictionary<string, string>? query)
+    {
+        var baseUrl =
+            $"{_options.IonApiUrl.TrimEnd('/')}/{_options.TenantId.Trim('/')}/CSI/IDORequestService/MGRestService.svc";
+        var url = $"{baseUrl}/{relativeUrl.TrimStart('/')}";
 
-        if (content.StartsWith("<", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"MGRest returned HTML. URL: {url}");
+        if (query is not { Count: > 0 })
+            return url;
 
-        response.EnsureSuccessStatusCode();
+        var queryString = string.Join("&", query.Select(kvp =>
+            $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value.Trim())}"));
+        return $"{url}?{queryString}";
+    }
 
-        return content;
+    private static bool LooksLikeHtml(string content) =>
+        content.TrimStart().StartsWith("<", StringComparison.OrdinalIgnoreCase);
+
+    private static void ThrowForUnsuccessfulStatus(HttpResponseMessage response, string url)
+    {
+        if (response.IsSuccessStatusCode)
+            return;
+
+        var status = (int)response.StatusCode;
+        var message = response.StatusCode switch
+        {
+            HttpStatusCode.Unauthorized =>
+                "ION authentication was rejected after refreshing the access token.",
+            HttpStatusCode.Forbidden =>
+                "ION denied the request. Verify the ION API suite and Mongoose permissions.",
+            HttpStatusCode.NotFound =>
+                "ION could not find the gateway route or requested custom IDO.",
+            _ when status == 429 =>
+                "ION throttled the request after one bounded retry.",
+            _ when status >= 500 =>
+                "ION Gateway or the SyteLine service returned a server error.",
+            _ => $"ION API request failed with HTTP {status} {response.ReasonPhrase}."
+        };
+
+        throw new HttpRequestException($"{message} URL: {url}", null, response.StatusCode);
     }
 }
-
-
 
 public class MgRestResponse<T>
 {
@@ -94,6 +131,7 @@ public class MgRestResponse<T>
     public string? Bookmark { get; set; }
     public List<T> Items { get; set; } = [];
 }
+
 public class MgNameValue
 {
     public string Name { get; set; } = "";

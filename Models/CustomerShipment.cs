@@ -67,7 +67,7 @@ public class CustomerShipment
     // Leaving it unmapped for now.
     public string? ShipToState { get; set; }
 
-    [CsiField("Uf_SalesRegion")]
+    [CsiField("cusUf_SalesRegion")]
     public string? ShipToRegion { get; set; }
 
     // ===== Shipping / Logistics =====
@@ -101,7 +101,7 @@ public class CustomerShipment
     [Column("shipment_id")]
     public int ShipmentID { get; set; }
 
-    [CsiField("BolNumber")]
+    [CsiField("ue_BolNumber")]
     public int? BolNumber { get; set; }
 
     // ===== Unused / not in SLCoShips list =====

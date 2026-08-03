@@ -71,8 +71,8 @@ public class IdoService : IIdoService
         {
             var custQuery = new Dictionary<string, string>
             {
-                ["props"] = "CustNum,CustSeq,Uf_SalesRegion",
-                ["filter"] = In("Uf_SalesRegion", allowedRegions),
+                ["props"] = "CustNum,CustSeq,cusUf_SalesRegion",
+                ["filter"] = In("cusUf_SalesRegion", allowedRegions),
                 ["rowcap"] = "0",
                 ["loadtype"] = "FIRST",
                 ["bookmark"] = "0",
@@ -89,7 +89,7 @@ public class IdoService : IIdoService
                 {
                     var cn = GetCell(row, "CustNum")?.Trim();
                     var cs = GetCell(row, "CustSeq")?.Trim() ?? "0";
-                    var region = GetCell(row, "Uf_SalesRegion")?.Trim();
+                    var region = GetCell(row, "cusUf_SalesRegion")?.Trim();
 
                     if (string.IsNullOrWhiteSpace(cn))
                         continue;
@@ -110,7 +110,7 @@ public class IdoService : IIdoService
 
         var slQuery = new Dictionary<string, string>
         {
-            ["props"] = "CoCustNum,CoCustSeq,CadrName,CoCustPo,CoNum,CoLine,CoiItem,CoiDescription,CoiDueDate,ShipDate,QtyShipped,DerNetPrice,BolNumber",
+            ["props"] = "CoCustNum,CoCustSeq,CadrName,CoCustPo,CoNum,CoLine,CoiItem,CoiDescription,CoiDueDate,ShipDate,QtyShipped,DerNetPrice,ue_BolNumber",
             ["filter"] = string.Join(" AND ", slFilters),
             ["rowcap"] = "0",
             ["loadtype"] = "FIRST",
@@ -382,17 +382,17 @@ public class IdoService : IIdoService
             ["readonly"] = "1"
         };
 
-        var siteAuths = new List<(string Site, string? AuthOverride)> { ("BAT", null) };
-        if (!string.IsNullOrWhiteSpace(_csiOptions.KentAuthorization))
-            siteAuths.Add(("KENT", _csiOptions.KentAuthorization));
+        var sites = new List<string> { "BAT" };
+        if (_csiOptions.Configurations.TryGetValue("KENT", out var kentConfiguration)
+            && !string.IsNullOrWhiteSpace(kentConfiguration))
+            sites.Add("KENT");
 
         var lines = new List<InvLineRawRow>();
 
-        foreach (var (site, authOverride) in siteAuths)
+        foreach (var site in sites)
         {
-            string siteJson = authOverride != null
-                ? await _csiRestClient.GetAsync("json/Chap_InvoiceLines/adv", query, authOverride)
-                : await _csiRestClient.GetAsync("json/Chap_InvoiceLines/adv", query);
+            string siteJson = await _csiRestClient.GetAsync(
+                "json/Chap_InvoiceLines/adv", query, site);
 
             var siteResponse = Deserialize(siteJson);
 
@@ -402,12 +402,13 @@ public class IdoService : IIdoService
                     .Select(MapRow<InvLineRawRow>)
                     .Where(l => l.InvDate.HasValue));
             }
-            else if (authOverride != null)
+            else if (site.Equals("KENT", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogInformation(
                     "Chap_InvoiceLines not available on {Site} ({Msg}); falling back to SLInvHdrs + SLInvItemAlls",
                     site, siteResponse.Message);
-                lines.AddRange(await FetchKentLinesViaStandardIdosAsync(repCode, reportPeriod.HistoryStart, reportEndDate, authOverride));
+                lines.AddRange(await FetchKentLinesViaStandardIdosAsync(
+                    repCode, reportPeriod.HistoryStart, reportEndDate));
             }
             else
             {
@@ -433,7 +434,7 @@ public class IdoService : IIdoService
         {
             var custQuery = new Dictionary<string, string>
             {
-                ["props"] = "CustNum,CustSeq,Name,Uf_SalesRegion,CorpCust",
+                ["props"] = "CustNum,CustSeq,Name,cusUf_SalesRegion,CorpCust",
                 ["filter"] = $"CustSeq = 0 AND {In("CustNum", uniqueCustNums)}",
                 ["rowcap"] = "0",
                 ["loadtype"] = "FIRST",
@@ -659,7 +660,7 @@ public class IdoService : IIdoService
 
         var custRegionQuery = new Dictionary<string, string>
         {
-            ["props"] = "CustNum,CustSeq,Uf_SalesRegion,CorpCust",
+            ["props"] = "CustNum,CustSeq,cusUf_SalesRegion,CorpCust",
             ["filter"] = In("CustNum", custNums),
             ["rowcap"] = "0",
             ["loadtype"] = "FIRST",
@@ -676,7 +677,7 @@ public class IdoService : IIdoService
             {
                 var cn = GetCell(row, "CustNum")?.Trim();
                 var cs = GetCell(row, "CustSeq")?.Trim() ?? "0";
-                var region = GetCell(row, "Uf_SalesRegion")?.Trim();
+                var region = GetCell(row, "cusUf_SalesRegion")?.Trim();
                 var corpCust = GetCell(row, "CorpCust")?.Trim();
                 if (!string.IsNullOrWhiteSpace(cn) && int.TryParse(cs, out int custSeq))
                 {
@@ -773,7 +774,7 @@ public class IdoService : IIdoService
 
         var custQuery = new Dictionary<string, string>
         {
-            ["props"] = "CustNum,CustSeq,Slsman,Uf_SalesRegion,CorpCust",
+            ["props"] = "CustNum,CustSeq,Slsman,cusUf_SalesRegion,CorpCust",
             ["filter"] = Eq("Slsman", repCode),
             ["rowcap"] = "0",
             ["loadtype"] = "FIRST",
@@ -790,7 +791,7 @@ public class IdoService : IIdoService
             var cn = GetCell(row, "CustNum");
             var cs = GetCell(row, "CustSeq")?.Trim() ?? "0";
             var slsman = GetCell(row, "Slsman")?.Trim();
-            var region = GetCell(row, "Uf_SalesRegion")?.Trim();
+            var region = GetCell(row, "cusUf_SalesRegion")?.Trim();
             var corpCust = GetCell(row, "CorpCust")?.Trim();
             int.TryParse(cs, out int custSeq);
             return new
@@ -834,12 +835,13 @@ public class IdoService : IIdoService
         var custNums = customers.Select(c => c.CustNum!).Distinct().ToList();
         const int custBatchSize = 30;
 
-        var siteAuths = new List<(string Site, string? AuthOverride)> { ("BAT", null) };
-        if (!string.IsNullOrWhiteSpace(_csiOptions.KentAuthorization))
-            siteAuths.Add(("KENT", _csiOptions.KentAuthorization));
+        var sites = new List<string> { "BAT" };
+        if (_csiOptions.Configurations.TryGetValue("KENT", out var kentConfiguration)
+            && !string.IsNullOrWhiteSpace(kentConfiguration))
+            sites.Add("KENT");
 
         var headers = new List<(string Site, InvHdrInfo Hdr)>();
-        foreach (var (site, authOverride) in siteAuths)
+        foreach (var site in sites)
         {
             foreach (var batch in custNums.Chunk(custBatchSize))
             {
@@ -853,9 +855,8 @@ public class IdoService : IIdoService
                     ["readonly"] = "1"
                 };
 
-                string hdrJson = authOverride != null
-                    ? await _csiRestClient.GetAsync("json/SLInvHdrs/adv", hdrQuery, authOverride)
-                    : await _csiRestClient.GetAsync("json/SLInvHdrs/adv", hdrQuery);
+                string hdrJson = await _csiRestClient.GetAsync(
+                    "json/SLInvHdrs/adv", hdrQuery, site);
 
                 var hdrResponse = Deserialize(hdrJson);
                 if (hdrResponse.MessageCode != 0)
@@ -869,7 +870,7 @@ public class IdoService : IIdoService
             return new List<Dictionary<string, object>>();
 
         var invoiceItems = new List<(string Site, InvItemInfo Item)>();
-        foreach (var (site, authOverride) in siteAuths)
+        foreach (var site in sites)
         {
             var siteInvNums = headers
                 .Where(h => h.Site == site && !string.IsNullOrWhiteSpace(h.Hdr.InvNum))
@@ -889,9 +890,8 @@ public class IdoService : IIdoService
                     ["readonly"] = "1"
                 };
 
-                string itemJson = authOverride != null
-                    ? await _csiRestClient.GetAsync("json/SLInvItemAlls/adv", itemQuery, authOverride)
-                    : await _csiRestClient.GetAsync("json/SLInvItemAlls/adv", itemQuery);
+                string itemJson = await _csiRestClient.GetAsync(
+                    "json/SLInvItemAlls/adv", itemQuery, site);
 
                 var itemResponse = Deserialize(itemJson);
                 if (itemResponse.MessageCode != 0)
@@ -1002,8 +1002,7 @@ public class IdoService : IIdoService
     private async Task<List<InvLineRawRow>> FetchKentLinesViaStandardIdosAsync(
         string repCode,
         DateTime dateFrom,
-        DateTime dateTo,
-        string kentAuth)
+        DateTime dateTo)
     {
         var hdrQuery = new Dictionary<string, string>
         {
@@ -1015,7 +1014,8 @@ public class IdoService : IIdoService
             ["readonly"] = "1"
         };
 
-        var hdrResponse = Deserialize(await _csiRestClient.GetAsync("json/SLInvHdrs/adv", hdrQuery, kentAuth));
+        var hdrResponse = Deserialize(await _csiRestClient.GetAsync(
+            "json/SLInvHdrs/adv", hdrQuery, "KENT"));
         if (hdrResponse.MessageCode != 0)
         {
             _logger.LogWarning("SLInvHdrs (KENT fallback) failed: {Msg}", hdrResponse.Message);
@@ -1047,7 +1047,8 @@ public class IdoService : IIdoService
                 ["readonly"] = "1"
             };
 
-            var itemResponse = Deserialize(await _csiRestClient.GetAsync("json/SLInvItemAlls/adv", itemQuery, kentAuth));
+            var itemResponse = Deserialize(await _csiRestClient.GetAsync(
+                "json/SLInvItemAlls/adv", itemQuery, "KENT"));
             if (itemResponse.MessageCode == 0)
                 rawItems.AddRange(itemResponse.Items.Select(MapRow<KentInvItemRaw>));
             else
@@ -1166,8 +1167,8 @@ public class IdoService : IIdoService
         // Line items + order/customer fields from SLCoShips
         var shipQuery = new Dictionary<string, string>
         {
-            ["props"] = "BolNumber,CoNum,CoCustNum,CoCustPo,CoLine,CoiItem,CoiDescription,CoiUM,QtyShipped",
-            ["filter"] = Eq("BolNumber", packNum),
+            ["props"] = "ue_BolNumber,CoNum,CoCustNum,CoCustPo,CoLine,CoiItem,CoiDescription,CoiUM,QtyShipped",
+            ["filter"] = Eq("ue_BolNumber", packNum),
             ["rowcap"] = "0",
             ["loadtype"] = "FIRST",
             ["bookmark"] = "0",
@@ -1238,7 +1239,7 @@ public class IdoService : IIdoService
         // Fetch all shipment lines for this order in one query
         var shipQuery = new Dictionary<string, string>
         {
-            ["props"] = "BolNumber,CoNum,CoCustNum,CoCustPo,CoLine,CoiItem,CoiDescription,CoiUM,QtyShipped",
+            ["props"] = "ue_BolNumber,CoNum,CoCustNum,CoCustPo,CoLine,CoiItem,CoiDescription,CoiUM,QtyShipped",
             ["filter"] = Eq("CoNum", coNum),
             ["rowcap"] = "0",
             ["loadtype"] = "FIRST",
@@ -1593,7 +1594,7 @@ public class IdoService : IIdoService
         [CsiField("CustNum")] public string? CustNum { get; set; }
         [CsiField("CustSeq")] public int CustSeq { get; set; }
         [CsiField("Name")] public string? Name { get; set; }
-        [CsiField("Uf_SalesRegion")] public string? UfSalesRegion { get; set; }
+        [CsiField("cusUf_SalesRegion")] public string? UfSalesRegion { get; set; }
         [CsiField("CorpCust")] public string? CorpCust { get; set; }
     }
 
@@ -1701,7 +1702,7 @@ public class IdoService : IIdoService
 
     private sealed class PackingListShipRow
     {
-        [CsiField("BolNumber")]      public string? BolNumber { get; set; }
+        [CsiField("ue_BolNumber")]   public string? BolNumber { get; set; }
         [CsiField("CoNum")]          public string? CoNum { get; set; }
         [CsiField("CoCustNum")]      public string? CustNum { get; set; }
         [CsiField("CoCustPo")]       public string? CustPo { get; set; }
