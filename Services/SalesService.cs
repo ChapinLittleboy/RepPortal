@@ -783,8 +783,8 @@ public class SalesService : ISalesService
     }
 
     /// <summary>
-    /// Fetches shipments from Syteline APIs (SLCoShips + AitSsBOLs) and merges BOL details
-    /// onto the shipment records. Link: SLCoShips.ue_BolNumber = AitSsBOLs.ShipmentId.
+    /// Fetches shipments from Syteline APIs (SLCoShips + ue_SS_Bols) and merges BOL details
+    /// onto the shipment records. Link: SLCoShips.ue_BolNumber = ue_SS_Bols.ShipmentId.
     /// </summary>
     public async Task<List<CustomerShipment>> GetShipmentsDataApiAsync(ShipmentsParameters parameters)
     {

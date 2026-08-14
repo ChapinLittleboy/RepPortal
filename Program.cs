@@ -152,6 +152,7 @@ builder.Services.AddSingleton<IIonTokenProvider, IonTokenProvider>();
 builder.Services.AddHttpClient<ICsiRestClient, CsiRestClient>()
     .AddHttpMessageHandler<CsiLoggingHandler>();
 
+builder.Services.AddScoped<IChapSureShipHistoryApiClient, ChapSureShipHistoryApiClient>();
 builder.Services.AddScoped<IIdoService, IdoService>();
 
 

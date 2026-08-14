@@ -121,6 +121,117 @@ public class CsiRestClientTests
         Assert.Equal(1, tokenProvider.InvalidationCount);
         Assert.Equal(2, tokenProvider.GetTokenCount);
     }
+
+    [Fact]
+    public async Task PutJsonAsync_SendsJsonThroughSelectedConfiguration()
+    {
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"MessageCode\":0}")
+        });
+        var client = new CsiRestClient(new HttpClient(handler),
+            new StubTokenProvider("token"), Options.Create(IonTokenProviderTests.CreateOptions()));
+
+        await client.PutJsonAsync("json/TestIdo/updateitems", "[{\"Action\":1}]", site: "KENT");
+
+        Assert.Equal(HttpMethod.Put, handler.LastRequest!.Method);
+        Assert.Equal("application/json", handler.LastRequest.ContentType);
+        Assert.Equal("[{\"Action\":1}]", handler.LastRequest.Body);
+        Assert.Equal("TRN KENT", handler.LastRequest.MongooseConfiguration);
+    }
+}
+
+public class ChapSureShipHistoryApiClientTests
+{
+    [Fact]
+    public async Task GetHeadersAsync_MapsUploadedHistoryAndScopesBySite()
+    {
+        var rest = new StubCsiRestClient
+        {
+            GetResponse = """
+                {"MessageCode":0,"Items":[[
+                  {"Name":"SiteRef","Value":"BAT"},
+                  {"Name":"ShipmentId","Value":"600001"},
+                  {"Name":"ShipDate","Value":"20260812"},
+                  {"Name":"CarrierCode","Value":"UPS"},
+                  {"Name":"ServiceType","Value":"Ground"}
+                ]]}
+                """
+        };
+        var client = new ChapSureShipHistoryApiClient(rest);
+
+        var rows = await client.GetHeadersAsync("BAT", [600001]);
+
+        var row = Assert.Single(rows);
+        Assert.Equal(600001, row.ShipmentId);
+        Assert.Equal(new DateTime(2026, 8, 12), row.ShipDate);
+        Assert.Equal("UPS", row.CarrierCode);
+        Assert.Equal("Ground", row.ServiceType);
+        Assert.Equal("json/ue_Chap_SS_History_BOLs/adv", rest.RelativeUrl);
+        Assert.Equal("BAT", rest.Site);
+        Assert.Contains("SiteRef = 'BAT'", rest.Query!["filter"]);
+        Assert.Contains("ShipmentId IN (600001)", rest.Query["filter"]);
+    }
+
+    [Fact]
+    public async Task GetShipmentIdsByOrderAsync_EscapesOrderAndReturnsDistinctIds()
+    {
+        var rest = new StubCsiRestClient
+        {
+            GetResponse = """
+                {"MessageCode":0,"Items":[
+                  [{"Name":"ShipmentId","Value":"700001"},{"Name":"OrderNum","Value":"S'100"}],
+                  [{"Name":"ShipmentId","Value":"700001"},{"Name":"OrderNum","Value":"S'100"}],
+                  [{"Name":"ShipmentId","Value":"700002"},{"Name":"OrderNum","Value":"S'100"}]
+                ]}
+                """
+        };
+        var client = new ChapSureShipHistoryApiClient(rest);
+
+        var ids = await client.GetShipmentIdsByOrderAsync("KENT", "S'100");
+
+        Assert.Equal([700001, 700002], ids);
+        Assert.Equal("KENT", rest.Site);
+        Assert.Contains("OrderNum IN ('S''100')", rest.Query!["filter"]);
+    }
+
+    [Fact]
+    public async Task InsertHeadersAsync_UsesInsertActionAndOmitsNullProperties()
+    {
+        var rest = new StubCsiRestClient();
+        var client = new ChapSureShipHistoryApiClient(rest);
+
+        await client.InsertHeadersAsync("BAT",
+        [
+            new ChapHistoryHeader("BAT", 600000, new DateTime(2025, 12, 1),
+                "C100", 0, "MAIN", null, "UPS", "1Z", null, "Ground", "P", null)
+        ]);
+
+        Assert.Equal("json/ue_Chap_SS_History_BOLs/additems", rest.RelativeUrl);
+        Assert.Equal("BAT", rest.Site);
+        using var json = System.Text.Json.JsonDocument.Parse(rest.Body!);
+        var item = json.RootElement[0];
+        Assert.Equal(1, item.GetProperty("Action").GetInt32());
+        Assert.Equal("PBT=[ue_Chap_SS_History_BOLs]", item.GetProperty("ItemId").GetString());
+        Assert.False(item.TryGetProperty("ItemNo", out _));
+        Assert.False(item.TryGetProperty("UpdateLocking", out _));
+        var properties = item.GetProperty("Properties").EnumerateArray().ToArray();
+        Assert.Contains(properties, property => property.GetProperty("Name").GetString() == "ShipmentId"
+            && property.GetProperty("Value").GetString() == "600000");
+        Assert.DoesNotContain(properties, property => property.GetProperty("Name").GetString() == "CarrierCode");
+    }
+
+    [Fact]
+    public async Task InsertOrdersAsync_ThrowsWhenMgRestReportsFailure()
+    {
+        var rest = new StubCsiRestClient { PutResponse = "{\"MessageCode\":5,\"Message\":\"bad row\"}" };
+        var client = new ChapSureShipHistoryApiClient(rest);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            client.InsertOrdersAsync("BAT", [new ChapHistoryOrder("BAT", 1, "S1")]));
+
+        Assert.Contains("bad row", exception.Message);
+    }
 }
 
 public class CsiOptionsValidatorTests
@@ -167,8 +278,10 @@ internal sealed class StubHttpClientFactory(HttpClient client) : IHttpClientFact
 
 internal sealed record RecordedRequest(
     string Url,
+    HttpMethod Method,
     AuthenticationHeaderValue? Authorization,
     string? MongooseConfiguration,
+    string? ContentType,
     string Body);
 
 internal sealed class RecordingHandler : HttpMessageHandler
@@ -199,11 +312,52 @@ internal sealed class RecordingHandler : HttpMessageHandler
             : await request.Content.ReadAsStringAsync(cancellationToken);
         LastRequest = new RecordedRequest(
             request.RequestUri!.OriginalString,
+            request.Method,
             request.Headers.Authorization,
             request.Headers.TryGetValues("X-Infor-MongooseConfig", out var values)
                 ? values.FirstOrDefault()
                 : null,
+            request.Content?.Headers.ContentType?.MediaType,
             body);
         return await _responseFactory(call);
+    }
+}
+
+internal sealed class StubCsiRestClient : ICsiRestClient
+{
+    public string PutResponse { get; init; } = "{\"MessageCode\":0}";
+    public string GetResponse { get; init; } = "{\"MessageCode\":0,\"Items\":[]}";
+    public string? RelativeUrl { get; private set; }
+    public string? Site { get; private set; }
+    public string? Body { get; private set; }
+    public IDictionary<string, string>? Query { get; private set; }
+
+    public Task<string> GetAsync(string relativeUrl, IDictionary<string, string>? query = null,
+        string site = "BAT", CancellationToken cancellationToken = default)
+    {
+        RelativeUrl = relativeUrl;
+        Site = site;
+        Query = query;
+        return Task.FromResult(GetResponse);
+    }
+
+    public Task<string> PutJsonAsync(string relativeUrl, string json,
+        IDictionary<string, string>? query = null, string site = "BAT",
+        CancellationToken cancellationToken = default)
+    {
+        RelativeUrl = relativeUrl;
+        Site = site;
+        Body = json;
+        return Task.FromResult(PutResponse);
+    }
+
+    public Task<string> PostJsonAsync(string relativeUrl, string json,
+        IDictionary<string, string>? query = null, string site = "BAT",
+        CancellationToken cancellationToken = default)
+    {
+        RelativeUrl = relativeUrl;
+        Site = site;
+        Body = json;
+        return Task.FromResult(PutResponse);
     }
 }

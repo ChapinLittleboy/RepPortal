@@ -18,7 +18,7 @@ public class Customer
     [CsiField("CustType")]
     public string? BuyingGroup { get; set; }
 
-    [CsiField("CustTypeDescription")]
+    [CsiField("ue_CustTypeDescription")]
     public string? BuyingGroupDescription { get; set; }
 
 

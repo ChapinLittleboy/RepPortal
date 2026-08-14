@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text;
 using Microsoft.Extensions.Options;
 using RepPortal.Models;
 
@@ -9,6 +10,20 @@ public interface ICsiRestClient
 {
     Task<string> GetAsync(
         string relativeUrl,
+        IDictionary<string, string>? query = null,
+        string site = "BAT",
+        CancellationToken cancellationToken = default);
+
+    Task<string> PutJsonAsync(
+        string relativeUrl,
+        string json,
+        IDictionary<string, string>? query = null,
+        string site = "BAT",
+        CancellationToken cancellationToken = default);
+
+    Task<string> PostJsonAsync(
+        string relativeUrl,
+        string json,
         IDictionary<string, string>? query = null,
         string site = "BAT",
         CancellationToken cancellationToken = default);
@@ -35,6 +50,31 @@ public sealed class CsiRestClient : ICsiRestClient
         IDictionary<string, string>? query = null,
         string site = "BAT",
         CancellationToken cancellationToken = default)
+        => await SendAsync(HttpMethod.Get, relativeUrl, null, query, site, cancellationToken);
+
+    public async Task<string> PutJsonAsync(
+        string relativeUrl,
+        string json,
+        IDictionary<string, string>? query = null,
+        string site = "BAT",
+        CancellationToken cancellationToken = default)
+        => await SendAsync(HttpMethod.Put, relativeUrl, json, query, site, cancellationToken);
+
+    public async Task<string> PostJsonAsync(
+        string relativeUrl,
+        string json,
+        IDictionary<string, string>? query = null,
+        string site = "BAT",
+        CancellationToken cancellationToken = default)
+        => await SendAsync(HttpMethod.Post, relativeUrl, json, query, site, cancellationToken);
+
+    private async Task<string> SendAsync(
+        HttpMethod method,
+        string relativeUrl,
+        string? json,
+        IDictionary<string, string>? query,
+        string site,
+        CancellationToken cancellationToken)
     {
         if (!_options.Configurations.TryGetValue(site, out var mongooseConfiguration)
             || string.IsNullOrWhiteSpace(mongooseConfiguration))
@@ -50,9 +90,12 @@ public sealed class CsiRestClient : ICsiRestClient
         while (true)
         {
             var token = await _tokenProvider.GetAccessTokenAsync(cancellationToken);
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using var request = new HttpRequestMessage(method, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             request.Headers.TryAddWithoutValidation("X-Infor-MongooseConfig", mongooseConfiguration);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            if (json is not null)
+                request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
             using var response = await _httpClient.SendAsync(request, cancellationToken);
 
@@ -74,8 +117,14 @@ public sealed class CsiRestClient : ICsiRestClient
 
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
             if (LooksLikeHtml(content))
+            {
+                var title = HtmlTitle(content);
                 throw new InvalidOperationException(
-                    $"ION Gateway returned HTML instead of an MGRest response. URL: {url}");
+                    $"ION Gateway returned HTML instead of an MGRest response " +
+                    $"(HTTP {(int)response.StatusCode} {response.StatusCode}, " +
+                    $"content type '{response.Content.Headers.ContentType?.MediaType ?? "unknown"}', " +
+                    $"title '{title}'). URL: {url}");
+            }
 
             ThrowForUnsuccessfulStatus(response, url);
             return content;
@@ -98,6 +147,17 @@ public sealed class CsiRestClient : ICsiRestClient
 
     private static bool LooksLikeHtml(string content) =>
         content.TrimStart().StartsWith("<", StringComparison.OrdinalIgnoreCase);
+
+    private static string HtmlTitle(string content)
+    {
+        var start = content.IndexOf("<title", StringComparison.OrdinalIgnoreCase);
+        if (start < 0) return "unknown";
+        start = content.IndexOf('>', start);
+        if (start < 0) return "unknown";
+        var end = content.IndexOf("</title>", start, StringComparison.OrdinalIgnoreCase);
+        if (end < 0) return "unknown";
+        return content[(start + 1)..end].Trim();
+    }
 
     private static void ThrowForUnsuccessfulStatus(HttpResponseMessage response, string url)
     {

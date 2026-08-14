@@ -8,7 +8,7 @@
 
 <div class="card">
     <div class="card-header">
-        <h5 class="card-title">Top Grossing Customers - FY2024 vs Current Year</h5>
+        <h5 class="card-title">Top Grossing Customers - @PreviousYearLabel vs @CurrentYearLabel</h5>
         <div class="card-tools">
             <div class="input-group input-group-sm">
                 <select class="form-select" @bind="numberOfCustomers">
@@ -42,8 +42,8 @@
                     <thead class="table-primary">
                         <tr>
                             <th>Customer</th>
-                            <th class="text-end">FY2024 Total</th>
-                            <th class="text-end">Current YTD</th>
+                            <th class="text-end">@PreviousYearLabel Total</th>
+                            <th class="text-end">@CurrentYearLabel YTD</th>
                             <th class="text-end">% Change</th>
                         </tr>
                     </thead>
@@ -79,11 +79,11 @@
                     <ChartSeriesCollection>
                         <ChartSeries DataSource="@selectedCustomer.MonthlyData" XName="Month" 
                                     YName="PreviousYearAmount" Type="ChartSeriesType.Column" 
-                                    Name="FY2024" Fill="#6c757d">
+                                    Name="@PreviousYearLabel" Fill="#6c757d">
                         </ChartSeries>
                         <ChartSeries DataSource="@selectedCustomer.MonthlyData" XName="Month" 
                                     YName="CurrentYearAmount" Type="ChartSeriesType.Column" 
-                                    Name="FY2025" Fill="#0d6efd">
+                                    Name="@CurrentYearLabel" Fill="#0d6efd">
                         </ChartSeries>
                     </ChartSeriesCollection>
                 </SfChart>
@@ -97,6 +97,8 @@
     private int numberOfCustomers = 5;
     private List<CustomerViewModel>? topCustomers;
     private CustomerViewModel? selectedCustomer;
+    private string PreviousYearLabel => $"CY{DateTime.Now.Year - 1}";
+    private string CurrentYearLabel => $"CY{DateTime.Now.Year}";
 
     protected override async Task OnInitializedAsync()
     {
