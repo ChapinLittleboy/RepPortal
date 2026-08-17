@@ -367,3 +367,4 @@ FodyWeavers.xsd
 /CLAUDE.md.old
 /.dotnet/.dotnet/TelemetryStorageService
 /.dotnet/.dotnet
+/Tools/Copy-LatestProdSqlBackups.ps1
