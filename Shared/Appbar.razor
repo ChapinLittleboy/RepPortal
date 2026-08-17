@@ -12,6 +12,7 @@
 @inject IRepCodeContext RepCodeContext
 @inject TitleService TitleService
 @inject IJSRuntime JS
+@inject Microsoft.Extensions.Options.IOptions<CsiOptions> CsiOptions
 
 
 <div class="control-container">
@@ -145,8 +146,8 @@
 	private readonly List<DropDownMenuItem> AdminItems =
 	[
 		CreateDropDownMenuItem("Usage Dashboard", "usagedashboard"),
-		CreateDropDownMenuItem("Manage User Roles", "manageuserroles"),
-		CreateDropDownMenuItem("Debug User Identity", "debuguseridentity"),
+	//	CreateDropDownMenuItem("Manage User Roles", "manageuserroles"),
+	//	CreateDropDownMenuItem("Debug User Identity", "debuguseridentity"), 
 		CreateDropDownMenuItem("Manage RepCodes", "managerepcodes"),
 		CreateDropDownMenuItem("Manage Folders", "managefolders"),
 		CreateDropDownMenuItem("Manage Form Files", "manageformfiles"),
@@ -154,8 +155,8 @@
 		CreateDropDownMenuItem("Manage Pricebook Files", "managepricebookfiles"),
 		CreateDropDownMenuItem("Manage Page Help Text", "pagehelp"),
 		CreateDropDownMenuItem("Connected Users", "connectedusers"),
-		CreateDropDownMenuItem("Manage Excluded Hold Code", "manageexcludedholdcodes"),
-		CreateDropDownMenuItem("IDO Props builder", "idopropsbuilder")
+		CreateDropDownMenuItem("Manage Excluded Hold Code", "manageexcludedholdcodes", separator: true),
+		
 	];
 
 	protected override async Task OnInitializedAsync()
@@ -170,6 +171,14 @@
 			var lastName = user.FindFirst(c => c.Type == "LastName")?.Value;
 			welcomemsg = $"{firstName} {lastName}!";
 			isAdmin = user.IsInRole("Administrator") || user.IsInRole("SuperUser");
+
+			if (isAdmin)
+			{
+				AdminItems.Add(CreateDropDownMenuItem(
+					GetUseApiStatusText(CsiOptions.Value.UseApi),
+					"useapistatus",
+					disabled: true));
+			}
 		}
 		else
 		{
@@ -394,11 +403,20 @@
     }
 
 #pragma warning disable BL0005
-	private static DropDownMenuItem CreateDropDownMenuItem(string text, string id)
+	private static string GetUseApiStatusText(bool useApi) =>
+		$"UseAPI: {useApi.ToString().ToLowerInvariant()} ({(useApi ? "MT Cloud" : "on-prem SQL")})";
+
+	private static DropDownMenuItem CreateDropDownMenuItem(
+		string text,
+		string id,
+		bool disabled = false,
+		bool separator = false)
 	{
 		var item = new DropDownMenuItem();
 		item.Text = text;
 		item.Id = id;
+		item.Disabled = disabled;
+		item.Separator = separator;
 		return item;
 	}
 #pragma warning restore BL0005

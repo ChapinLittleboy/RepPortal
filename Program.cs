@@ -129,6 +129,15 @@ builder.Services.AddOptions<CsiOptions>()
 builder.Services.AddSingleton<IValidateOptions<CsiOptions>, CsiOptionsValidator>();
 builder.Services.Configure<SalesReportOptions>(
     builder.Configuration.GetSection("SalesReports"));
+builder.Services.Configure<SrfLaunchOptions>(
+    builder.Configuration.GetSection(SrfLaunchOptions.SectionName));
+builder.Services.PostConfigure<SrfLaunchOptions>(options =>
+{
+    if (string.IsNullOrWhiteSpace(options.LaunchSecret))
+    {
+        options.LaunchSecret = Environment.GetEnvironmentVariable("SRF_LAUNCH_SECRET");
+    }
+});
 
 builder.Services.AddScoped<CreditHoldExclusionService>();
 builder.Services.AddScoped<UserManager<ApplicationUser>>();
@@ -177,6 +186,7 @@ builder.Services.AddScoped<IPageDefinitionService, PageDefinitionService>();
 builder.Services.AddHttpClient<AIService>();
 builder.Services.AddScoped<AIService>();
 builder.Services.AddScoped<IUsageAnalyticsService, UsageAnalyticsService>();
+builder.Services.AddSingleton<ISrfLaunchTokenService, SrfLaunchTokenService>();
 builder.Services.AddScoped<IPriceBookService, PriceBookService>();
 builder.Services.AddScoped<PackingListService>();
 builder.Services.AddScoped<IPivotLayoutService, PivotLayoutService>();
