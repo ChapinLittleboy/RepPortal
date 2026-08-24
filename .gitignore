@@ -368,3 +368,9 @@ FodyWeavers.xsd
 /.dotnet/.dotnet/TelemetryStorageService
 /.dotnet/.dotnet
 /Tools/Copy-LatestProdSqlBackups.ps1
+/.artifact_flat_bom
+/outputs/01a0152d-2226-7910-819d-901b0a26d8af
+/.artifact_job_ops
+/sql
+/.tmp_flat_bom_materials.psv
+/.tmp_job_operations.psv
