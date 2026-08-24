@@ -12,17 +12,20 @@ namespace RepPortal.Services;
 public class IdoService : IIdoService
 {
     private readonly ICsiRestClient _csiRestClient;
+    private readonly IChapSureShipHistoryApiClient _sureShipHistory;
     private readonly IDbConnectionFactory _dbConnectionFactory;
     private readonly ILogger<IdoService> _logger;
     private readonly CsiOptions _csiOptions;
 
     public IdoService(
         ICsiRestClient csiRestClient,
+        IChapSureShipHistoryApiClient sureShipHistory,
         IDbConnectionFactory dbConnectionFactory,
         ILogger<IdoService> logger,
         IOptions<CsiOptions> csiOptions)
     {
         _csiRestClient = csiRestClient;
+        _sureShipHistory = sureShipHistory;
         _dbConnectionFactory = dbConnectionFactory;
         _logger = logger;
         _csiOptions = csiOptions.Value;
@@ -64,6 +67,32 @@ public class IdoService : IIdoService
         string repCode,
         IEnumerable<string>? allowedRegions)
     {
+        var sites = new[] { "BAT", "KENT" }
+            .Where(site => _csiOptions.Configurations.TryGetValue(site, out var configuration)
+                           && !string.IsNullOrWhiteSpace(configuration))
+            .ToList();
+
+        var shipments = new List<CustomerShipment>();
+        foreach (var site in sites)
+        {
+            shipments.AddRange(await GetShipmentsDataForSiteAsync(
+                parameters, repCode, allowedRegions, site));
+        }
+
+        return shipments
+            .OrderBy(s => s.CustName)
+            .ThenBy(s => s.PoNumber)
+            .ThenBy(s => s.CoLine)
+            .ThenBy(s => s.ShipDate)
+            .ToList();
+    }
+
+    private async Task<List<CustomerShipment>> GetShipmentsDataForSiteAsync(
+        SalesService.ShipmentsParameters parameters,
+        string repCode,
+        IEnumerable<string>? allowedRegions,
+        string site)
+    {
         HashSet<string>? allowedCustKeys = null;
         Dictionary<string, string>? custRegionLookup = null;
 
@@ -71,15 +100,16 @@ public class IdoService : IIdoService
         {
             var custQuery = new Dictionary<string, string>
             {
-                ["props"] = "CustNum,CustSeq,Uf_SalesRegion",
-                ["filter"] = In("Uf_SalesRegion", allowedRegions),
+                ["props"] = "CustNum,CustSeq,cusUf_SalesRegion",
+                ["filter"] = In("cusUf_SalesRegion", allowedRegions),
                 ["rowcap"] = "0",
                 ["loadtype"] = "FIRST",
                 ["bookmark"] = "0",
                 ["readonly"] = "1"
             };
 
-            var custResponse = Deserialize(await _csiRestClient.GetAsync("json/SLCustomers/adv", custQuery));
+            var custResponse = Deserialize(await _csiRestClient.GetAsync(
+                "json/SLCustomers/adv", custQuery, site));
 
             if (custResponse.MessageCode == 0)
             {
@@ -89,7 +119,7 @@ public class IdoService : IIdoService
                 {
                     var cn = GetCell(row, "CustNum")?.Trim();
                     var cs = GetCell(row, "CustSeq")?.Trim() ?? "0";
-                    var region = GetCell(row, "Uf_SalesRegion")?.Trim();
+                    var region = GetCell(row, "cusUf_SalesRegion")?.Trim();
 
                     if (string.IsNullOrWhiteSpace(cn))
                         continue;
@@ -107,10 +137,12 @@ public class IdoService : IIdoService
             slFilters.Add($"ShipDate >= '{parameters.BeginShipDate:yyyyMMdd}'");
         if (parameters.EndShipDate != default)
             slFilters.Add($"ShipDate <= '{parameters.EndShipDate:yyyyMMdd}'");
+        if (!string.IsNullOrWhiteSpace(parameters.CustNum))
+            slFilters.Add(Eq("CoCustNum", parameters.CustNum.Trim()));
 
         var slQuery = new Dictionary<string, string>
         {
-            ["props"] = "CoCustNum,CoCustSeq,CadrName,CoCustPo,CoNum,CoLine,CoiItem,CoiDescription,CoiDueDate,ShipDate,QtyShipped,DerNetPrice,BolNumber",
+            ["props"] = "CoCustNum,CoCustSeq,CadrName,CoCustPo,CoNum,CoLine,CoiItem,CoiDescription,CoiDueDate,ShipDate,QtyShipped,CoiPrice,DerTotPrice,ue_BolNumber",
             ["filter"] = string.Join(" AND ", slFilters),
             ["rowcap"] = "0",
             ["loadtype"] = "FIRST",
@@ -118,10 +150,11 @@ public class IdoService : IIdoService
             ["readonly"] = "1"
         };
 
-        var slResponse = Deserialize(await _csiRestClient.GetAsync("json/SLCoShips/adv", slQuery));
+        var slResponse = Deserialize(await _csiRestClient.GetAsync(
+            "json/SLCoShips/adv", slQuery, site));
 
         if (slResponse.MessageCode != 0)
-            throw new InvalidOperationException(slResponse.Message);
+            throw new InvalidOperationException($"{site} SLCoShips: {slResponse.Message}");
 
         var filteredItems = slResponse.Items;
         if (allowedCustKeys != null && allowedCustKeys.Count > 0)
@@ -153,66 +186,124 @@ public class IdoService : IIdoService
             .Distinct()
             .ToList();
 
-        if (bolNumbers.Count == 0)
-            return shipments;
-
-        var bolQuery = new Dictionary<string, string>
+        var liveBols = new List<BolInfo>();
+        foreach (var batch in bolNumbers.Chunk(100))
         {
-            ["props"] = "ShipmentId,InvoiceeState,ConsigneeState,Whse,CarrierCode,ShipCode,ShipCodeDesc,ShipDate,BillTransportationTo,TrackingNumber,InvoiceeName,CustNum,CustSeq",
-            ["filter"] = In("ShipmentId", bolNumbers.Select(n => n.ToString(CultureInfo.InvariantCulture))),
-            ["rowcap"] = "0",
-            ["loadtype"] = "FIRST",
-            ["bookmark"] = "0",
-            ["readonly"] = "1"
-        };
+            var bolQuery = new Dictionary<string, string>
+            {
+                ["props"] = "ShipmentId,invoicee_state,consignee_state,whse,carrier_code,ship_code,ShipCodeDesc,ship_date,BillTransportationTo,tracking_number,invoicee_name,cust_num,cust_seq,Chap_CarrierServiceType",
+                ["filter"] = In("ShipmentId", batch.Select(number =>
+                    number.ToString(CultureInfo.InvariantCulture))),
+                ["rowcap"] = "0",
+                ["loadtype"] = "FIRST",
+                ["bookmark"] = "0",
+                ["readonly"] = "1"
+            };
 
-        var bolResponse = Deserialize(await _csiRestClient.GetAsync("json/ait_ss_bols/adv", bolQuery));
+            var bolResponse = Deserialize(await _csiRestClient.GetAsync(
+                "json/ue_SS_Bols/adv", bolQuery, site));
+            if (bolResponse.MessageCode != 0)
+                throw new InvalidOperationException($"{site} ue_SS_Bols: {bolResponse.Message}");
+            liveBols.AddRange(bolResponse.Items.Select(MapRow<BolInfo>));
+        }
 
-        if (bolResponse.MessageCode != 0)
-            throw new InvalidOperationException(bolResponse.Message);
-
-        var bolsByShipmentId = bolResponse.Items
-            .Select(MapRow<BolInfo>)
+        var bolsByShipmentId = liveBols
             .Where(b => b.ShipmentId.HasValue)
             .GroupBy(b => b.ShipmentId!.Value)
             .ToDictionary(g => g.Key, g => g.First());
+
+        var missingBolNumbers = bolNumbers
+            .Where(number => !bolsByShipmentId.ContainsKey(number))
+            .ToArray();
+
+        var missingOrderNumbers = shipments
+            .Where(shipment => (!shipment.BolNumber.HasValue || shipment.BolNumber.Value == 0)
+                               && !string.IsNullOrWhiteSpace(shipment.OrderNumber))
+            .Select(shipment => shipment.OrderNumber)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        IReadOnlyList<ChapHistoryOrder> orderMappings = missingOrderNumbers.Length == 0
+            ? []
+            : await _sureShipHistory.GetOrderMappingsAsync(site, missingOrderNumbers);
+        var historyIds = missingBolNumbers
+            .Concat(orderMappings.Select(mapping => mapping.ShipmentId))
+            .Distinct()
+            .ToArray();
+        var historyByShipmentId = (await _sureShipHistory.GetHeadersAsync(site, historyIds))
+            .GroupBy(header => header.ShipmentId)
+            .ToDictionary(group => group.Key, group => group.First());
+
+        var historyByOrderAndSecond = orderMappings
+            .Where(mapping => historyByShipmentId.ContainsKey(mapping.ShipmentId))
+            .Select(mapping => new
+            {
+                Mapping = mapping,
+                Header = historyByShipmentId[mapping.ShipmentId]
+            })
+            .Where(link => link.Header.ShipDate.HasValue)
+            .GroupBy(link => ShipmentHistoryKey(
+                link.Mapping.OrderNum, link.Header.ShipDate!.Value))
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(link => link.Header)
+                    .OrderBy(header => header.ShipDate)
+                    .ThenBy(header => header.ShipmentId)
+                    .ToArray());
 
         try
         {
             foreach (var shipment in shipments)
             {
-                if (!shipment.BolNumber.HasValue
-                    || !bolsByShipmentId.TryGetValue(shipment.BolNumber.Value, out BolInfo? bol))
+                if (shipment.BolNumber.HasValue
+                    && bolsByShipmentId.TryGetValue(
+                        shipment.BolNumber.Value, out BolInfo? bol))
                 {
+                    ApplyBol(shipment, bol);
                     continue;
                 }
 
-                if (!string.IsNullOrWhiteSpace(bol.InvoiceeState))
-                    shipment.BillToState = bol.InvoiceeState;
-                if (!string.IsNullOrWhiteSpace(bol.ConsigneeState))
-                    shipment.ShipToState = bol.ConsigneeState;
-                if (!string.IsNullOrWhiteSpace(bol.Whse))
-                    shipment.Whse = bol.Whse;
-                if (!string.IsNullOrWhiteSpace(bol.CarrierCode))
-                    shipment.CarrierCode = bol.CarrierCode;
-                if (!string.IsNullOrWhiteSpace(bol.ShipCode))
-                    shipment.ShipCode = bol.ShipCode;
-                else if (!string.IsNullOrWhiteSpace(bol.ShipCodeDesc))
-                    shipment.ShipCode = bol.ShipCodeDesc;
-                if (!string.IsNullOrWhiteSpace(bol.BillTransportationTo))
-                    shipment.FreightTerms = bol.BillTransportationTo;
-                if (!string.IsNullOrWhiteSpace(bol.TrackingNumber))
-                    shipment.TrackingNumber = bol.TrackingNumber;
+                if (shipment.BolNumber.HasValue
+                    && historyByShipmentId.TryGetValue(
+                        shipment.BolNumber.Value, out ChapHistoryHeader? directHistory))
+                {
+                    ApplyBol(shipment, directHistory);
+                    continue;
+                }
+
+                var key = ShipmentHistoryKey(shipment.OrderNumber, shipment.ShipDate);
+                if (!historyByOrderAndSecond.TryGetValue(key, out var candidates)
+                    || candidates.Length == 0)
+                    continue;
+
+                var history = candidates
+                    .OrderBy(header => Math.Abs(
+                        (header.ShipDate!.Value - shipment.ShipDate).Ticks))
+                    .ThenBy(header => header.ShipmentId)
+                    .First();
+                if (candidates.Length > 1)
+                {
+                    _logger.LogWarning(
+                        "Multiple SureShip history BOLs matched {Site} order {OrderNumber} at {ShipDate}; selected {ShipmentId}",
+                        site, shipment.OrderNumber, shipment.ShipDate, history.ShipmentId);
+                }
+
+                shipment.BolNumber = history.ShipmentId;
+                ApplyBol(shipment, history);
             }
 
             return shipments;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error mapping shipment data");
-            return new List<CustomerShipment>();
+            _logger.LogError(ex, "Error mapping {Site} shipment data", site);
+            return shipments;
         }
     }
+
+    private static (string OrderNumber, DateTime ShipSecond) ShipmentHistoryKey(
+        string? orderNumber, DateTime shipDate) =>
+        ((orderNumber ?? "").Trim().ToUpperInvariant(),
+            shipDate.AddTicks(-(shipDate.Ticks % TimeSpan.TicksPerSecond)));
 
     public async Task<List<InvoiceRptDetail>> GetInvoiceRptDataAsync(
         SalesService.InvoiceRptParameters parameters,
@@ -382,17 +473,17 @@ public class IdoService : IIdoService
             ["readonly"] = "1"
         };
 
-        var siteAuths = new List<(string Site, string? AuthOverride)> { ("BAT", null) };
-        if (!string.IsNullOrWhiteSpace(_csiOptions.KentAuthorization))
-            siteAuths.Add(("KENT", _csiOptions.KentAuthorization));
+        var sites = new List<string> { "BAT" };
+        if (_csiOptions.Configurations.TryGetValue("KENT", out var kentConfiguration)
+            && !string.IsNullOrWhiteSpace(kentConfiguration))
+            sites.Add("KENT");
 
         var lines = new List<InvLineRawRow>();
 
-        foreach (var (site, authOverride) in siteAuths)
+        foreach (var site in sites)
         {
-            string siteJson = authOverride != null
-                ? await _csiRestClient.GetAsync("json/Chap_InvoiceLines/adv", query, authOverride)
-                : await _csiRestClient.GetAsync("json/Chap_InvoiceLines/adv", query);
+            string siteJson = await _csiRestClient.GetAsync(
+                "json/Chap_InvoiceLines/adv", query, site);
 
             var siteResponse = Deserialize(siteJson);
 
@@ -402,12 +493,13 @@ public class IdoService : IIdoService
                     .Select(MapRow<InvLineRawRow>)
                     .Where(l => l.InvDate.HasValue));
             }
-            else if (authOverride != null)
+            else if (site.Equals("KENT", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogInformation(
                     "Chap_InvoiceLines not available on {Site} ({Msg}); falling back to SLInvHdrs + SLInvItemAlls",
                     site, siteResponse.Message);
-                lines.AddRange(await FetchKentLinesViaStandardIdosAsync(repCode, reportPeriod.HistoryStart, reportEndDate, authOverride));
+                lines.AddRange(await FetchKentLinesViaStandardIdosAsync(
+                    repCode, reportPeriod.HistoryStart, reportEndDate));
             }
             else
             {
@@ -433,7 +525,7 @@ public class IdoService : IIdoService
         {
             var custQuery = new Dictionary<string, string>
             {
-                ["props"] = "CustNum,CustSeq,Name,Uf_SalesRegion,CorpCust",
+                ["props"] = "CustNum,CustSeq,Name,cusUf_SalesRegion,CorpCust",
                 ["filter"] = $"CustSeq = 0 AND {In("CustNum", uniqueCustNums)}",
                 ["rowcap"] = "0",
                 ["loadtype"] = "FIRST",
@@ -659,7 +751,7 @@ public class IdoService : IIdoService
 
         var custRegionQuery = new Dictionary<string, string>
         {
-            ["props"] = "CustNum,CustSeq,Uf_SalesRegion,CorpCust",
+            ["props"] = "CustNum,CustSeq,cusUf_SalesRegion,CorpCust",
             ["filter"] = In("CustNum", custNums),
             ["rowcap"] = "0",
             ["loadtype"] = "FIRST",
@@ -676,7 +768,7 @@ public class IdoService : IIdoService
             {
                 var cn = GetCell(row, "CustNum")?.Trim();
                 var cs = GetCell(row, "CustSeq")?.Trim() ?? "0";
-                var region = GetCell(row, "Uf_SalesRegion")?.Trim();
+                var region = GetCell(row, "cusUf_SalesRegion")?.Trim();
                 var corpCust = GetCell(row, "CorpCust")?.Trim();
                 if (!string.IsNullOrWhiteSpace(cn) && int.TryParse(cs, out int custSeq))
                 {
@@ -773,7 +865,7 @@ public class IdoService : IIdoService
 
         var custQuery = new Dictionary<string, string>
         {
-            ["props"] = "CustNum,CustSeq,Slsman,Uf_SalesRegion,CorpCust",
+            ["props"] = "CustNum,CustSeq,Slsman,cusUf_SalesRegion,CorpCust",
             ["filter"] = Eq("Slsman", repCode),
             ["rowcap"] = "0",
             ["loadtype"] = "FIRST",
@@ -790,7 +882,7 @@ public class IdoService : IIdoService
             var cn = GetCell(row, "CustNum");
             var cs = GetCell(row, "CustSeq")?.Trim() ?? "0";
             var slsman = GetCell(row, "Slsman")?.Trim();
-            var region = GetCell(row, "Uf_SalesRegion")?.Trim();
+            var region = GetCell(row, "cusUf_SalesRegion")?.Trim();
             var corpCust = GetCell(row, "CorpCust")?.Trim();
             int.TryParse(cs, out int custSeq);
             return new
@@ -834,12 +926,13 @@ public class IdoService : IIdoService
         var custNums = customers.Select(c => c.CustNum!).Distinct().ToList();
         const int custBatchSize = 30;
 
-        var siteAuths = new List<(string Site, string? AuthOverride)> { ("BAT", null) };
-        if (!string.IsNullOrWhiteSpace(_csiOptions.KentAuthorization))
-            siteAuths.Add(("KENT", _csiOptions.KentAuthorization));
+        var sites = new List<string> { "BAT" };
+        if (_csiOptions.Configurations.TryGetValue("KENT", out var kentConfiguration)
+            && !string.IsNullOrWhiteSpace(kentConfiguration))
+            sites.Add("KENT");
 
         var headers = new List<(string Site, InvHdrInfo Hdr)>();
-        foreach (var (site, authOverride) in siteAuths)
+        foreach (var site in sites)
         {
             foreach (var batch in custNums.Chunk(custBatchSize))
             {
@@ -853,9 +946,8 @@ public class IdoService : IIdoService
                     ["readonly"] = "1"
                 };
 
-                string hdrJson = authOverride != null
-                    ? await _csiRestClient.GetAsync("json/SLInvHdrs/adv", hdrQuery, authOverride)
-                    : await _csiRestClient.GetAsync("json/SLInvHdrs/adv", hdrQuery);
+                string hdrJson = await _csiRestClient.GetAsync(
+                    "json/SLInvHdrs/adv", hdrQuery, site);
 
                 var hdrResponse = Deserialize(hdrJson);
                 if (hdrResponse.MessageCode != 0)
@@ -869,7 +961,7 @@ public class IdoService : IIdoService
             return new List<Dictionary<string, object>>();
 
         var invoiceItems = new List<(string Site, InvItemInfo Item)>();
-        foreach (var (site, authOverride) in siteAuths)
+        foreach (var site in sites)
         {
             var siteInvNums = headers
                 .Where(h => h.Site == site && !string.IsNullOrWhiteSpace(h.Hdr.InvNum))
@@ -889,9 +981,8 @@ public class IdoService : IIdoService
                     ["readonly"] = "1"
                 };
 
-                string itemJson = authOverride != null
-                    ? await _csiRestClient.GetAsync("json/SLInvItemAlls/adv", itemQuery, authOverride)
-                    : await _csiRestClient.GetAsync("json/SLInvItemAlls/adv", itemQuery);
+                string itemJson = await _csiRestClient.GetAsync(
+                    "json/SLInvItemAlls/adv", itemQuery, site);
 
                 var itemResponse = Deserialize(itemJson);
                 if (itemResponse.MessageCode != 0)
@@ -1002,8 +1093,7 @@ public class IdoService : IIdoService
     private async Task<List<InvLineRawRow>> FetchKentLinesViaStandardIdosAsync(
         string repCode,
         DateTime dateFrom,
-        DateTime dateTo,
-        string kentAuth)
+        DateTime dateTo)
     {
         var hdrQuery = new Dictionary<string, string>
         {
@@ -1015,7 +1105,8 @@ public class IdoService : IIdoService
             ["readonly"] = "1"
         };
 
-        var hdrResponse = Deserialize(await _csiRestClient.GetAsync("json/SLInvHdrs/adv", hdrQuery, kentAuth));
+        var hdrResponse = Deserialize(await _csiRestClient.GetAsync(
+            "json/SLInvHdrs/adv", hdrQuery, "KENT"));
         if (hdrResponse.MessageCode != 0)
         {
             _logger.LogWarning("SLInvHdrs (KENT fallback) failed: {Msg}", hdrResponse.Message);
@@ -1047,7 +1138,8 @@ public class IdoService : IIdoService
                 ["readonly"] = "1"
             };
 
-            var itemResponse = Deserialize(await _csiRestClient.GetAsync("json/SLInvItemAlls/adv", itemQuery, kentAuth));
+            var itemResponse = Deserialize(await _csiRestClient.GetAsync(
+                "json/SLInvItemAlls/adv", itemQuery, "KENT"));
             if (itemResponse.MessageCode == 0)
                 rawItems.AddRange(itemResponse.Items.Select(MapRow<KentInvItemRaw>));
             else
@@ -1159,169 +1251,192 @@ public class IdoService : IIdoService
 
     public async Task<PackingList> GetPackingListByShipmentAsync(string packNum)
     {
-        var result = new PackingList();
         if (string.IsNullOrWhiteSpace(packNum))
-            return result;
+            return new PackingList();
 
-        // Line items + order/customer fields from SLCoShips
-        var shipQuery = new Dictionary<string, string>
+        foreach (var site in ConfiguredSites())
         {
-            ["props"] = "BolNumber,CoNum,CoCustNum,CoCustPo,CoLine,CoiItem,CoiDescription,CoiUM,QtyShipped",
-            ["filter"] = Eq("BolNumber", packNum),
-            ["rowcap"] = "0",
-            ["loadtype"] = "FIRST",
-            ["bookmark"] = "0",
-            ["readonly"] = "1"
-        };
+            var result = await GetPackingListByShipmentForSiteAsync(packNum.Trim(), site);
+            if (result.Items.Count > 0 || result.Header.PackDate.HasValue
+                                       || !string.IsNullOrWhiteSpace(result.Header.Whse))
+                return result;
+        }
 
-        var shipResponse = Deserialize(await _csiRestClient.GetAsync("json/SLCoShips/adv", shipQuery));
-        if (shipResponse.MessageCode != 0)
-            throw new InvalidOperationException(shipResponse.Message);
+        return new PackingList { Header = new PackingListHeader { PackNum = packNum.Trim() } };
+    }
 
-        var shipRows = shipResponse.Items.Select(MapRow<PackingListShipRow>).ToList();
+    private async Task<PackingList> GetPackingListByShipmentForSiteAsync(string packNum, string site)
+    {
+        var shipRows = await LoadPackingListShipRowsAsync(Eq("ue_BolNumber", packNum), site);
+        var liveBol = (await LoadLivePackingListBolsAsync([packNum], site))
+            .FirstOrDefault();
+        ChapHistoryHeader? historyBol = null;
+        if (liveBol is null && int.TryParse(packNum, NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out var shipmentId))
+            historyBol = (await _sureShipHistory.GetHeadersAsync(site, [shipmentId])).FirstOrDefault();
 
-        // Header fields (dates, warehouse, carrier, ship-to address) from ait_ss_bols
-        var bolQuery = new Dictionary<string, string>
-        {
-            ["props"] = "ShipmentId,ShipDate,Whse,ShipCode,CarrierCode,CustNum,ConsigneeName,ConsigneeAddr1,ConsigneeAddr2,ConsigneeAddr3,ConsigneeAddr4,ConsigneeCity,ConsigneeState,ConsigneeZip",
-            ["filter"] = Eq("ShipmentId", packNum),
-            ["rowcap"] = "1",
-            ["loadtype"] = "FIRST",
-            ["bookmark"] = "0",
-            ["readonly"] = "1"
-        };
-
-        var bolResponse = Deserialize(await _csiRestClient.GetAsync("json/ait_ss_bols/adv", bolQuery));
-        PackingListBolRow? bol = bolResponse.MessageCode == 0 && bolResponse.Items.Count > 0
-            ? MapRow<PackingListBolRow>(bolResponse.Items[0])
-            : null;
-
-        var firstShip = shipRows.FirstOrDefault();
-        result.Header = new PackingListHeader
-        {
-            PackNum    = packNum,
-            PackDate   = bol?.ShipDate,
-            Whse       = bol?.Whse ?? "",
-            CoNum      = firstShip?.CoNum ?? "",
-            CustNum    = firstShip?.CustNum ?? bol?.CustNum ?? "",
-            ShipCode   = bol?.ShipCode ?? "",
-            Carrier    = bol?.CarrierCode ?? "",
-            ShipAddr   = bol?.ConsigneeName ?? "",
-            ShipAddr2  = bol?.ConsigneeAddr1 ?? "",
-            ShipAddr3  = bol?.ConsigneeAddr2 ?? "",
-            ShipAddr4  = bol?.ConsigneeAddr3 ?? "",
-            ShipCity   = bol?.ConsigneeCity ?? "",
-            ShipState  = bol?.ConsigneeState ?? "",
-            ShipZip    = bol?.ConsigneeZip ?? "",
-            CustPo     = firstShip?.CustPo ?? "",
-        };
-
-        result.Items = shipRows.Select(r => new PackingListItem
-        {
-            CoLine     = r.CoLine,
-            Item       = r.Item ?? "",
-            ItemDesc   = r.ItemDesc ?? "",
-            UM         = r.UM ?? "",
-            ShipmentId = packNum,
-            QtyPicked  = r.QtyShipped,
-            QtyShipped = r.QtyShipped,
-        }).ToList();
-
-        return result;
+        return CreatePackingList(packNum, shipRows, liveBol, historyBol);
     }
 
     public async Task<List<PackingList>> GetPackingListsByOrderAsync(string coNum)
     {
         if (string.IsNullOrWhiteSpace(coNum))
-            return new List<PackingList>();
-
-        // Fetch all shipment lines for this order in one query
-        var shipQuery = new Dictionary<string, string>
-        {
-            ["props"] = "BolNumber,CoNum,CoCustNum,CoCustPo,CoLine,CoiItem,CoiDescription,CoiUM,QtyShipped",
-            ["filter"] = Eq("CoNum", coNum),
-            ["rowcap"] = "0",
-            ["loadtype"] = "FIRST",
-            ["bookmark"] = "0",
-            ["readonly"] = "1"
-        };
-
-        var shipResponse = Deserialize(await _csiRestClient.GetAsync("json/SLCoShips/adv", shipQuery));
-        if (shipResponse.MessageCode != 0)
-            throw new InvalidOperationException(shipResponse.Message);
-
-        var shipRows = shipResponse.Items.Select(MapRow<PackingListShipRow>).ToList();
-        if (shipRows.Count == 0)
-            return new List<PackingList>();
-
-        // Group lines by pack number (BolNumber)
-        var byBol = shipRows
-            .Where(r => !string.IsNullOrWhiteSpace(r.BolNumber))
-            .GroupBy(r => r.BolNumber!)
-            .ToList();
-
-        // Fetch all BOL headers in one query
-        var bolNums = byBol.Select(g => g.Key).ToList();
-        var bolQuery = new Dictionary<string, string>
-        {
-            ["props"] = "ShipmentId,ShipDate,Whse,ShipCode,CarrierCode,CustNum,ConsigneeName,ConsigneeAddr1,ConsigneeAddr2,ConsigneeAddr3,ConsigneeAddr4,ConsigneeCity,ConsigneeState,ConsigneeZip",
-            ["filter"] = In("ShipmentId", bolNums),
-            ["rowcap"] = "0",
-            ["loadtype"] = "FIRST",
-            ["bookmark"] = "0",
-            ["readonly"] = "1"
-        };
-
-        var bolResponse = Deserialize(await _csiRestClient.GetAsync("json/ait_ss_bols/adv", bolQuery));
-        var bolLookup = (bolResponse.MessageCode == 0
-            ? bolResponse.Items.Select(MapRow<PackingListBolRow>)
-                                .Where(b => !string.IsNullOrWhiteSpace(b.ShipmentId))
-            : Enumerable.Empty<PackingListBolRow>())
-            .ToDictionary(b => b.ShipmentId!, StringComparer.OrdinalIgnoreCase);
+            return [];
 
         var results = new List<PackingList>();
-        foreach (var group in byBol)
-        {
-            var packNum = group.Key;
-            bolLookup.TryGetValue(packNum, out PackingListBolRow? bol);
-            var firstShip = group.First();
+        foreach (var site in ConfiguredSites())
+            results.AddRange(await GetPackingListsByOrderForSiteAsync(coNum.Trim(), site));
 
-            var pl = new PackingList
-            {
-                Header = new PackingListHeader
-                {
-                    PackNum   = packNum,
-                    PackDate  = bol?.ShipDate,
-                    Whse      = bol?.Whse ?? "",
-                    CoNum     = firstShip.CoNum ?? "",
-                    CustNum   = firstShip.CustNum ?? bol?.CustNum ?? "",
-                    ShipCode  = bol?.ShipCode ?? "",
-                    Carrier   = bol?.CarrierCode ?? "",
-                    ShipAddr  = bol?.ConsigneeName ?? "",
-                    ShipAddr2 = bol?.ConsigneeAddr1 ?? "",
-                    ShipAddr3 = bol?.ConsigneeAddr2 ?? "",
-                    ShipAddr4 = bol?.ConsigneeAddr3 ?? "",
-                    ShipCity  = bol?.ConsigneeCity ?? "",
-                    ShipState = bol?.ConsigneeState ?? "",
-                    ShipZip   = bol?.ConsigneeZip ?? "",
-                    CustPo    = firstShip.CustPo ?? "",
-                },
-                Items = group.Select(r => new PackingListItem
-                {
-                    CoLine     = r.CoLine,
-                    Item       = r.Item ?? "",
-                    ItemDesc   = r.ItemDesc ?? "",
-                    UM         = r.UM ?? "",
-                    ShipmentId = packNum,
-                    QtyPicked  = r.QtyShipped,
-                    QtyShipped = r.QtyShipped,
-                }).ToList()
-            };
-            results.Add(pl);
+        return results
+            .OrderBy(result => result.Header.PackDate ?? DateTime.MinValue)
+            .ThenBy(result => result.Header.PackNum, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private async Task<List<PackingList>> GetPackingListsByOrderForSiteAsync(
+        string coNum, string site)
+    {
+        var shipRows = await LoadPackingListShipRowsAsync(Eq("CoNum", coNum), site);
+        var historyIds = await _sureShipHistory.GetShipmentIdsByOrderAsync(site, coNum);
+        var packNumbers = shipRows
+            .Select(row => row.BolNumber)
+            .Where(number => !string.IsNullOrWhiteSpace(number))
+            .Select(number => number!.Trim())
+            .Concat(historyIds.Select(id => id.ToString(CultureInfo.InvariantCulture)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (packNumbers.Count == 0)
+            return [];
+
+        var rowPackNumbers = shipRows
+            .Where(row => !string.IsNullOrWhiteSpace(row.BolNumber))
+            .Select(row => row.BolNumber!.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var missingRowsFor = packNumbers.Where(number => !rowPackNumbers.Contains(number)).ToArray();
+        if (missingRowsFor.Length > 0)
+        {
+            var missingRows = await LoadPackingListShipRowsAsync(
+                $"{Eq("CoNum", coNum)} AND {In("ue_BolNumber", missingRowsFor)}", site);
+            shipRows.AddRange(missingRows);
+        }
+
+        var liveBols = await LoadLivePackingListBolsAsync(packNumbers, site);
+        var liveLookup = liveBols
+            .Where(bol => !string.IsNullOrWhiteSpace(bol.ShipmentId))
+            .GroupBy(bol => bol.ShipmentId!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+        var missingHeaderIds = packNumbers
+            .Where(number => !liveLookup.ContainsKey(number))
+            .Select(number => int.TryParse(number, NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out var id) ? id : 0)
+            .Where(id => id > 0)
+            .ToArray();
+        var historyLookup = (await _sureShipHistory.GetHeadersAsync(site, missingHeaderIds))
+            .GroupBy(header => header.ShipmentId)
+            .ToDictionary(group => group.Key, group => group.First());
+        var rowsByPack = shipRows
+            .Where(row => !string.IsNullOrWhiteSpace(row.BolNumber))
+            .GroupBy(row => row.BolNumber!.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.OrdinalIgnoreCase);
+
+        var results = new List<PackingList>();
+        foreach (var packNumber in packNumbers)
+        {
+            liveLookup.TryGetValue(packNumber, out var liveBol);
+            ChapHistoryHeader? historyBol = null;
+            if (int.TryParse(packNumber, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
+                historyLookup.TryGetValue(id, out historyBol);
+            rowsByPack.TryGetValue(packNumber, out var rows);
+            results.Add(CreatePackingList(packNumber, rows ?? [], liveBol, historyBol, coNum));
         }
 
         return results;
     }
+
+    private async Task<List<PackingListShipRow>> LoadPackingListShipRowsAsync(
+        string filter, string site)
+    {
+        var query = new Dictionary<string, string>
+        {
+            ["props"] = "ue_BolNumber,CoNum,CoCustNum,CoCustPo,CoLine,CoiItem,CoiDescription,CoiUM,QtyShipped",
+            ["filter"] = filter,
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+        var response = Deserialize(await _csiRestClient.GetAsync("json/SLCoShips/adv", query, site));
+        if (response.MessageCode != 0)
+            throw new InvalidOperationException($"{site} SLCoShips: {response.Message}");
+        return response.Items.Select(MapRow<PackingListShipRow>).ToList();
+    }
+
+    private async Task<List<PackingListBolRow>> LoadLivePackingListBolsAsync(
+        IReadOnlyCollection<string> packNumbers, string site)
+    {
+        if (packNumbers.Count == 0)
+            return [];
+
+        var query = new Dictionary<string, string>
+        {
+            ["props"] = "ShipmentId,ship_date,whse,ship_code,carrier_code,cust_num,consignee_name,consignee_addr__1,consignee_addr__2,consignee_addr__3,consignee_addr__4,consignee_city,consignee_state,consignee_zip",
+            ["filter"] = In("ShipmentId", packNumbers),
+            ["rowcap"] = "0",
+            ["loadtype"] = "FIRST",
+            ["bookmark"] = "0",
+            ["readonly"] = "1"
+        };
+        var response = Deserialize(await _csiRestClient.GetAsync("json/ue_SS_Bols/adv", query, site));
+        if (response.MessageCode != 0)
+            throw new InvalidOperationException($"{site} ue_SS_Bols: {response.Message}");
+        return response.Items.Select(MapRow<PackingListBolRow>).ToList();
+    }
+
+    private static PackingList CreatePackingList(
+        string packNumber,
+        IReadOnlyCollection<PackingListShipRow> rows,
+        PackingListBolRow? liveBol,
+        ChapHistoryHeader? historyBol,
+        string? orderNumber = null)
+    {
+        var firstShip = rows.FirstOrDefault();
+        return new PackingList
+        {
+            Header = new PackingListHeader
+            {
+                PackNum = packNumber,
+                PackDate = liveBol?.ShipDate ?? historyBol?.ShipDate,
+                Whse = liveBol?.Whse ?? historyBol?.Whse ?? "",
+                CoNum = firstShip?.CoNum ?? orderNumber ?? "",
+                CustNum = firstShip?.CustNum ?? liveBol?.CustNum ?? historyBol?.CustNum ?? "",
+                ShipCode = liveBol?.ShipCode ?? historyBol?.ShipCode ?? "",
+                Carrier = liveBol?.CarrierCode ?? historyBol?.CarrierCode ?? "",
+                ShipAddr = liveBol?.ConsigneeName ?? "",
+                ShipAddr2 = liveBol?.ConsigneeAddr1 ?? "",
+                ShipAddr3 = liveBol?.ConsigneeAddr2 ?? "",
+                ShipAddr4 = liveBol?.ConsigneeAddr3 ?? "",
+                ShipCity = liveBol?.ConsigneeCity ?? "",
+                ShipState = liveBol?.ConsigneeState ?? "",
+                ShipZip = liveBol?.ConsigneeZip ?? "",
+                CustPo = firstShip?.CustPo ?? ""
+            },
+            Items = rows.Select(row => new PackingListItem
+            {
+                CoLine = row.CoLine,
+                Item = row.Item ?? "",
+                ItemDesc = row.ItemDesc ?? "",
+                UM = row.UM ?? "",
+                ShipmentId = packNumber,
+                QtyPicked = row.QtyShipped,
+                QtyShipped = row.QtyShipped
+            }).ToList()
+        };
+    }
+
+    private IEnumerable<string> ConfiguredSites() => new[] { "BAT", "KENT" }
+        .Where(site => _csiOptions.Configurations.TryGetValue(site, out var configuration)
+                       && !string.IsNullOrWhiteSpace(configuration));
 
     public async Task<List<Customer>> GetCustomersDetailsByRepCodeAsync(string repCode)
     {
@@ -1358,7 +1473,7 @@ public class IdoService : IIdoService
         }
 
         const string props =
-            "CustNum,Name,Slsman,Stat,CustType,CustTypeDescription,CorpCust," +
+            "CustNum,Name,Slsman,Stat,CustType,ue_CustTypeDescription,CorpCust," +
             "CreditHold,CreditHoldDate,CreditHoldReason,CreditHoldDescription," +
             "Addr_1,Addr_2,Addr_3,Addr_4,City,StateCode,Zip,Country," +
             "cusUf_PROG_BASIS,cusUf_FrtTerms,cusuf_c_slsmgr";
@@ -1593,9 +1708,63 @@ public class IdoService : IIdoService
         [CsiField("CustNum")] public string? CustNum { get; set; }
         [CsiField("CustSeq")] public int CustSeq { get; set; }
         [CsiField("Name")] public string? Name { get; set; }
-        [CsiField("Uf_SalesRegion")] public string? UfSalesRegion { get; set; }
+        [CsiField("cusUf_SalesRegion")] public string? UfSalesRegion { get; set; }
         [CsiField("CorpCust")] public string? CorpCust { get; set; }
     }
+
+    private static void ApplyBol(CustomerShipment shipment, BolInfo bol)
+    {
+        if (!string.IsNullOrWhiteSpace(bol.InvoiceeState))
+            shipment.BillToState = bol.InvoiceeState;
+        if (!string.IsNullOrWhiteSpace(bol.ConsigneeState))
+            shipment.ShipToState = bol.ConsigneeState;
+        if (!string.IsNullOrWhiteSpace(bol.Whse))
+            shipment.Whse = bol.Whse;
+        if (!string.IsNullOrWhiteSpace(bol.CarrierCode))
+            shipment.CarrierCode = bol.CarrierCode;
+        if (!string.IsNullOrWhiteSpace(bol.ServiceType))
+            shipment.ServiceType = bol.ServiceType;
+        if (!string.IsNullOrWhiteSpace(bol.ShipCode))
+            shipment.ShipCode = bol.ShipCode;
+        else if (!string.IsNullOrWhiteSpace(bol.ShipCodeDesc))
+            shipment.ShipCode = bol.ShipCodeDesc;
+        if (!string.IsNullOrWhiteSpace(bol.BillTransportationTo))
+            shipment.FreightTerms = FreightTermsDescription(bol.BillTransportationTo);
+        if (!string.IsNullOrWhiteSpace(bol.TrackingNumber))
+            shipment.TrackingNumber = bol.TrackingNumber;
+        if (bol.ShipmentId.HasValue)
+            shipment.ShipmentID = bol.ShipmentId.Value;
+    }
+
+    private static void ApplyBol(CustomerShipment shipment, ChapHistoryHeader bol)
+    {
+        shipment.ShipmentID = bol.ShipmentId;
+        if (!string.IsNullOrWhiteSpace(bol.Whse))
+            shipment.Whse = bol.Whse;
+        if (!string.IsNullOrWhiteSpace(bol.CarrierCode))
+            shipment.CarrierCode = bol.CarrierCode;
+        if (!string.IsNullOrWhiteSpace(bol.ServiceType))
+            shipment.ServiceType = bol.ServiceType;
+        if (!string.IsNullOrWhiteSpace(bol.ShipCode))
+            shipment.ShipCode = bol.ShipCode;
+        if (!string.IsNullOrWhiteSpace(bol.BillTransportationTo))
+            shipment.FreightTerms = FreightTermsDescription(bol.BillTransportationTo);
+        var trackingNumber = !string.IsNullOrWhiteSpace(bol.TrackingNumber)
+            ? bol.TrackingNumber
+            : bol.ProNumber;
+        if (!string.IsNullOrWhiteSpace(trackingNumber))
+            shipment.TrackingNumber = trackingNumber;
+    }
+
+    private static string FreightTermsDescription(string value) =>
+        value.Trim().ToUpperInvariant() switch
+        {
+            "P" => "Prepaid",
+            "C" => "Collect",
+            "T" => "Third Party",
+            "Q" => "Prepaid and Charge",
+            _ => value.Trim()
+        };
 
     private sealed class ItemDescInfo
     {
@@ -1627,18 +1796,19 @@ public class IdoService : IIdoService
     private sealed class BolInfo
     {
         [CsiField("ShipmentId")] public int? ShipmentId { get; set; }
-        [CsiField("InvoiceeState")] public string? InvoiceeState { get; set; }
-        [CsiField("ConsigneeState")] public string? ConsigneeState { get; set; }
-        [CsiField("Whse")] public string? Whse { get; set; }
-        [CsiField("CarrierCode")] public string? CarrierCode { get; set; }
-        [CsiField("ShipCode")] public string? ShipCode { get; set; }
+        [CsiField("invoicee_state")] public string? InvoiceeState { get; set; }
+        [CsiField("consignee_state")] public string? ConsigneeState { get; set; }
+        [CsiField("whse")] public string? Whse { get; set; }
+        [CsiField("carrier_code")] public string? CarrierCode { get; set; }
+        [CsiField("ship_code")] public string? ShipCode { get; set; }
         [CsiField("ShipCodeDesc")] public string? ShipCodeDesc { get; set; }
-        [CsiField("ShipDate")] public DateTime? ShipDate { get; set; }
+        [CsiField("ship_date")] public DateTime? ShipDate { get; set; }
         [CsiField("BillTransportationTo")] public string? BillTransportationTo { get; set; }
-        [CsiField("TrackingNumber")] public string? TrackingNumber { get; set; }
-        [CsiField("InvoiceeName")] public string? InvoiceeName { get; set; }
-        [CsiField("CustNum")] public string? CustNum { get; set; }
-        [CsiField("CustSeq")] public int? CustSeq { get; set; }
+        [CsiField("tracking_number")] public string? TrackingNumber { get; set; }
+        [CsiField("Chap_CarrierServiceType")] public string? ServiceType { get; set; }
+        [CsiField("invoicee_name")] public string? InvoiceeName { get; set; }
+        [CsiField("cust_num")] public string? CustNum { get; set; }
+        [CsiField("cust_seq")] public int? CustSeq { get; set; }
     }
 
     private sealed class InvHdrInfo
@@ -1684,24 +1854,24 @@ public class IdoService : IIdoService
     private sealed class PackingListBolRow
     {
         [CsiField("ShipmentId")]     public string? ShipmentId { get; set; }
-        [CsiField("ShipDate")]       public DateTime? ShipDate { get; set; }
-        [CsiField("Whse")]           public string? Whse { get; set; }
-        [CsiField("ShipCode")]       public string? ShipCode { get; set; }
-        [CsiField("CarrierCode")]    public string? CarrierCode { get; set; }
-        [CsiField("CustNum")]        public string? CustNum { get; set; }
-        [CsiField("ConsigneeName")]  public string? ConsigneeName { get; set; }
-        [CsiField("ConsigneeAddr1")] public string? ConsigneeAddr1 { get; set; }
-        [CsiField("ConsigneeAddr2")] public string? ConsigneeAddr2 { get; set; }
-        [CsiField("ConsigneeAddr3")] public string? ConsigneeAddr3 { get; set; }
-        [CsiField("ConsigneeAddr4")] public string? ConsigneeAddr4 { get; set; }
-        [CsiField("ConsigneeCity")]  public string? ConsigneeCity { get; set; }
-        [CsiField("ConsigneeState")] public string? ConsigneeState { get; set; }
-        [CsiField("ConsigneeZip")]   public string? ConsigneeZip { get; set; }
+        [CsiField("ship_date")]       public DateTime? ShipDate { get; set; }
+        [CsiField("whse")]           public string? Whse { get; set; }
+        [CsiField("ship_code")]       public string? ShipCode { get; set; }
+        [CsiField("carrier_code")]    public string? CarrierCode { get; set; }
+        [CsiField("cust_num")]        public string? CustNum { get; set; }
+        [CsiField("consignee_name")]  public string? ConsigneeName { get; set; }
+        [CsiField("consignee_addr__1")] public string? ConsigneeAddr1 { get; set; }
+        [CsiField("consignee_addr__2")] public string? ConsigneeAddr2 { get; set; }
+        [CsiField("consignee_addr__3")] public string? ConsigneeAddr3 { get; set; }
+        [CsiField("consignee_addr__4")] public string? ConsigneeAddr4 { get; set; }
+        [CsiField("consignee_city")]  public string? ConsigneeCity { get; set; }
+        [CsiField("consignee_state")] public string? ConsigneeState { get; set; }
+        [CsiField("consignee_zip")]   public string? ConsigneeZip { get; set; }
     }
 
     private sealed class PackingListShipRow
     {
-        [CsiField("BolNumber")]      public string? BolNumber { get; set; }
+        [CsiField("ue_BolNumber")]   public string? BolNumber { get; set; }
         [CsiField("CoNum")]          public string? CoNum { get; set; }
         [CsiField("CoCustNum")]      public string? CustNum { get; set; }
         [CsiField("CoCustPo")]       public string? CustPo { get; set; }

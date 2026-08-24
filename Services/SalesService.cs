@@ -431,13 +431,13 @@ public class SalesService : ISalesService
     }
 
     // Used for the secondary SLCustomers call to look up billing/corporate name (CustSeq = 0)
-    // and Uf_SalesRegion for KENT fallback lines that need SalesRegion backfilled.
+    // and cusUf_SalesRegion for KENT fallback lines that need SalesRegion backfilled.
     private class CustNameInfo
     {
         [CsiField("CustNum")]        public string? CustNum { get; set; }
         [CsiField("CustSeq")]        public int CustSeq { get; set; }
         [CsiField("Name")]           public string? Name { get; set; }
-        [CsiField("Uf_SalesRegion")] public string? UfSalesRegion { get; set; }
+        [CsiField("cusUf_SalesRegion")] public string? UfSalesRegion { get; set; }
     }
 
     // Used for the secondary SLItems call to look up item descriptions.
@@ -478,8 +478,7 @@ public class SalesService : ISalesService
     private async Task<List<InvLineRawRow>> FetchKentLinesViaStandardIdosAsync(
         string repCode,
         DateTime dateFrom,
-        DateTime dateTo,
-        string kentAuth)
+        DateTime dateTo)
     {
         // ── SLInvHdrs (KENT) ──
         var hdrQuery = new Dictionary<string, string>
@@ -492,7 +491,7 @@ public class SalesService : ISalesService
             ["readonly"] = "1"
         };
 
-        var hdrJson = await _csiRestClient!.GetAsync("json/SLInvHdrs/adv", hdrQuery, kentAuth);
+        var hdrJson = await _csiRestClient!.GetAsync("json/SLInvHdrs/adv", hdrQuery, "KENT");
         var hdrResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(hdrJson,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
@@ -532,7 +531,7 @@ public class SalesService : ISalesService
                 ["readonly"] = "1"
             };
 
-            var itemJson = await _csiRestClient!.GetAsync("json/SLInvItemAlls/adv", itemQuery, kentAuth);
+            var itemJson = await _csiRestClient!.GetAsync("json/SLInvItemAlls/adv", itemQuery, "KENT");
             var itemResponse = JsonSerializer.Deserialize<MgRestAdvResponse>(itemJson,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
@@ -784,8 +783,8 @@ public class SalesService : ISalesService
     }
 
     /// <summary>
-    /// Fetches shipments from Syteline APIs (SLCoShips + AitSsBOLs) and merges BOL details
-    /// onto the shipment records. Link: SLCoShips.BolNumber = AitSsBOLs.ShipmentId.
+    /// Fetches shipments from Syteline APIs (SLCoShips + ue_SS_Bols) and merges BOL details
+    /// onto the shipment records. Link: SLCoShips.ue_BolNumber = ue_SS_Bols.ShipmentId.
     /// </summary>
     public async Task<List<CustomerShipment>> GetShipmentsDataApiAsync(ShipmentsParameters parameters)
     {

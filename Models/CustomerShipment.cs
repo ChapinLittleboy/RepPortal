@@ -49,7 +49,7 @@ public class CustomerShipment
     [CsiField("QtyShipped")]
     public int ShipQty { get; set; }
 
-    [CsiField("DerNetPrice")]
+    [CsiField("CoiPrice")]
     public decimal Price { get; set; }
 
     // Option A: Map ExtLinePrice to DerTotPrice (already calculated total)
@@ -67,21 +67,21 @@ public class CustomerShipment
     // Leaving it unmapped for now.
     public string? ShipToState { get; set; }
 
-    [CsiField("Uf_SalesRegion")]
+    [CsiField("cusUf_SalesRegion")]
     public string? ShipToRegion { get; set; }
 
     // ===== Shipping / Logistics =====
-    // These exist in SLCoShips but you said you will ultimately override from AIT_SS_BOLs.
+    // These exist in SLCoShips but are ultimately overridden from ue_SS_Bols.
 
     [CsiField("ShpCarrierCode")]
     public string CarrierCode { get; set; } = "";
 
     // Service type is not cleanly exposed as a single field in SLCoShips list,
-    // but you have DerCarrier and CarrierName, etc. Your AIT_SS_BOLs has Chap_CarrierServiceType.
+    // but you have DerCarrier and CarrierName, etc. ue_SS_Bols has the BOL carrier details.
     // Leave unmapped here (populated from BOLs).
     public string ServiceType { get; set; } = "";
 
-    // FreightTerms (you’re using BillTransportationTo from AIT_SS_BOLs)
+    // FreightTerms (using BillTransportationTo from ue_SS_Bols)
     public string? FreightTerms { get; set; }
 
     [CsiField("DoNum")] // DO/BOL in SLCoShips (often ship code)
@@ -93,7 +93,7 @@ public class CustomerShipment
 
     // Warehouse
     // SLCoShips exposes ShipperNum, PackNum, but not a plain Whse field in the snippet shown,
-    // but your AIT_SS_BOLs includes Whse, so you can populate from that.
+    // but ue_SS_Bols includes whse, so you can populate from that.
     public string Whse { get; set; } = "";
 
     // Shipment ID (SLCoShips: ShipmentId)
@@ -101,7 +101,7 @@ public class CustomerShipment
     [Column("shipment_id")]
     public int ShipmentID { get; set; }
 
-    [CsiField("BolNumber")]
+    [CsiField("ue_BolNumber")]
     public int? BolNumber { get; set; }
 
     // ===== Unused / not in SLCoShips list =====

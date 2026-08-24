@@ -1,7 +1,6 @@
 ﻿namespace RepPortal.Services;
 
 using System.Diagnostics;
-using System.Net.Http.Headers;
 using Microsoft.Extensions.Logging;
 
 public class CsiLoggingHandler : DelegatingHandler
@@ -19,11 +18,17 @@ public class CsiLoggingHandler : DelegatingHandler
     {
         var stopwatch = Stopwatch.StartNew();
 
-        // ---- REQUEST LOGGING ----
+        var sanitizedUrl = request.RequestUri?.GetLeftPart(UriPartial.Path);
+        var mongooseConfiguration = request.Headers.TryGetValues(
+            "X-Infor-MongooseConfig", out var configurations)
+                ? configurations.FirstOrDefault()
+                : null;
+
         _logger.LogInformation(
-            "CSI REQUEST {Method} {Url}",
+            "CSI REQUEST {Method} {Url} configuration={MongooseConfiguration}",
             request.Method,
-            request.RequestUri);
+            sanitizedUrl,
+            mongooseConfiguration);
 
         if (request.RequestUri?.Query is { Length: > 0 })
         {
@@ -37,7 +42,6 @@ public class CsiLoggingHandler : DelegatingHandler
 
         _logger.LogDebug("CSI HEADERS {@Headers}", safeHeaders);
 
-        // ---- CALL ----
         HttpResponseMessage response;
         try
         {
@@ -51,11 +55,11 @@ public class CsiLoggingHandler : DelegatingHandler
 
         stopwatch.Stop();
 
-        // ---- RESPONSE LOGGING ----
         _logger.LogInformation(
-            "CSI RESPONSE {StatusCode} in {ElapsedMs}ms",
+            "CSI RESPONSE {StatusCode} in {ElapsedMs}ms configuration={MongooseConfiguration}",
             (int)response.StatusCode,
-            stopwatch.ElapsedMilliseconds);
+            stopwatch.ElapsedMilliseconds,
+            mongooseConfiguration);
 
         var content = await response.Content.ReadAsStringAsync();
 
