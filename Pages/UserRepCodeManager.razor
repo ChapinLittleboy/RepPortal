@@ -1,11 +1,72 @@
 ﻿@page "/admin/manage-repcodes"
 @attribute [Authorize(Roles = "Administrator")]
+@using Dapper
 @using Syncfusion.Blazor.Grids
 @using FilterType = Syncfusion.Blazor.Grids.FilterType
 @inject UserManager<ApplicationUser> UserManager
+@inject IDbConnectionFactory DbConnectionFactory
 @inject IJSRuntime JS
 
-<h3>Manage RepCodes and Regions</h3>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Manage RepCodes and Regions</h3>
+    <button class="btn btn-outline-primary"
+            @onclick="ShowRegistrationCodes">
+        View Registration Codes
+    </button>
+</div>
+
+<SfDialog Width="700px"
+          IsModal="true"
+          ShowCloseIcon="true"
+          CloseOnEscape="true"
+          Header="Agency Registration Codes"
+          @bind-Visible="registrationCodeDialogVisible">
+    <DialogTemplates>
+        <Content>
+            @if (registrationCodesLoading)
+            {
+                <p class="mb-0"><em>Loading registration codes...</em></p>
+            }
+            else if (!string.IsNullOrWhiteSpace(registrationCodesError))
+            {
+                <div class="alert alert-danger mb-0" role="alert">
+                    @registrationCodesError
+                </div>
+            }
+            else if (registrationCodes is null || registrationCodes.Count == 0)
+            {
+                <p class="mb-0">No registration codes were found.</p>
+            }
+            else
+            {
+                <SfGrid TValue="AgencyRegistrationCodeInfo"
+                        DataSource="registrationCodes"
+                        AllowSorting="true"
+                        AllowFiltering="true"
+                        Toolbar="@(new List<string>() { "Search" })"
+                        Height="400">
+                    <GridFilterSettings Type="FilterType.Excel" />
+                    <GridColumns>
+                        <GridColumn Field="RepCode"
+                                    HeaderText="RepCode"
+                                    Width="150" />
+                        <GridColumn Field="RegistrationCode"
+                                    HeaderText="Registration Code"
+                                    Width="220" />
+                        <GridColumn Field="Status"
+                                    HeaderText="Status"
+                                    Width="120" />
+                        <GridColumn Field="ExpirationDate"
+                                    HeaderText="Expiration Date"
+                                    Type="ColumnType.Date"
+                                    Format="MM/dd/yyyy"
+                                    Width="150" />
+                    </GridColumns>
+                </SfGrid>
+            }
+        </Content>
+    </DialogTemplates>
+</SfDialog>
 
 @if (users is null)
 {
@@ -92,6 +153,10 @@ else
 @code {
     private List<UserWithEdit>? users;
     private SfGrid<UserWithEdit>? Grid;
+    private List<AgencyRegistrationCodeInfo>? registrationCodes;
+    private bool registrationCodeDialogVisible;
+    private bool registrationCodesLoading;
+    private string? registrationCodesError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -113,6 +178,46 @@ else
             .ThenBy(u => u.LastName)
             .ThenBy(u => u.RepCode)
             .ToList();
+    }
+
+    private async Task ShowRegistrationCodes()
+    {
+        registrationCodeDialogVisible = true;
+        registrationCodesError = null;
+        registrationCodesLoading = true;
+
+        try
+        {
+            const string sql = @"
+                SELECT
+                    RepCode,
+                    RegistrationCode,
+                    IsActive,
+                    ExpirationDate
+                FROM dbo.AgencyRegistrationCodes
+                ORDER BY
+                    CASE
+                        WHEN IsActive = 1
+                         AND (ExpirationDate IS NULL OR ExpirationDate > GETUTCDATE())
+                            THEN 0
+                        ELSE 1
+                    END,
+                    RepCode,
+                    RegistrationCode;";
+
+            using var connection = DbConnectionFactory.CreateRepConnection();
+            var rows = await connection.QueryAsync<AgencyRegistrationCodeInfo>(sql);
+            registrationCodes = rows.ToList();
+        }
+        catch (Exception ex)
+        {
+            registrationCodes = null;
+            registrationCodesError = $"Unable to load registration codes: {ex.Message}";
+        }
+        finally
+        {
+            registrationCodesLoading = false;
+        }
     }
 
     private async Task SaveRepAndRegion(UserWithEdit user)
@@ -174,6 +279,20 @@ else
                 }
             }
         }
+    }
+
+    private class AgencyRegistrationCodeInfo
+    {
+        public string? RepCode { get; set; }
+        public string? RegistrationCode { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime? ExpirationDate { get; set; }
+
+        public string Status => !IsActive
+            ? "Inactive"
+            : ExpirationDate.HasValue && ExpirationDate.Value <= DateTime.UtcNow
+                ? "Expired"
+                : "Active";
     }
 
     private class UserWithEdit
