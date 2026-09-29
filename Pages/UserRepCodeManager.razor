@@ -15,7 +15,7 @@
     </button>
 </div>
 
-<SfDialog Width="700px"
+<SfDialog Width="850px"
           IsModal="true"
           ShowCloseIcon="true"
           CloseOnEscape="true"
@@ -61,6 +61,21 @@
                                     Type="ColumnType.Date"
                                     Format="MM/dd/yyyy"
                                     Width="150" />
+                        <GridColumn HeaderText="Invitation" Width="145" AllowSorting="false" AllowFiltering="false">
+                            <Template Context="ctx">
+                                @{
+                                    var registrationCode = (AgencyRegistrationCodeInfo)ctx;
+                                }
+                                @if (registrationCode.Status == "Active" && !string.IsNullOrWhiteSpace(registrationCode.RegistrationCode))
+                                {
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       href="@BuildInvitationMailto(registrationCode)"
+                                       aria-label="Draft invitation for @registrationCode.RepCode">
+                                        Draft email
+                                    </a>
+                                }
+                            </Template>
+                        </GridColumn>
                     </GridColumns>
                 </SfGrid>
             }
@@ -218,6 +233,35 @@ else
         {
             registrationCodesLoading = false;
         }
+    }
+
+    private static string BuildInvitationMailto(AgencyRegistrationCodeInfo code)
+    {
+        const string subject = "Welcome to the Chapin Rep Portal";
+        var regionInstruction = string.Equals(code.RepCode, "LAW", StringComparison.OrdinalIgnoreCase)
+            ? " Select your Region, then click Register."
+            : " Then click Register.";
+
+        var body = string.Join("\r\n", new[]
+        {
+            "Hi,",
+            "",
+            "Welcome aboard!",
+            "",
+            "To get started with our Rep Portal, please register using your own email address. Each person has their own login, so there is no need to share one with others at your company.",
+            "",
+            "Go to https://www.chapinportal.com/ and click Register in the top right corner.",
+            "",
+            $"Enter your email address, a password, your first and last name, and {code.RegistrationCode} in the Registration Code box.{regionInstruction}",
+            "",
+            "You'll receive an email to confirm your account. Open it and follow the confirmation link to finish setting up your login.",
+            "",
+            "Let me know if you have any questions or run into any issues!",
+            "",
+            "Thanks,"
+        });
+
+        return $"mailto:?subject={Uri.EscapeDataString(subject)}&body={Uri.EscapeDataString(body)}";
     }
 
     private async Task SaveRepAndRegion(UserWithEdit user)
